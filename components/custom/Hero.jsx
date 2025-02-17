@@ -77,7 +77,7 @@ const Hero = () => {
 
       <div className="flex flex-wrap justify-center items-center gap-3 mt-3 px-2 w-full max-w-2xl">
         {[
-          'create a TODO app in react',
+          'create a TODO app',
           'create a Budget track app',
           'create a flappy bird game',
           'write backend for authentication',

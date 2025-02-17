@@ -1,7 +1,7 @@
-import '../styles/globals.css';
-import Provider from '../components/Provider';
+import Provider from '@/components/Provider';
+import '@/styles/globals.css';
 
-function MyApp({ Component, pageProps }) {
+function App({ Component, pageProps }) {
   return (
     <Provider
       attribute="class"
@@ -9,9 +9,9 @@ function MyApp({ Component, pageProps }) {
       enableSystem
       disableTransitionOnChange
     >
-      <Component {...pageProps} />
+        <Component {...pageProps} />
     </Provider>
   );
 }
 
-export default MyApp;
+export default App;

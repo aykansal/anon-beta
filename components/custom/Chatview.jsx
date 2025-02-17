@@ -4,7 +4,6 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { MessageContext } from '@/context/MessagesContext';
 import { ArrowRight, Link, Loader2Icon } from 'lucide-react';
-import ChatPrompt from '@/data/ChatPrompt';
 import Markdown from 'react-markdown';
 
 const Chatview = () => {
@@ -38,8 +37,9 @@ const Chatview = () => {
         setloading(true);
 
         // add the prompt to the last/recent message
-        message[message.length - 1].content +=
-          ' . And Remember, ' + ChatPrompt.CHAT_PROMPT;
+        // message[message.length - 1].content +=
+        //   ' . And Remember';
+          // + ChatPrompt.CHAT_PROMPT;
 
         const stringMessage = JSON.stringify(message);
         try {

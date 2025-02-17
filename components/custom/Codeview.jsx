@@ -7,6 +7,7 @@ import {
   SandpackLayout,
   SandpackCodeEditor,
   SandpackFileExplorer,
+  Sandpack,
 } from '@codesandbox/sandpack-react';
 import axios from 'axios';
 import { Loader2Icon } from 'lucide-react';
@@ -79,7 +80,6 @@ const Codeview = () => {
           </h1>
         </div>
       </div>
-
       <SandpackProvider
         className="relative rounded-3xl"
         files={files}
@@ -87,11 +87,12 @@ const Codeview = () => {
           dependencies: {
             ...Extras.DEPENDANCY,
           },
+          main: '/pages/index.tsx',
         }}
         options={{
           externalResources: ['https://cdn.tailwindcss.com'],
         }}
-        template="react"
+        template="vite-react-ts"
         theme={'dark'}
       >
         <SandpackLayout>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
+  anonSqliteProcess,
   fetchMessagesAR,
   messageAR,
   runLua,
@@ -11,34 +12,40 @@ import {
 } from '@/lib/arkit';
 import WalletConnect from '@/components/anon/WalletConnect';
 import styles from './test.module.css';
-import { dryrun } from '@permaweb/aoconnect/browser';
+import {
+  connect,
+  createDataItemSigner,
+} from '@permaweb/aoconnect/browser';
+import axios from 'axios';
 
 const fileData = [
   {
     file: 'data/file1.tsx',
     body: `import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-export function cn(...inputs: ClassValue[]) {
-   return twMerge(clsx(inputs));
+          import { twMerge } from "tailwind-merge";
+          export function cn(...inputs: ClassValue[]) {
+          return twMerge(clsx(inputs));
 }`,
   },
   {
     file: 'data/file2.tsx',
     body: `import2 { clsx2, type ClassValue } from "clsx2";
-import { twMerge } from "tailwind-merge";
-export function cn(...inputs: ClassValue[]) {
-   return twMerge(clsx(inputs));
+          import { twMerge } from "tailwind-merge";
+          export function cn(...inputs: ClassValue[]) {
+          return twMerge(clsx(inputs));
 }`,
   },
 ];
 
 const Testarweave = () => {
-  const [process, setProcess] = useState('');
+  const [process, setProcess] = useState(
+    '8j7hprq4lWAOPLcBPwAYR7SwNeWRNfdk_MgRhs0u4hE'
+  );
   const [message, setMessage] = useState('');
-  const [fetchedMessages, setFetchedMessages] = useState();
-  const [spawning, setSpawning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [spawning, setSpawning] = useState(false);
+  const [fetchedMessages, setFetchedMessages] = useState();
 
   const handleSendMessage = async ({ fileData }) => {
     try {
@@ -158,8 +165,18 @@ const Testarweave = () => {
                 onClick={async () => {
                   setLoading(true);
                   await runLua({
-                    process,
-                    code: 'Handlers.add("pingpong",Handlers.utils.hasMatchingData("ping"),Handlers.utils.reply("pong"))',
+                    process: anonSqliteProcess,
+                    code: `Handlers.add("getAuthor",{Action="getAuthor"},
+                            function (msg)
+                                local tables={}
+                                local query = "SELECT * FROM Authors"
+                                for row in db:nrows(query) do
+                                    table.insert(tables,row)
+                                end
+                                msg.reply({Data=tables})
+                            end
+                          )`,
+                    // code: `apm.install("@rakis/DbAdmin")`,
                   })
                     .then(console.log)
                     .catch(console.error);
@@ -172,10 +189,37 @@ const Testarweave = () => {
               </Button>
               <Button
                 onClick={async () => {
-                  await dryrun;
+                  const ao = connect();
+                  const res = await ao
+                    .message({
+                      data: `
+                    Send({Target="f_ZV6pI3KYkkHIctjTeEvUyBo8icRAwmDkHWWcvl3uY",Tags={Action="getAuthor"}})
+                    `,
+                      process: anonSqliteProcess,
+                      signer: createDataItemSigner(globalThis.arweaveWallet),
+                      tags: [{ name: 'Action', value: 'Eval' }],
+                    })
+                    .then(
+                      async (res) =>
+                        await axios.get(`https://arweave.net/${res}`)
+                    );
+                  console.log(res?.data);
                 }}
               >
-                Run Eval
+                Run Eval using luacode
+              </Button>
+              <Button
+                onClick={async () => {
+                  const ao = connect();
+                  const res = await ao.dryrun({
+                    data: '',
+                    process: anonSqliteProcess,
+                    tags: [{ name: 'Action', value: 'getAuthor' }],
+                  });
+                  console.log(res.Messages[0].Data);
+                }}
+              >
+                Run Eval using dryrun
               </Button>
 
               <Button
