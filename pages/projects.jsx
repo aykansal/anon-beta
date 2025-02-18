@@ -26,6 +26,7 @@ const ProjectsPage = () => {
       );
       console.log('Fetched projects:', res.data.projects);
       setProjects(res?.data?.projects || []);
+      setActiveProject(res?.data?.projects[0]);
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -44,7 +45,6 @@ const ProjectsPage = () => {
       }
 
       setConnectionStatus('connecting');
-      // Fetch project code
       const codeRes = await axios.get(
         `http://localhost:5000/projects/code?activeProjectId=${project.id}`
       );
@@ -167,7 +167,7 @@ const ProjectsPage = () => {
 
   return (
     <div className="flex flex-col bg-background h-screen overflow-hidden">
-      {/* Title Bar */}
+      {/* Title Bar - Always show */}
       <div className="shrink-0">
         <TitleBar
           projects={projects}
@@ -180,45 +180,59 @@ const ProjectsPage = () => {
         />
       </div>
 
-      {/* Main Content */}
-      <div id="main-container" className="flex flex-1 bg-gray-700 min-h-0">
-        {/* Code Section */}
-        <div style={{ width: `${splitPosition}%` }} className="h-full">
-          <Codeview
-            theme="dark"
-            files={files}
-            onSave={handleSaveCode}
-            isSaving={isSavingCode}
-            isGenerating={isGenerating}
-            activeProject={activeProject}
-          />
-        </div>
+      {/* Main Content - Only show when project is selected */}
+      {activeProject ? (
+        <div id="main-container" className="flex flex-1 bg-gray-700 min-h-0">
+          {/* Code Section */}
+          <div style={{ width: `${splitPosition}%` }} className="h-full">
+            <Codeview
+              theme="dark"
+              files={files}
+              onSave={handleSaveCode}
+              isSaving={isSavingCode}
+              isGenerating={isGenerating}
+              activeProject={activeProject}
+            />
+          </div>
 
-        {/* Resizer */}
-        <div
-          className={`w-1 h-full bg-border hover:bg-primary/50 cursor-col-resize active:bg-primary ${
-            isResizing ? 'bg-primary' : ''
-          }`}
-          onMouseDown={startResizing}
+          {/* Resizer */}
+          <div
+            className={`w-1 h-full bg-border hover:bg-primary/50 cursor-col-resize active:bg-primary ${
+              isResizing ? 'bg-primary' : ''
+            }`}
+            onMouseDown={startResizing}
+          />
+
+          {/* Chat Section */}
+          <div style={{ width: `${100 - splitPosition}%` }} className="h-full">
+            <Chatview
+              activeProject={activeProject}
+              onGenerateStart={() => setIsGenerating(true)}
+              onGenerateEnd={() => setIsGenerating(false)}
+            />
+          </div>
+        </div>
+      ) : (
+        // Show this when no project is selected
+        <div className="flex-1 flex items-center justify-center bg-background">
+          <div className="text-center text-muted-foreground">
+            <h3 className="text-lg font-medium mb-2">No Project Selected</h3>
+            <p className="text-sm">
+              Select an existing project or create a new one to get started
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Status Bar - Only show when project is selected */}
+      {activeProject && (
+        <StatusBar
+          activeProject={activeProject}
+          isSaving={isSavingCode}
+          isGenerating={isGenerating}
+          connectionStatus={connectionStatus}
         />
-
-        {/* Chat Section */}
-        <div style={{ width: `${100 - splitPosition}%` }} className="h-full">
-          <Chatview
-            activeProject={activeProject}
-            onGenerateStart={() => setIsGenerating(true)}
-            onGenerateEnd={() => setIsGenerating(false)}
-          />
-        </div>
-      </div>
-
-      {/* Status Bar */}
-      <StatusBar
-        activeProject={activeProject}
-        isSaving={isSavingCode}
-        isGenerating={isGenerating}
-        connectionStatus={connectionStatus}
-      />
+      )}
     </div>
   );
 };

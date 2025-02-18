@@ -8,7 +8,7 @@ import {
   RefreshCwIcon,
   SearchIcon,
   HelpCircleIcon,
-  BookOpenIcon
+  BookOpenIcon,
 } from 'lucide-react';
 
 const TitleBar = ({
@@ -18,10 +18,20 @@ const TitleBar = ({
   onCreateProject,
   onSave,
   onRun,
-  onRefresh
+  onRefresh,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+
+  const handleProjectChange = (e) => {
+    const projectId = parseInt(e.target.value);
+    if (!Array.isArray(projects)) {
+      console.error('Projects is not an array');
+      return;
+    }
+    const selectedProject = projects.find((p) => p.id === projectId);
+    onProjectSelect(selectedProject);
+  };
 
   const handleCreateSubmit = (e) => {
     e.preventDefault();
@@ -39,25 +49,18 @@ const TitleBar = ({
         {/* Project Selection */}
         <select
           value={activeProject?.id || ''}
-          onChange={(e) => {
-            e.preventDefault();
-            const project = projects.find(p => p.id === e.target.value);
-            console.log(project)
-            onProjectSelect(project);
-          }}
+          onChange={handleProjectChange}
           className="h-7 px-2 bg-background border rounded text-sm"
         >
           <option value="">Select Project</option>
-          {projects && projects.map((project) => (
+          {projects?.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}
             </option>
           ))}
         </select>
-
         {/* Separator */}
         <div className="w-px h-4 bg-border mx-1" />
-
         {/* Action Buttons */}
         <button
           onClick={() => setIsCreating(true)}
@@ -67,7 +70,6 @@ const TitleBar = ({
           <PlusIcon size={14} />
           <span>New</span>
         </button>
-
         <button
           onClick={onSave}
           disabled={!activeProject}
@@ -77,7 +79,6 @@ const TitleBar = ({
           <SaveIcon size={14} />
           <span>Save</span>
         </button>
-
         <button
           onClick={onRun}
           disabled={!activeProject}
@@ -87,7 +88,6 @@ const TitleBar = ({
           <PlayIcon size={14} />
           <span>Run</span>
         </button>
-
         <button
           onClick={onRefresh}
           disabled={!activeProject}
@@ -97,10 +97,8 @@ const TitleBar = ({
           <RefreshCwIcon size={14} />
           <span>Refresh</span>
         </button>
-
         {/* Separator */}
         <div className="w-px h-4 bg-border mx-1" />
-
         {/* Additional Tools */}
         <button
           className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
@@ -108,16 +106,13 @@ const TitleBar = ({
         >
           <SearchIcon size={14} />
         </button>
-
         <button
           className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
           title="File Explorer"
         >
           <FolderIcon size={14} />
         </button>
-
         <div className="flex-1" /> {/* Spacer */}
-
         {/* Right-side buttons */}
         <button
           className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
@@ -125,14 +120,12 @@ const TitleBar = ({
         >
           <BookOpenIcon size={14} />
         </button>
-
         <button
           className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
           title="Help"
         >
           <HelpCircleIcon size={14} />
         </button>
-
         <button
           className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
           title="Settings"
