@@ -1,8 +1,6 @@
 'use client';
 import { useState } from 'react';
-import Appbar from '@/components/custom/Appbar';
 import { ActionContext } from '@/context/ActionContext';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { MessageContext } from '@/context/MessagesContext';
 import { UserDetailsContext } from '@/context/UserDetailsContext';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
@@ -17,10 +15,7 @@ const Provider = ({ children, ...props }) => {
       <MessageContext.Provider value={{ message, setmessage }}>
         <ActionContext.Provider value={{ action, setAction }}>
           <NextThemesProvider {...props}>
-            <SidebarProvider defaultOpen={false}>
-              <Appbar />
-              {children}
-            </SidebarProvider>
+            {children}
           </NextThemesProvider>
         </ActionContext.Provider>
       </MessageContext.Provider>

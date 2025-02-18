@@ -5,8 +5,8 @@ import React, { useContext } from 'react';
 import { Button } from '../ui/button';
 import { UserDetailsContext } from '@/context/UserDetailsContext';
 import { MessageContext } from '@/context/MessagesContext';
-import { Menu } from 'lucide-react';
-import { useSidebar } from '../ui/sidebar';
+// import { Menu } from 'lucide-react';
+// import { useSidebar } from '../ui/sidebar';
 import { ActionContext } from '@/context/ActionContext';
 import Login from './Login';
 import { googleLogout } from '@react-oauth/google';
@@ -15,7 +15,7 @@ const Navbar = () => {
   const context = useContext(UserDetailsContext);
   const msgContext = useContext(MessageContext);
   const actionContext = useContext(ActionContext);
-  const { toggleSidebar } = useSidebar();
+  // const { toggleSidebar } = useSidebar();
   const { userDets } = context;
   const { message } = msgContext;
   const { setAction } = actionContext;
@@ -48,7 +48,7 @@ const Navbar = () => {
           </div>
 
           <div className="cursor-pointer">
-            <Menu onClick={toggleSidebar} />
+            {/* <Menu onClick={toggleSidebar} /> */}
           </div>
         </div>
       ) : (

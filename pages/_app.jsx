@@ -1,5 +1,6 @@
 import Provider from '@/components/Provider';
 import '@/styles/globals.css';
+import { Toaster } from 'sonner';
 
 function App({ Component, pageProps }) {
   return (
@@ -9,7 +10,8 @@ function App({ Component, pageProps }) {
       enableSystem
       disableTransitionOnChange
     >
-        <Component {...pageProps} />
+      <Component {...pageProps} />
+      <Toaster />
     </Provider>
   );
 }

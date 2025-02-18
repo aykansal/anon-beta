@@ -1,6 +1,3 @@
-'use client';
-
-import { MessageContext } from '@/context/MessagesContext';
 import Extras from '@/data/Extras';
 import {
   SandpackProvider,
@@ -10,113 +7,185 @@ import {
   Sandpack,
 } from '@codesandbox/sandpack-react';
 import axios from 'axios';
-import { Loader2Icon } from 'lucide-react';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { Loader2Icon, AlertCircle, Code, Eye, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import SandPackPreviewClient from './SandPackPreviewClient';
-import { Toaster } from '../ui/toaster';
+import { toast } from 'sonner';
 
-const Codeview = () => {
+const Codeview = ({ activeProject }) => {
   const [activeTab, setactiveTab] = useState('code');
   const [files, setfiles] = useState(Extras.DEFAULT_FILE);
   const [loading, setloading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const context = useContext(MessageContext);
-  const { message } = context;
-  const lastCalledRef = useRef(0);
-  const GetCode = async () => {
-    setloading(true);
+  useEffect(() => {
+    if (activeProject?.id) {
+      loadProjectCode();
+    }
+  }, [activeProject?.id]);
 
-    const latestPrompt = message[message.length - 1];
-    // instead of sendng same context here with every msg req, it will be stored in the history of the model from ther server to reduce token cost and improve latency.
-    // message[message.length - 1].content + ' ' + CODE_GEN_PROMPT;
-
+  const loadProjectCode = async () => {
     try {
-      const aiResp = await axios
-        .post(`${process.env.NEXT_PUBLIC_BASE_URL}/code/genCode`, {
-          prompt: latestPrompt,
-        })
-        .then((response) => response.data.response);
+      setError(null);
+      setloading(true);
 
-      const mergedFile = { ...Extras.DEFAULT_FILE, ...aiResp?.files };
-      setfiles(mergedFile);
+      if (!activeProject?.id) {
+        throw new Error('Project ID is required to load code');
+      }
+
+      const response = await axios.get(`http://localhost:5000/projects/code?activeProjectId=${activeProject.id}`);
+
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+
+      if (response.data?.files) {
+        setfiles(response.data.files);
+      } else {
+        setfiles(Extras.DEFAULT_FILE);
+      }
+    } catch (error) {
+      console.error('Error loading project code:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load project code';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
       setloading(false);
-    } catch (err) {
-      console.log(err);
     }
   };
-  useEffect(() => {
-    if (message?.length > 0) {
-      console.log('Generating code again');
-      const role = message[message.length - 1].role;
-      console.log(role);
 
-      if (role === 'user') {
-        const now = Date.now();
-        if (now - lastCalledRef.current >= 10000) {
-          lastCalledRef.current = now; // Update the timestamp
-          GetCode();
-        } else {
-          console.log('Rate limiter active, skipping GetCode call.');
-        }
+  const handleSaveCode = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      if (!activeProject?.id) {
+        throw new Error('Project ID is required to save code');
       }
-    }
-  }, [message]);
 
-  return (
-    <div className="relative">
-      <div className="bg-[#181818] p-2 border rounded-t-xl w-full">
-        <div className="flex flex-wrap justify-center items-center gap-1 bg-black p-1 rounded-full w-[140px] shrink-0">
-          <h1
-            onClick={() => setactiveTab('code')}
-            className={`cursor-pointer text-sm ${activeTab == 'code' && 'text-blue-500 bg-blue-500/30 '} px-2 py-1  rounded-full`}
-          >
-            code
-          </h1>
-          <h1
-            onClick={() => setactiveTab('preview')}
-            className={`cursor-pointer text-sm ${activeTab == 'preview' && 'text-blue-500 bg-blue-500/30 '} px-2 py-1  rounded-full`}
-          >
-            preview
-          </h1>
+      await axios.post(`http://localhost:5000/projects/${activeProject.id}/code`, {
+        files,
+        sandboxId: Date.now().toString()
+      });
+
+      toast.success('Code saved successfully');
+    } catch (error) {
+      console.error('Error saving code:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save code';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (!activeProject?.id) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
+        <p>Select a project to view and edit code</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="flex items-center space-x-2 text-muted-foreground">
+          <Loader2Icon className="animate-spin" />
+          <span>Loading code...</span>
         </div>
       </div>
-      <SandpackProvider
-        className="relative rounded-3xl"
-        files={files}
-        customSetup={{
-          dependencies: {
-            ...Extras.DEPENDANCY,
-          },
-          main: '/pages/index.tsx',
-        }}
-        options={{
-          externalResources: ['https://cdn.tailwindcss.com'],
-        }}
-        template="vite-react-ts"
-        theme={'dark'}
-      >
-        <SandpackLayout>
-          {activeTab == 'code' ? (
-            <>
-              <SandpackFileExplorer style={{ height: '78vh' }} />
-              <SandpackCodeEditor style={{ height: '78vh' }} />
-            </>
-          ) : (
-            <>
-              <SandPackPreviewClient />
-            </>
-          )}
-        </SandpackLayout>
-      </SandpackProvider>
-      {loading && (
-        <div className="top-0 absolute flex justify-center items-center bg-gray-800 opacity-80 rounded-xl w-full h-full">
-          <div className="flex items-center gap-2">
-            <Loader2Icon className="animate-spin" />
-            <h2>Generating files....</h2>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full max-h-screen bg-background">
+      {error && (
+        <div className="bg-destructive/15 text-destructive px-4 py-2 rounded-md m-4">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4" />
+            <p>{error}</p>
           </div>
         </div>
       )}
-      <Toaster />
+
+      {/* Top Bar */}
+      <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setactiveTab('code')}
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors ${activeTab === 'code'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+              }`}
+          >
+            <Code className="h-4 w-4" />
+            <span className="hidden sm:inline">Editor</span>
+          </button>
+          <button
+            onClick={() => setactiveTab('preview')}
+            className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors ${activeTab === 'preview'
+                ? 'bg-primary text-primary-foreground'
+                : 'hover:bg-muted'
+              }`}
+          >
+            <Eye className="h-4 w-4" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
+        </div>
+
+        <button
+          onClick={handleSaveCode}
+          disabled={isSaving}
+          className="flex items-center space-x-1 px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+        >
+          <Save className="h-4 w-4" />
+          <span className="hidden sm:inline">Save</span>
+        </button>
+      </div>
+
+      {/* Code Editor */}
+      <div className="flex-1 overflow-hidden">
+        <SandpackProvider
+          files={files}
+          theme="dark"
+          template="react"
+          customSetup={{
+            dependencies: {
+              "react": "^18.0.0",
+              "react-dom": "^18.0.0",
+              "@radix-ui/react-icons": "^1.3.0",
+              "class-variance-authority": "^0.7.0",
+              "clsx": "^2.0.0",
+              "tailwind-merge": "^2.1.0",
+              "tailwindcss-animate": "^1.0.7"
+            }
+          }}
+        >
+          <div className="h-full">
+            {activeTab === 'code' ? (
+              <SandpackLayout className="h-full">
+                <div className="hidden sm:block h-full">
+                  <SandpackFileExplorer />
+                </div>
+                <SandpackCodeEditor
+                  showTabs
+                  showLineNumbers
+                  showInlineErrors
+                  wrapContent
+                  closableTabs
+                  className="h-full"
+                />
+              </SandpackLayout>
+            ) : (
+              <div className="h-full">
+                <SandPackPreviewClient />
+              </div>
+            )}
+          </div>
+        </SandpackProvider>
+      </div>
     </div>
   );
 };
