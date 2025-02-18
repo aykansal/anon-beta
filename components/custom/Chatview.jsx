@@ -26,25 +26,27 @@ const Chatview = ({ activeProject }) => {
     scrollToBottom();
   }, [message, loading]);
 
+  // Debug effect for activeProject changes
   useEffect(() => {
+    console.log('Active project changed in Chatview:', activeProject);
     if (activeProject?.id) {
-      loadChatHistory();
-      loadProjectCode();
+      fetchMessages(activeProject.id);
     } else {
       setmessage([]);
-      setFiles(Extras.DEFAULT_FILE);
     }
   }, [activeProject]);
 
-  const loadChatHistory = async () => {
+  const fetchMessages = async (projectId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/chat/${activeProject.id}`);
-      if (response.data?.messages) {
-        setmessage(response.data.messages);
-      }
+      setLoading(true);
+      const response = await axios.get(`http://localhost:5000/chat/${projectId}`);
+      console.log('Fetched messages:', response.data);
+      setmessage(response.data.messages || []);
     } catch (error) {
-      console.error('Error loading chat history:', error);
-      toast.error('Failed to load chat history');
+      console.error('Error fetching messages:', error);
+      setError('Failed to load chat messages');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,52 +108,27 @@ const Chatview = ({ activeProject }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!userInput.trim() || loading || !activeProject?.id) return;
 
-    if (!userInput.trim()) {
-      toast.error("Please enter a message");
-      return;
-    }
-
-    if (!activeProject?.id) {
-      toast.error("Please select a project first");
-      return;
-    }
-
-    const newMessage = {
-      role: 'user',
-      content: userInput,
-    };
-
-    setLoading(true);
-    setError(null);
+    const newMessage = userInput.trim();
+    setuserInput('');
 
     try {
-      setmessage([...message, newMessage]);
-      setuserInput('');
-
+      setLoading(true);
+      setmessage(prev => [...prev, { role: 'user', content: newMessage }]);
+      
+      console.log('Sending chat message for project:', activeProject.id);
       const response = await axios.post('http://localhost:5000/chat/getChat', {
-        prompt: JSON.stringify([...message, newMessage]),
+        prompt: newMessage,
         projectId: activeProject.id
       });
 
-      if (!response.data) {
-        throw new Error('No response from server');
+      if (response.data.message) {
+        setmessage(prev => [...prev, { role: 'assistant', content: response.data.message }]);
       }
-      setmessage([...message, newMessage, { role: 'assistant', content: response?.data?.response }]);
     } catch (error) {
-      console.error('Error in chat:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'An error occurred';
-      setError(errorMessage);
-      toast.error(errorMessage);
-
-      setmessage([
-        ...message,
-        newMessage,
-        {
-          role: 'assistant',
-          content: 'Sorry, there was an error: ' + errorMessage
-        },
-      ]);
+      console.error('Error sending message:', error);
+      setError('Failed to send message');
     } finally {
       setLoading(false);
     }
@@ -166,109 +143,77 @@ const Chatview = ({ activeProject }) => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background relative">
-      {/* Header with Code Toggle Button */}
-      <div className="shrink-0 p-4 border-b flex justify-end">
-        <button
-          onClick={() => setIsCodeViewOpen(!isCodeViewOpen)}
-          className={`px-4 py-2 rounded-md flex items-center gap-2 ${isCodeViewOpen ? 'bg-primary text-primary-foreground' : 'bg-secondary'}`}
-        >
-          {isCodeViewOpen ? <X size={16} /> : <Code size={16} />}
-          {isCodeViewOpen ? 'Close Code' : 'View Code'}
-        </button>
-      </div>
+    <div className="h-full flex flex-col bg-background">
+      {error && (
+        <div className="shrink-0 bg-destructive/15 text-destructive px-4 py-2 m-4">
+          <p>{error}</p>
+        </div>
+      )}
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex relative overflow-hidden">
-        {/* Chat Section */}
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${isCodeViewOpen ? 'lg:w-1/2' : 'lg:w-full'}`}>
-          {error && (
-            <div className="shrink-0 bg-destructive/15 text-destructive px-4 py-2 rounded-md m-4">
-              <p>{error}</p>
+      {/* Messages Container */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="h-full p-4 space-y-4">
+          {message.length === 0 ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <p>No messages yet. Start a conversation!</p>
             </div>
-          )}
-
-          {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="h-full p-4 space-y-4">
-              {message.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <p>No messages yet. Start a conversation!</p>
+          ) : (
+            <div className="space-y-4">
+              {message.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${msg.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                      }`}
+                  >
+                    <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                      {msg.content}
+                    </Markdown>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {message.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                          }`}
-                      >
-                        <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-                          {msg.content}
-                        </Markdown>
-                      </div>
-                    </div>
-                  ))}
+              ))}
 
-                  {loading && (
-                    <div className="flex justify-start">
-                      <div className="max-w-[85%] sm:max-w-[75%] p-3 rounded-lg bg-muted animate-pulse">
-                        <div className="flex items-center space-x-2">
-                          <Loader2Icon className="animate-spin" />
-                          <span>Thinking...</span>
-                        </div>
-                      </div>
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] sm:max-w-[75%] p-3 rounded-lg bg-muted animate-pulse">
+                    <div className="flex items-center space-x-2">
+                      <Loader2Icon className="animate-spin" />
+                      <span>Thinking...</span>
                     </div>
-                  )}
-                  <div ref={messagesEndRef} />
+                  </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
-          </div>
-
-          {/* Chat Input */}
-          <form onSubmit={handleSubmit} className="shrink-0 p-4 border-t">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setuserInput(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 bg-background border rounded-md px-4 py-2"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50"
-                disabled={loading}
-              >
-                {loading ? <Loader2Icon className="animate-spin" /> : 'Send'}
-              </button>
-            </div>
-          </form>
+          )}
         </div>
+      </div>
 
-        {/* Code View Section */}
-        <div className={`fixed lg:static top-0 right-0 h-full bg-background border-l
-          transform transition-all duration-300 ease-in-out
-          ${isCodeViewOpen ? 'translate-x-0' : 'translate-x-full lg:w-0'}
-          w-full lg:w-1/2
-          z-20
-        `}>
-          <div className="h-full overflow-hidden">
-            <Codeview 
-              activeProject={activeProject}
-              files={files}
-              onSave={handleSaveCode}
-              isSaving={isSavingCode}
+      {/* Chat Input */}
+      <div className="shrink-0 border-t bg-background p-4">
+        <form onSubmit={handleSubmit}>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={userInput}
+              onChange={(e) => setuserInput(e.target.value)}
+              placeholder="Type your message..."
+              className="flex-1 bg-background border rounded-md px-4 py-2"
+              disabled={loading}
             />
+            <button
+              type="submit"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? <Loader2Icon className="animate-spin" /> : 'Send'}
+            </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -3,76 +3,138 @@ import {
   SandpackLayout,
   SandpackCodeEditor,
   SandpackFileExplorer,
-  Sandpack,
 } from '@codesandbox/sandpack-react';
-import { Loader2Icon, Save } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2Icon, CodeIcon, EyeIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import SandPackPreviewClient from './SandPackPreviewClient';
+import { cn } from '@/lib/utils';
 
-const Codeview = ({ activeProject, files, onSave, isSaving, isGenerating }) => {
+const Codeview = ({
+  activeProject,
+  files,
+  onSave,
+  isSaving,
+  isGenerating,
+  theme,
+}) => {
   const [currentFiles, setCurrentFiles] = useState(files);
+  const [activeView, setActiveView] = useState('code');
+
+  // Update currentFiles when files prop changes
+  useEffect(() => {
+    console.log('Files updated in Codeview:', files);
+    setCurrentFiles(files);
+  }, [files]);
+
+  // Debug effect for activeProject changes
+  useEffect(() => {
+    console.log('Active project changed in Codeview:', activeProject);
+  }, [activeProject]);
 
   const handleSave = async () => {
-    await onSave(currentFiles);
+    if (onSave) {
+      await onSave(currentFiles);
+    }
   };
 
-  if (!activeProject?.id) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
-        <p>Select a project to view and edit code</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Code Editor</h2>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="px-4 py-2 rounded-md flex items-center gap-2 bg-primary text-primary-foreground disabled:opacity-50"
-        >
-          {isSaving ? <Loader2Icon className="animate-spin" /> : <Save size={16} />}
-          {isSaving ? 'Saving...' : 'Save'}
-        </button>
+    <div className="flex flex-col bg-background h-full">
+      {/* Save Status */}
+      {isSaving && (
+        <div className="bg-primary/10 px-4 py-2 text-primary shrink-0">
+          <p className="flex items-center gap-2">
+            <Loader2Icon className="animate-spin" size={16} />
+            Saving changes...
+          </p>
+        </div>
+      )}
+
+      {/* View Toggle - Compact Style */}
+      <div className="h-10 px-2 flex items-center border-b">
+        <div className="inline-flex h-7 gap-1 bg-muted rounded-md p-1">
+          <button
+            onClick={() => setActiveView('code')}
+            className={cn(
+              'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors',
+              activeView === 'code'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <CodeIcon size={12} />
+            Code
+          </button>
+          <button
+            onClick={() => setActiveView('preview')}
+            className={cn(
+              'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors',
+              activeView === 'preview'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <EyeIcon size={12} />
+            Preview
+          </button>
+        </div>
       </div>
 
-      {/* Sandpack Editor */}
-      <div className="flex-1 overflow-hidden">
+      {/* Sandpack Container */}
+      <div className="flex-1 h-full p-1">
         <SandpackProvider
-          files={currentFiles}
-          theme="dark"
-          template="react"
-          customSetup={{
-            dependencies: {
-              "react": "^18.0.0",
-              "react-dom": "^18.0.0",
-              "@codesandbox/sandpack-react": "^2.6.9"
-            }
+          style={{ height: '100%' }}
+          template="vite-react-ts"
+          theme={theme}
+          // files={currentFiles}
+          options={{
+            visibleFiles: Object.keys(currentFiles),
+            activeFile: '/App.tsx',
           }}
         >
-          <SandpackLayout>
-            <div className="flex h-full">
-              <div className="w-48 border-r">
-                <SandpackFileExplorer />
-              </div>
-              <div className="flex-1">
-                <SandpackCodeEditor 
-                  showTabs
-                  showLineNumbers
-                  showInlineErrors
-                  wrapContent
+          <SandpackLayout className="p-1 h-full">
+            {activeView === 'code' ? (
+              <>
+                <SandpackFileExplorer style={{ height: '100%' }} />
+                <SandpackCodeEditor
+                  showTabs={true}
+                  showLineNumbers={true}
+                  showInlineErrors={true}
+                  wrapContent={true}
+                  closableTabs={true}
+                  readOnly={!activeProject}
                   onChange={(updatedFiles) => {
+                    console.log('Files changed in editor:', updatedFiles);
                     setCurrentFiles(updatedFiles);
                   }}
+                  style={{ height: '100%' }}
                 />
-              </div>
-            </div>
+              </>
+            ) : (
+              <SandPackPreviewClient  />
+            )}
           </SandpackLayout>
         </SandpackProvider>
       </div>
+
+      {/* Save Button */}
+      {activeProject && (
+        <div className="bg-background p-4 border-t shrink-0">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-primary disabled:opacity-50 px-4 py-2 rounded-md w-full text-primary-foreground"
+          >
+            {isSaving ? (
+              <span className="flex justify-center items-center gap-2">
+                <Loader2Icon className="animate-spin" size={16} />
+                Saving...
+              </span>
+            ) : (
+              'Save Changes'
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

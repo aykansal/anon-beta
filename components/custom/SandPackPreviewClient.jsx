@@ -52,7 +52,7 @@ const SandPackPreviewClient = () => {
     <SandpackPreview
       ref={previewRef}
       showNavigator={true}
-      style={{ height: '78vh' }}
+      style={{ height: '100%' }}
     />
   );
 };
