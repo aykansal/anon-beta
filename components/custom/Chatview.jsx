@@ -136,7 +136,10 @@ const Chatview = ({ activeProject }) => {
       if (response.data.message) {
         setmessage((prev) => [
           ...prev,
-          { role: 'assistant', content: response.data.message },
+          {
+            role: 'assistant',
+            content: JSON.parse(response.data.frontendCode.content),
+          },
         ]);
       }
     } catch (error) {

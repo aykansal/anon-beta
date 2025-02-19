@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import CreateProjectModal from './CreateProjectModal';
 
-const ProjectSidebar = ({ projects, activeProject, onProjectSelect, onCreateProject }) => {
+const ProjectSidebar = ({
+  projects,
+  activeProject,
+  onProjectSelect,
+  onCreateProject,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCreateProject = (projectName) => {
@@ -25,10 +30,11 @@ const ProjectSidebar = ({ projects, activeProject, onProjectSelect, onCreateProj
             <div
               key={project.id}
               onClick={() => onProjectSelect(project)}
-              className={`p-3 rounded-md cursor-pointer ${activeProject?.id === project.id
+              className={`p-3 rounded-md cursor-pointer ${
+                activeProject?.id === project.id
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-accent'
-                }`}
+              }`}
             >
               {project.name}
             </div>

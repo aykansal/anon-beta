@@ -14,9 +14,7 @@ const Provider = ({ children, ...props }) => {
     <UserDetailsContext.Provider value={{ userDets, setuserDets }}>
       <MessageContext.Provider value={{ message, setmessage }}>
         <ActionContext.Provider value={{ action, setAction }}>
-          <NextThemesProvider {...props}>
-            {children}
-          </NextThemesProvider>
+          <NextThemesProvider {...props}>{children}</NextThemesProvider>
         </ActionContext.Provider>
       </MessageContext.Provider>
     </UserDetailsContext.Provider>

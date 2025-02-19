@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { connectWallet, useQuickWallet } from '@/lib/arkit';
 import Modal from './modal';

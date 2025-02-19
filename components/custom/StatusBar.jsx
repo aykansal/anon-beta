@@ -1,11 +1,11 @@
 import React from 'react';
 import { Loader2Icon, GitBranchIcon, CheckCircleIcon } from 'lucide-react';
 
-const StatusBar = ({ 
-  activeProject, 
-  isSaving, 
+const StatusBar = ({
+  activeProject,
+  isSaving,
   isGenerating,
-  connectionStatus = 'connected' // 'connected' | 'disconnected' | 'connecting'
+  connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting'
 }) => {
   return (
     <div className="h-6 shrink-0 bg-muted border-t px-2 flex items-center text-xs text-muted-foreground">
@@ -13,7 +13,9 @@ const StatusBar = ({
         {/* Project Status */}
         <div className="flex items-center gap-1">
           <GitBranchIcon size={12} />
-          <span>{activeProject ? activeProject.name : 'No project selected'}</span>
+          <span>
+            {activeProject ? activeProject.name : 'No project selected'}
+          </span>
         </div>
 
         {/* Save Status */}

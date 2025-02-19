@@ -15,13 +15,13 @@ export default {
   SIGNIn_AGREEMENT_TEXT:
     'By using Anon, you agree to the collection of usage data for analytics.',
   DEFAULT_FILE: {
-    "/postcss.config.js": {
-      "code": "export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};"
+    '/postcss.config.js': {
+      code: 'export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};',
     },
-    "/tailwind.config.ts": {
-      "code": "import type { Config } from 'tailwindcss';\n\nconst config: Config = {\n  content: [\n    \"./index.html\",\n    \"./src/**/*.{js,ts,jsx,tsx}\"\n  ],\n  theme: {\n    extend: {},\n  },\n  plugins: [],\n};\n\nexport default config;"
+    '/tailwind.config.ts': {
+      code: 'import type { Config } from \'tailwindcss\';\n\nconst config: Config = {\n  content: [\n    "./index.html",\n    "./src/**/*.{js,ts,jsx,tsx}"\n  ],\n  theme: {\n    extend: {},\n  },\n  plugins: [],\n};\n\nexport default config;',
     },
-    "/project.lua":{ "code": "print('Hello, World!')" },
+    '/project.lua': { code: "print('Hello, World!')" },
     // '/pages/_app.js': {
     //   code: "import '../styles/globals.css';\n\nfunction MyApp({ Component, pageProps }) {\n  return <Component {...pageProps} />;\n}\n\nexport default MyApp;",
     // },
@@ -45,8 +45,8 @@ export default {
     'framer-motion': '^12.0.6',
     'locomotive-scroll': '^5.0.0-beta.21',
     'lucide-react': '^0.474.0',
-    "esbuild-wasm": "^0.24.2",
-    "@rollup/wasm-node": "^4.34.1",
+    'esbuild-wasm': '^0.24.2',
+    '@rollup/wasm-node': '^4.34.1',
   },
 
   //   DEFAULT_FILE: {

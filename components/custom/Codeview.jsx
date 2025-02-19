@@ -110,7 +110,7 @@ const Codeview = ({
                 />
               </>
             ) : (
-              <SandPackPreviewClient  />
+              <SandPackPreviewClient />
             )}
           </SandpackLayout>
         </SandpackProvider>

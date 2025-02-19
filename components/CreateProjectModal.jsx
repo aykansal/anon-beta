@@ -18,7 +18,10 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit }) => {
         <h2 className="text-xl font-semibold mb-4">Create New Project</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="projectName" className="block text-sm font-medium mb-2">
+            <label
+              htmlFor="projectName"
+              className="block text-sm font-medium mb-2"
+            >
               Project Name
             </label>
             <input
