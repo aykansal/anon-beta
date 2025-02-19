@@ -85,7 +85,7 @@ const Codeview = ({
           style={{ height: '100%' }}
           template="vite-react-ts"
           theme={theme}
-          // files={currentFiles}
+          files={currentFiles}
           options={{
             visibleFiles: Object.keys(currentFiles),
             activeFile: '/App.tsx',

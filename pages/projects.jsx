@@ -165,6 +165,20 @@ const ProjectsPage = () => {
     console.log('Active project changed:', activeProject);
   }, [activeProject]);
 
+  // Add effect to listen for codebase updates
+  useEffect(() => {
+    const handleCodebaseUpdate = (event) => {
+      const newCodebase = event.detail;
+      setFiles(newCodebase);
+    };
+
+    window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
+
+    return () => {
+      window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
+    };
+  }, []);
+
   return (
     <div className="flex flex-col bg-background h-screen overflow-hidden">
       {/* Title Bar - Always show */}

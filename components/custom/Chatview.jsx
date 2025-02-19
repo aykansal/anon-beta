@@ -8,7 +8,7 @@ import { Loader2Icon, Code, X } from 'lucide-react';
 import Codeview from './Codeview';
 import Extras from '@/data/Extras';
 
-const Chatview = ({ activeProject }) => {
+const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [userInput, setuserInput] = useState('');
   const [message, setmessage] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,6 +16,7 @@ const Chatview = ({ activeProject }) => {
   const [files, setFiles] = useState(Extras.DEFAULT_FILE);
   const [isSavingCode, setIsSavingCode] = useState(false);
   const messagesEndRef = useRef(null);
+  const [codebase, setCodebase] = useState(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -125,28 +126,59 @@ const Chatview = ({ activeProject }) => {
 
     try {
       setLoading(true);
+      onGenerateStart?.(); // Notify parent that generation started
       setmessage((prev) => [...prev, newMessage]);
 
       console.log('Sending chat message for project:', activeProject.id);
-      const response = await axios.post('http://localhost:5000/chat/getChat', {
-        prompt: newMessage,
-        projectId: activeProject.id,
-      });
+      const response = await axios
+        .post('http://localhost:5000/chat/getChat', {
+          prompt: newMessage,
+          projectId: activeProject.id,
+        })
+        .then((response) => response.data);
 
-      if (response.data.message) {
+      if (!response) {
+        setError('Failed to send message');
+        toast.error('Failed to send message');
+        throw new Error('Failed to send message');
+      }
+
+      if (response.content) {
+        // Update messages with the response
         setmessage((prev) => [
           ...prev,
           {
-            role: 'assistant',
-            content: JSON.parse(response.data.frontendCode.content),
+            role: response.role,
+            content: `${response.content.description}\n\n${response.content.codeInstructions?.map((instruction, index) => `${index + 1}. ${instruction}`).join('\n')}`,
           },
         ]);
+
+        // Update codebase if present in response
+        if (response.content.codebase) {
+          const formattedFiles = {};
+          response.content.codebase.forEach(file => {
+            formattedFiles[file.filePath] = {
+              code: file.code,
+              hidden: false,
+              active: true
+            };
+          });
+          setCodebase(formattedFiles);
+          
+          // Emit the codebase to parent component
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('codebaseUpdate', {
+              detail: formattedFiles
+            }));
+          }
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message');
     } finally {
       setLoading(false);
+      onGenerateEnd?.(); // Notify parent that generation ended
     }
   };
 
