@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { toast } from 'sonner';
-import Extras from '@/data/Extras';
 import { useEffect, useState } from 'react';
 import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
@@ -8,14 +7,13 @@ import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
 
 const ProjectsPage = () => {
+  const [files, setFiles] = useState({});
   const [projects, setProjects] = useState([]);
-  const [activeProject, setActiveProject] = useState(null);
-  const [projectMessages, setProjectMessages] = useState({});
-  const [files, setFiles] = useState(Extras.DEFAULT_FILE);
+  const [isResizing, setIsResizing] = useState(false);
+  const [splitPosition, setSplitPosition] = useState(70);
   const [isSavingCode, setIsSavingCode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [splitPosition, setSplitPosition] = useState(70);
-  const [isResizing, setIsResizing] = useState(false);
+  const [activeProject, setActiveProject] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connected');
 
   const fetchProjects = async () => {
@@ -40,28 +38,16 @@ const ProjectsPage = () => {
     try {
       if (!project) {
         setActiveProject(null);
-        setFiles(Extras.DEFAULT_FILE);
         return;
       }
 
       setConnectionStatus('connecting');
-      const codeRes = await axios.get(
-        `http://localhost:5000/projects/code?activeProjectId=${project.id}`
-      );
-      console.log('Fetched project code:', codeRes.data);
-
       setActiveProject(project);
-      if (codeRes.data.files) {
-        setFiles(codeRes.data.files);
-      } else {
-        setFiles(Extras.DEFAULT_FILE);
-      }
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Error loading project:', error);
       setConnectionStatus('disconnected');
-      toast.error('Failed to load project code');
-      setFiles(Extras.DEFAULT_FILE);
+      toast.error('Failed to load project');
     }
   };
 
@@ -79,10 +65,6 @@ const ProjectsPage = () => {
       console.log('Created new project:', newProject);
 
       setProjects((prevProjects) => [...prevProjects, newProject]);
-      setProjectMessages((prev) => ({
-        ...prev,
-        [newProject.id]: [],
-      }));
 
       // Select the new project
       await handleProjectSelect(newProject);
@@ -104,6 +86,7 @@ const ProjectsPage = () => {
         throw new Error('Project ID is required to save code');
       }
 
+      // Save code to database
       await axios.post(
         `http://localhost:5000/projects/${activeProject.id}/code`,
         {

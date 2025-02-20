@@ -1,12 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { toast } from 'sonner';
-import Markdown from 'react-markdown';
-import { Loader2Icon, Code, X } from 'lucide-react';
-import Codeview from './Codeview';
 import Extras from '@/data/Extras';
+import Markdown from 'react-markdown';
+import { Loader2Icon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [userInput, setuserInput] = useState('');
@@ -14,9 +12,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [files, setFiles] = useState(Extras.DEFAULT_FILE);
-  const [isSavingCode, setIsSavingCode] = useState(false);
   const messagesEndRef = useRef(null);
-  const [codebase, setCodebase] = useState(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,13 +22,13 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
     scrollToBottom();
   }, [message, loading]);
 
-  // Debug effect for activeProject changes
   useEffect(() => {
     console.log('Active project changed in Chatview:', activeProject);
     if (activeProject?.id) {
       fetchMessages(activeProject.id);
     } else {
       setmessage([]);
+      setFiles(Extras.DEFAULT_FILE);
     }
   }, [activeProject]);
 
@@ -42,78 +38,17 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       const response = await axios.get(
         `http://localhost:5000/chat/${projectId}`
       );
-      console.log('Fetched messages:', response.data.messages);
-      setmessage(response?.data?.messages);
+
+      const messages = response.data.messages.map((msg) => ({
+        ...msg,
+        content: msg.role === 'model' ? JSON.parse(msg.content) : msg.content,
+      }));
+      setmessage(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
       setError('Failed to load chat messages');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadProjectCode = async () => {
-    try {
-      setError(null);
-      setLoading(true);
-
-      if (!activeProject?.id) {
-        throw new Error('Project ID is required to load code');
-      }
-
-      const response = await axios.get(
-        `http://localhost:5000/projects/code?activeProjectId=${activeProject.id}`
-      );
-
-      if (!response.data) {
-        throw new Error('No data received from server');
-      }
-
-      if (response.data?.files) {
-        setFiles(response.data.files);
-      } else {
-        setFiles(Extras.DEFAULT_FILE);
-      }
-    } catch (error) {
-      console.error('Error loading project code:', error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        'Failed to load project code';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveCode = async (updatedFiles) => {
-    try {
-      setIsSavingCode(true);
-      setError(null);
-
-      if (!activeProject?.id) {
-        throw new Error('Project ID is required to save code');
-      }
-
-      await axios.post(
-        `http://localhost:5000/projects/${activeProject.id}/code`,
-        {
-          files: updatedFiles,
-          sandboxId: Date.now().toString(),
-        }
-      );
-
-      setFiles(updatedFiles);
-      toast.success('Code saved successfully');
-    } catch (error) {
-      console.error('Error saving code:', error);
-      const errorMessage =
-        error.response?.data?.message || error.message || 'Failed to save code';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSavingCode(false);
     }
   };
 
@@ -126,51 +61,39 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
 
     try {
       setLoading(true);
-      onGenerateStart?.(); // Notify parent that generation started
+      onGenerateStart?.();
       setmessage((prev) => [...prev, newMessage]);
 
-      console.log('Sending chat message for project:', activeProject.id);
-      const response = await axios
-        .post('http://localhost:5000/chat/getChat', {
-          prompt: newMessage,
-          projectId: activeProject.id,
-        })
-        .then((response) => response.data);
+      const response = await axios.post('http://localhost:5000/chat/getChat', {
+        prompt: newMessage,
+        projectId: activeProject.id,
+      });
 
-      if (!response) {
-        setError('Failed to send message');
-        toast.error('Failed to send message');
-        throw new Error('Failed to send message');
-      }
-
-      if (response.content) {
-        // Update messages with the response
+      if (response.data?.content) {
         setmessage((prev) => [
           ...prev,
           {
-            role: response.role,
-            content: `${response.content.description}\n\n${response.content.codeInstructions?.map((instruction, index) => `${index + 1}. ${instruction}`).join('\n')}`,
+            role: response.data.role,
+            content: response.data.content,
           },
         ]);
 
-        // Update codebase if present in response
-        if (response.content.codebase) {
+        // If there's codebase in the response, emit it
+        if (response.data.content.codebase) {
           const formattedFiles = {};
-          response.content.codebase.forEach(file => {
+          response.data.content.codebase.forEach((file) => {
             formattedFiles[file.filePath] = {
               code: file.code,
               hidden: false,
-              active: true
+              active: true,
             };
           });
-          setCodebase(formattedFiles);
-          
-          // Emit the codebase to parent component
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('codebaseUpdate', {
-              detail: formattedFiles
-            }));
-          }
+
+          window.dispatchEvent(
+            new CustomEvent('codebaseUpdate', {
+              detail: formattedFiles,
+            })
+          );
         }
       }
     } catch (error) {
@@ -178,8 +101,30 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       setError('Failed to send message');
     } finally {
       setLoading(false);
-      onGenerateEnd?.(); // Notify parent that generation ended
+      onGenerateEnd?.();
     }
+  };
+
+  const renderMessageContent = (msg) => {
+    if (msg.role === 'user') {
+      return msg.content;
+    }
+
+    // For model responses, format the content
+    const content = msg.content;
+    let markdownContent = '';
+
+    if (content.description) {
+      markdownContent += content.description + '\n\n';
+    }
+
+    // if (content.codeInstructions && Array.isArray(content.codeInstructions)) {
+    //   markdownContent += content.codeInstructions
+    //     .map((instruction, index) => `${index + 1}. ${instruction}`)
+    //     .join('\n');
+    // }
+
+    return markdownContent;
   };
 
   if (!activeProject?.id) {
@@ -221,7 +166,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
                       }`}
                     >
                       <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-                        {msg.content}
+                        {renderMessageContent(msg)}
                       </Markdown>
                     </div>
                   </div>
@@ -244,7 +189,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       </div>
 
       {/* Chat Input */}
-      <div className="shrink-0 border-t bg-background p-4">
+      <div className="shrink-0 bg-background p-4">
         <form onSubmit={handleSubmit}>
           <div className="flex gap-2">
             <input

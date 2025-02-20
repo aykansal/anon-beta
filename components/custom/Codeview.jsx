@@ -3,44 +3,81 @@ import {
   SandpackLayout,
   SandpackCodeEditor,
   SandpackFileExplorer,
+  ExportIcon,
 } from '@codesandbox/sandpack-react';
-import { Loader2Icon, CodeIcon, EyeIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Loader2Icon, CodeIcon, EyeIcon, Rocket } from 'lucide-react';
+import { useContext, useEffect, useState } from 'react';
 import SandPackPreviewClient from './SandPackPreviewClient';
 import { cn } from '@/lib/utils';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { ActionContext } from '@/context/ActionContext';
 
-const Codeview = ({
-  activeProject,
-  files,
-  onSave,
-  isSaving,
-  isGenerating,
-  theme,
-}) => {
-  const [currentFiles, setCurrentFiles] = useState(files);
+const Codeview = ({ activeProject, onSave, isSaving, isGenerating, theme }) => {
+  const [currentFiles, setCurrentFiles] = useState({});
   const [activeView, setActiveView] = useState('code');
+  const [loading, setLoading] = useState(false);
 
-  // Update currentFiles when files prop changes
-  useEffect(() => {
-    console.log('Files updated in Codeview:', files);
-    setCurrentFiles(files);
-  }, [files]);
+  const actionContext = useContext(ActionContext);
+  const { action, setAction } = actionContext;
+  const [error, setError] = useState(null);
 
-  // Debug effect for activeProject changes
+  // Fetch code when project changes
   useEffect(() => {
-    console.log('Active project changed in Codeview:', activeProject);
+    if (activeProject?.id) {
+      fetchProjectCode(activeProject.id);
+    }
   }, [activeProject]);
 
-  const handleSave = async () => {
-    if (onSave) {
-      await onSave(currentFiles);
+  const fetchProjectCode = async (projectId) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `http://localhost:5000/code/${projectId}`
+      );
+
+      if (response.data?.files) {
+        setCurrentFiles(response.data.files);
+      }
+    } catch (error) {
+      console.error('Error loading project code:', error);
+      setError('Failed to load code');
+      toast.error('Failed to load code');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    const handleCodebaseUpdate = (event) => {
+      const newCodebase = event.detail;
+      setCurrentFiles(newCodebase);
+    };
+
+    window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
+    return () =>
+      window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
+  }, []);
+
+  // const handleSave = async () => {
+  //   if (onSave) {
+  //     await onSave(currentFiles);
+  //   }
+  // };
+
+  const onAction = (actionType) => {
+    console.log(actionType);
+    setAction({
+      Action: actionType,
+      timeStamp: Date.now(),
+    });
+    console.log(actionType);
   };
 
   return (
     <div className="flex flex-col bg-background h-full">
       {/* Save Status */}
-      {isSaving && (
+      {(isSaving || isGenerating || loading || action == 'deploy') && (
         <div className="bg-primary/10 px-4 py-2 text-primary shrink-0">
           <p className="flex items-center gap-2">
             <Loader2Icon className="animate-spin" size={16} />
@@ -49,8 +86,25 @@ const Codeview = ({
         </div>
       )}
 
+      {/* Loading Status */}
+      {loading && (
+        <div className="bg-primary/10 px-4 py-2 text-primary shrink-0">
+          <p className="flex items-center gap-2">
+            <Loader2Icon className="animate-spin" size={16} />
+            Loading code...
+          </p>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-destructive/10 px-4 py-2 text-destructive shrink-0">
+          <p>{error}</p>
+        </div>
+      )}
+
       {/* View Toggle - Compact Style */}
-      <div className="h-10 px-2 flex items-center border-b">
+      <div className="h-10 px-2 flex items-center justify-between border-b">
         <div className="inline-flex h-7 gap-1 bg-muted rounded-md p-1">
           <button
             onClick={() => setActiveView('code')}
@@ -77,18 +131,39 @@ const Codeview = ({
             Preview
           </button>
         </div>
+        <button
+          onClick={() => onAction('deploy')}
+          className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
+          title="Deploy"
+        >
+          <Rocket size={12} />
+          Deploy
+        </button>
+        <button
+          onClick={() => onAction('export')}
+          className="h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground"
+          title="Export"
+        >
+          <ExportIcon size={12} />
+          Export
+        </button>
       </div>
 
       {/* Sandpack Container */}
       <div className="flex-1 h-full p-1">
         <SandpackProvider
-          style={{ height: '100%' }}
-          template="vite-react-ts"
-          theme={theme}
+          style={{ height: '85vh' }}
+          // template="nextjs"
           files={currentFiles}
+          template="vite-react-ts"
+          // customSetup={{
+          //   files: currentFiles,
+          //   environment:'node'
+          // }}
+          theme={theme}
           options={{
             visibleFiles: Object.keys(currentFiles),
-            activeFile: '/App.tsx',
+            activeFile: Object.keys(currentFiles)[0] || '',
           }}
         >
           <SandpackLayout className="p-1 h-full">
@@ -103,7 +178,6 @@ const Codeview = ({
                   closableTabs={true}
                   readOnly={!activeProject}
                   onChange={(updatedFiles) => {
-                    console.log('Files changed in editor:', updatedFiles);
                     setCurrentFiles(updatedFiles);
                   }}
                   style={{ height: '100%' }}
@@ -115,26 +189,6 @@ const Codeview = ({
           </SandpackLayout>
         </SandpackProvider>
       </div>
-
-      {/* Save Button */}
-      {activeProject && (
-        <div className="bg-background p-4 border-t shrink-0">
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="bg-primary disabled:opacity-50 px-4 py-2 rounded-md w-full text-primary-foreground"
-          >
-            {isSaving ? (
-              <span className="flex justify-center items-center gap-2">
-                <Loader2Icon className="animate-spin" size={16} />
-                Saving...
-              </span>
-            ) : (
-              'Save Changes'
-            )}
-          </button>
-        </div>
-      )}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
   SearchIcon,
   HelpCircleIcon,
   BookOpenIcon,
+  GitBranch,
 } from 'lucide-react';
 
 const TitleBar = ({
@@ -76,8 +77,8 @@ const TitleBar = ({
           className="h-7 px-2 flex items-center gap-1 hover:bg-accent rounded-md text-sm disabled:opacity-50"
           title="Save Project"
         >
-          <SaveIcon size={14} />
-          <span>Save</span>
+          <GitBranch size={14} />
+          <span>Commit</span>
         </button>
         <button
           onClick={onRun}
@@ -86,7 +87,7 @@ const TitleBar = ({
           title="Run Project"
         >
           <PlayIcon size={14} />
-          <span>Run</span>
+          <span>Run Lua</span>
         </button>
         <button
           onClick={onRefresh}

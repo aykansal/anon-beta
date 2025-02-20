@@ -10,6 +10,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@codesandbox/sandpack-client": "^2.19.8",
     "@codesandbox/sandpack-react": "^2.19.10",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
