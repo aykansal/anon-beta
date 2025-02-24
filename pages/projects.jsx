@@ -5,6 +5,7 @@ import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
+import { spawnProcess } from '@/lib/arkit';
 
 const ProjectsPage = () => {
   const [files, setFiles] = useState({});
@@ -20,16 +21,21 @@ const ProjectsPage = () => {
     try {
       setConnectionStatus('connecting');
       const res = await axios.get(
-        'http://localhost:5000/projects?walletAddress=ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI'
+        `${process.env.NEXT_PUBLIC_BACKEND}/projects?walletAddress=ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI`
       );
       console.log('Fetched projects:', res.data.projects);
-      setProjects(res?.data?.projects || []);
-      setActiveProject(res?.data?.projects[0]);
+      if (res?.data?.projects.length > 0) {
+        setProjects(res?.data?.projects);
+        setActiveProject(res?.data?.projects[0]);
+        toast.success('Projects fetched successfully');
+      } else {
+        toast.error('No projects found! Create a new project');
+      }
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Error fetching projects:', error);
-      setConnectionStatus('disconnected');
       toast.error('Failed to fetch projects');
+      setConnectionStatus('disconnected');
     }
   };
 
@@ -54,12 +60,19 @@ const ProjectsPage = () => {
   const handleCreateProject = async (projectName) => {
     try {
       setConnectionStatus('connecting');
-      const res = await axios.post('http://localhost:5000/projects', {
-        name: projectName,
-        arweaveId: 'new Id',
-        sandboxId: 'null',
-        walletAddress: 'ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI',
-      });
+      const processId = await spawnProcess(projectName, [
+        { name: 'Action', value: 'create-project' },
+      ]);
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND}/projects`,
+        {
+          processId,
+          sandboxId: 'null',
+          name: projectName,
+          arweaveId: 'new Id',
+          walletAddress: 'ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI',
+        }
+      );
 
       const newProject = res?.data?.project;
       console.log('Created new project:', newProject);
@@ -88,7 +101,7 @@ const ProjectsPage = () => {
 
       // Save code to database
       await axios.post(
-        `http://localhost:5000/projects/${activeProject.id}/code`,
+        `${process.env.NEXT_PUBLIC_BACKEND}/projects/${activeProject.id}/code`,
         {
           files: updatedFiles,
           sandboxId: Date.now().toString(),

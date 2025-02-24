@@ -11,7 +11,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [message, setmessage] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [files, setFiles] = useState(Extras.DEFAULT_FILE);
+  const [, setFiles] = useState(Extras.DEFAULT_FILE);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -36,7 +36,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://localhost:5000/chat/${projectId}`
+        `${process.env.NEXT_PUBLIC_BACKEND}/chat/history/${projectId}`
       );
 
       const messages = response.data.messages.map((msg) => ({
@@ -64,10 +64,13 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       onGenerateStart?.();
       setmessage((prev) => [...prev, newMessage]);
 
-      const response = await axios.post('http://localhost:5000/chat/getChat', {
-        prompt: newMessage,
-        projectId: activeProject.id,
-      });
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND}/chat/`,
+        {
+          prompt: newMessage,
+          projectId: activeProject.id,
+        }
+      );
 
       if (response.data?.content) {
         setmessage((prev) => [

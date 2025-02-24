@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   PlayIcon,
   PlusIcon,
-  SaveIcon,
   SettingsIcon,
   FolderIcon,
   RefreshCwIcon,
@@ -34,10 +33,11 @@ const TitleBar = ({
     onProjectSelect(selectedProject);
   };
 
-  const handleCreateSubmit = (e) => {
+  const handleCreateSubmit = async (e) => {
     e.preventDefault();
-    if (newProjectName.trim()) {
-      onCreateProject(newProjectName.trim());
+    const newProject = newProjectName.trim();
+    if (newProject) {
+      onCreateProject(newProject);
       setNewProjectName('');
       setIsCreating(false);
     }
