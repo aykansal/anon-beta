@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
+import { spawnProcess } from '@/lib/arkit';
 import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
-import { spawnProcess } from '@/lib/arkit';
 
 const ProjectsPage = () => {
   const [files, setFiles] = useState({});
@@ -16,115 +16,188 @@ const ProjectsPage = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeProject, setActiveProject] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connected');
+  const [error, setError] = useState(null); // Global error state for UI feedback
+  const [isCreating, setIsCreating] = useState(false);
+  const [status, setStatus] = useState(''); // New state for handling status
+
+  // Validate environment variable
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
+    throw new Error('BACKEND_URL environment variable is not set');
+  }
 
   const fetchProjects = async () => {
     try {
       setConnectionStatus('connecting');
+      setError(null); // Clear previous errors
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND}/projects?walletAddress=ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI`
+        `${backendUrl}/projects?walletAddress=ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI`
       );
-      console.log('Fetched projects:', res.data.projects);
-      if (res?.data?.projects.length > 0) {
-        setProjects(res?.data?.projects);
-        setActiveProject(res?.data?.projects[0]);
+
+      if (!res.data || typeof res.data.projects === 'undefined') {
+        throw new Error('Invalid response format from server');
+      }
+
+      if (res.data.projects.length > 0) {
+        setProjects(res.data.projects);
+        setActiveProject(res.data.projects[0]);
         toast.success('Projects fetched successfully');
       } else {
-        toast.error('No projects found! Create a new project');
+        setProjects([]);
+        setActiveProject(null);
+        toast.info('No projects found! Create a new project');
       }
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Error fetching projects:', error);
-      toast.error('Failed to fetch projects');
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to fetch projects';
+      setError(errorMessage);
+      toast.error(errorMessage);
       setConnectionStatus('disconnected');
     }
   };
 
   const handleProjectSelect = async (project) => {
-    console.log('Selecting project:', project);
     try {
       if (!project) {
         setActiveProject(null);
+        setFiles({});
+        setError(null);
         return;
       }
 
+      if (!project.id || typeof project.id !== 'number') {
+        throw new Error('Invalid project ID');
+      }
+
       setConnectionStatus('connecting');
+      setError(null);
       setActiveProject(project);
       setConnectionStatus('connected');
+      toast.success(`Selected project: ${project.name}`);
     } catch (error) {
-      console.error('Error loading project:', error);
+      console.error('Error selecting project:', error);
+      const errorMessage = error.message || 'Failed to load project';
+      setError(errorMessage);
+      toast.error(errorMessage);
       setConnectionStatus('disconnected');
-      toast.error('Failed to load project');
+      setActiveProject(null);
     }
   };
 
   const handleCreateProject = async (projectName) => {
     try {
+      if (
+        !projectName ||
+        typeof projectName !== 'string' ||
+        projectName.trim() === ''
+      ) {
+        throw new Error(
+          'Project name is required and must be a non-empty string'
+        );
+      }
+
+      setStatus('Creating Project...'); // Set status to creating
       setConnectionStatus('connecting');
+      setError(null);
       const processId = await spawnProcess(projectName, [
         { name: 'Action', value: 'create-project' },
       ]);
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND}/projects`,
-        {
-          processId,
-          sandboxId: 'null',
-          name: projectName,
-          arweaveId: 'new Id',
-          walletAddress: 'ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI',
-        }
-      );
+      console.log(processId);
 
-      const newProject = res?.data?.project;
+      if (!processId || typeof processId !== 'string') {
+        throw new Error('Failed to generate process ID');
+      }
+
+      const res = await axios.post(`${backendUrl}/projects`, {
+        processId,
+        sandboxId: 'null',
+        name: projectName,
+        walletAddress: 'ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI',
+      });
+
+      if (!res.data?.project) {
+        throw new Error('Invalid response from server: missing project data');
+      }
+
+      const newProject = res.data.project;
       console.log('Created new project:', newProject);
 
       setProjects((prevProjects) => [...prevProjects, newProject]);
-
-      // Select the new project
       await handleProjectSelect(newProject);
       setConnectionStatus('connected');
       toast.success('Project created successfully');
     } catch (error) {
       console.error('Error creating project:', error);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Error creating project';
+      setError(errorMessage);
+      toast.error(errorMessage);
       setConnectionStatus('disconnected');
-      toast.error('Error creating project');
+    } finally {
+      setIsCreating(false); // Reset isCreating after completion
+      setStatus(''); // Reset status after completion
     }
   };
 
   const handleSaveCode = async (updatedFiles) => {
     try {
-      setIsSavingCode(true);
-      setConnectionStatus('connecting');
-
       if (!activeProject?.id) {
-        throw new Error('Project ID is required to save code');
+        throw new Error('No active project selected to save code');
       }
 
-      // Save code to database
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND}/projects/${activeProject.id}/code`,
-        {
-          files: updatedFiles,
-          sandboxId: Date.now().toString(),
-        }
-      );
+      if (
+        !updatedFiles ||
+        typeof updatedFiles !== 'object' ||
+        Object.keys(updatedFiles).length === 0
+      ) {
+        throw new Error('No files provided to save');
+      }
+
+      setStatus('Saving Code...'); // Set status to saving
+      setConnectionStatus('connecting');
+      setError(null);
+
+      await axios.post(`${backendUrl}/projects/${activeProject.id}/code`, {
+        files: updatedFiles,
+        sandboxId: Date.now().toString(),
+      });
 
       setFiles(updatedFiles);
       setConnectionStatus('connected');
       toast.success('Code saved successfully');
     } catch (error) {
       console.error('Error saving code:', error);
+      const errorMessage =
+        error.response?.data?.error || error.message || 'Failed to save code';
+      setError(errorMessage);
+      toast.error(errorMessage);
       setConnectionStatus('disconnected');
-      toast.error('Failed to save code');
     } finally {
-      setIsSavingCode(false);
+      setStatus(''); // Reset status after completion
     }
   };
 
   const handleRunProject = () => {
+    if (!activeProject) {
+      toast.error('No project selected to run');
+      return;
+    }
+    setStatus('Running Project...'); // Set status to running
     toast.info('Running project...');
+    // Add actual run logic here if needed
   };
 
   const handleRefreshProject = () => {
+    if (!activeProject) {
+      toast.error('No project selected to refresh');
+      return;
+    }
     fetchProjects();
     toast.info('Refreshing project...');
   };
@@ -137,8 +210,12 @@ const ProjectsPage = () => {
 
   const handleResizing = (e) => {
     if (isResizing) {
-      const containerWidth =
-        document.getElementById('main-container').offsetWidth;
+      const container = document.getElementById('main-container');
+      if (!container) {
+        console.warn('Main container not found for resizing');
+        return;
+      }
+      const containerWidth = container.offsetWidth;
       const newPosition = (e.clientX / containerWidth) * 100;
       if (newPosition >= 30 && newPosition <= 85) {
         setSplitPosition(newPosition);
@@ -156,64 +233,71 @@ const ProjectsPage = () => {
     fetchProjects();
   }, []);
 
-  // Debug effect to monitor activeProject changes
   useEffect(() => {
     console.log('Active project changed:', activeProject);
   }, [activeProject]);
 
-  // Add effect to listen for codebase updates
   useEffect(() => {
     const handleCodebaseUpdate = (event) => {
+      if (!event.detail || typeof event.detail !== 'object') {
+        console.warn('Invalid codebase update event:', event);
+        return;
+      }
       const newCodebase = event.detail;
       setFiles(newCodebase);
     };
 
     window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
-
-    return () => {
+    return () =>
       window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
-    };
   }, []);
 
   return (
-    <div className="flex flex-col bg-background h-screen overflow-hidden">
-      {/* Title Bar - Always show */}
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
+      {/* Title Bar */}
       <div className="shrink-0">
         <TitleBar
           projects={projects}
           activeProject={activeProject}
           onProjectSelect={handleProjectSelect}
           onCreateProject={handleCreateProject}
-          onSave={() => handleSaveCode(files)}
+          setIsCreating={setIsCreating}
+          isCreating={isCreating}
+          onSave={() =>
+            activeProject
+              ? handleSaveCode(files)
+              : toast.error('No project selected to save')
+          }
           onRun={handleRunProject}
           onRefresh={handleRefreshProject}
         />
       </div>
 
-      {/* Main Content - Only show when project is selected */}
+      {/* Error Display */}
+      {error && (
+        <div className="bg-destructive/10 px-4 py-2 text-destructive shrink-0 flex justify-between items-center">
+          <p>{error}</p>
+          <button
+            onClick={fetchProjects}
+            className="text-sm underline hover:text-destructive-dark"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Main Content */}
       {activeProject ? (
-        <div id="main-container" className="flex flex-1 bg-gray-700 min-h-0">
-          {/* Code Section */}
+        <div id="main-container" className="flex flex-1 min-h-0">
           <div style={{ width: `${splitPosition}%` }} className="h-full">
             <Codeview
               theme="dark"
               files={files}
-              onSave={handleSaveCode}
               isSaving={isSavingCode}
               isGenerating={isGenerating}
               activeProject={activeProject}
             />
           </div>
-
-          {/* Resizer */}
-          <div
-            className={`w-1 h-full bg-border hover:bg-primary/50 cursor-col-resize active:bg-primary ${
-              isResizing ? 'bg-primary' : ''
-            }`}
-            onMouseDown={startResizing}
-          />
-
-          {/* Chat Section */}
           <div style={{ width: `${100 - splitPosition}%` }} className="h-full">
             <Chatview
               activeProject={activeProject}
@@ -223,26 +307,30 @@ const ProjectsPage = () => {
           </div>
         </div>
       ) : (
-        // Show this when no project is selected
         <div className="flex-1 flex items-center justify-center bg-background">
           <div className="text-center text-muted-foreground">
             <h3 className="text-lg font-medium mb-2">No Project Selected</h3>
-            <p className="text-sm">
-              Select an existing project or create a new one to get started
-            </p>
+            <button
+              onClick={() => {
+                setIsCreating(true);
+              }}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md"
+            >
+              Create a New Project
+            </button>
           </div>
         </div>
       )}
 
-      {/* Status Bar - Only show when project is selected */}
-      {activeProject && (
-        <StatusBar
-          activeProject={activeProject}
-          isSaving={isSavingCode}
-          isGenerating={isGenerating}
-          connectionStatus={connectionStatus}
-        />
-      )}
+      {/* Status Bar */}
+      <StatusBar
+        isCreating={isCreating}
+        activeProject={activeProject}
+        isSaving={isSavingCode}
+        isGenerating={isGenerating}
+        connectionStatus={connectionStatus}
+        status={status} // Pass the status to StatusBar
+      />
     </div>
   );
 };

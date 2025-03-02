@@ -1,17 +1,18 @@
 'use client';
 
 import axios from 'axios';
-import Extras from '@/data/Extras';
 import Markdown from 'react-markdown';
 import { Loader2Icon } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import ExtrasCopy from '@/data/Extras copy';
+import { toast } from 'sonner';
 
 const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [userInput, setuserInput] = useState('');
   const [message, setmessage] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [, setFiles] = useState(Extras.DEFAULT_FILE);
+  const [, setFiles] = useState(ExtrasCopy.DEFAULT_FILE);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -23,20 +24,20 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   }, [message, loading]);
 
   useEffect(() => {
-    console.log('Active project changed in Chatview:', activeProject);
     if (activeProject?.id) {
       fetchMessages(activeProject.id);
     } else {
       setmessage([]);
       setFiles(Extras.DEFAULT_FILE);
     }
+    console.log('Active project changed in Chatview:', activeProject);
   }, [activeProject]);
 
   const fetchMessages = async (projectId) => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND}/chat/history/${projectId}`
+        `${process.env.BACKEND_URL}/chat/history/${projectId}`
       );
 
       const messages = response.data.messages.map((msg) => ({
@@ -46,7 +47,12 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       setmessage(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
-      setError('Failed to load chat messages');
+      toast.error('Failed to load chat messages', {
+        action: {
+          label: 'Resend',
+          onClick: () => fetchMessages(),
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -64,12 +70,38 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       onGenerateStart?.();
       setmessage((prev) => [...prev, newMessage]);
 
+      // Create request body
+      const requestBody = {
+        prompt: newMessage,
+        projectId: activeProject.id,
+      };
+
+      // Include current project files, not just for first message
+      // This ensures the AI always has the latest file versions
+      const currentProjectFiles = {};
+
+      // Dispatch event to request current files from Codeview
+      window.dispatchEvent(new CustomEvent('requestCurrentFiles'));
+
+      // Set up listener for the response
+      const filesHandler = (event) => {
+        Object.assign(currentProjectFiles, event.detail);
+        window.removeEventListener('getCurrentFiles', filesHandler);
+      };
+
+      window.addEventListener('getCurrentFiles', filesHandler);
+
+      // Wait a brief moment for the event to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Add the current project files to the request
+      if (Object.keys(currentProjectFiles).length > 0) {
+        requestBody.templateFiles = currentProjectFiles;
+      }
+
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND}/chat/`,
-        {
-          prompt: newMessage,
-          projectId: activeProject.id,
-        }
+        `${process.env.BACKEND_URL}/chat/`,
+        requestBody
       );
 
       if (response.data?.content) {
@@ -81,7 +113,6 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
           },
         ]);
 
-        // If there's codebase in the response, emit it
         if (response.data.content.codebase) {
           const formattedFiles = {};
           response.data.content.codebase.forEach((file) => {
@@ -101,7 +132,12 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      setError('Failed to send message');
+      toast.error('Failed to send message', {
+        action: {
+          label: 'Resend',
+          onClick: () => handleSubmit(),
+        },
+      });
     } finally {
       setLoading(false);
       onGenerateEnd?.();
@@ -140,13 +176,17 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {error && (
-        <div className="shrink-0 bg-destructive/15 text-destructive px-4 py-2 m-4">
+      {/* {error && (
+        <div className="shrink-0 bg-destructive/15 text-destructive px-4 py-2 m-4 flex justify-between items-center">
           <p>{error}</p>
+          <button
+            onClick={() => handleSubmit({ preventDefault: () => {} })}
+            className="text-sm underline hover:text-destructive-dark"
+          >
+            Retry
+          </button>
         </div>
-      )}
-
-      {/* Messages Container */}
+      )} */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="h-full p-4 space-y-4">
           {message && Array.isArray(message) && message.length === 0 ? (
@@ -190,7 +230,6 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
           )}
         </div>
       </div>
-
       {/* Chat Input */}
       <div className="shrink-0 bg-background p-4">
         <form onSubmit={handleSubmit}>
@@ -198,7 +237,12 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
             <input
               type="text"
               value={userInput}
-              onChange={(e) => setuserInput(e.target.value)}
+              onChange={(e) => {
+                setuserInput(e.target.value);
+                // if (e.target.value.length > 450)
+                //   toast.warning('Approaching 500-character limit!');
+              }}
+              // maxLength={500}
               placeholder="Type your message..."
               className="flex-1 bg-background border rounded-md px-4 py-2"
               disabled={loading}
@@ -210,6 +254,14 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
             >
               {loading ? <Loader2Icon className="animate-spin" /> : 'Send'}
             </button>
+            {loading && (
+              <button
+                onClick={() => setLoading(false)} // Add abort logic if possible
+                className="bg-destructive text-white px-4 py-2 rounded-md"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         </form>
       </div>

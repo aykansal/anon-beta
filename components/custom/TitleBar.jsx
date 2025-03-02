@@ -19,8 +19,9 @@ const TitleBar = ({
   onSave,
   onRun,
   onRefresh,
+  isCreating = false,
+  setIsCreating,
 }) => {
-  const [isCreating, setIsCreating] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
 
   const handleProjectChange = (e) => {
@@ -39,7 +40,7 @@ const TitleBar = ({
     if (newProject) {
       onCreateProject(newProject);
       setNewProjectName('');
-      setIsCreating(false);
+      // setIsCreating(false);
     }
   };
 

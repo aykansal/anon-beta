@@ -41,7 +41,7 @@ const SandPackPreviewClient = () => {
         navigator.clipboard
           .writeText('https://' + result.sandboxId + '.csb.app/')
           .then(() => {
-            toast.success('Link Copied to the clipboard');
+            toast.success('Deployment Link Copied to the clipboard');
           });
       } else if (action.Action == 'export') {
         window.open(result.editorUrl);

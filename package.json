@@ -10,8 +10,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@codesandbox/nodebox": "^0.1.9",
     "@codesandbox/sandpack-client": "^2.19.8",
-    "@codesandbox/sandpack-react": "^2.19.10",
+    "@codesandbox/sandpack-react": "^2.20.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@google/generative-ai": "^0.21.0",
@@ -22,7 +23,9 @@
     "@radix-ui/react-toast": "^1.2.5",
     "@radix-ui/react-tooltip": "^1.1.7",
     "@react-oauth/google": "^0.12.1",
+    "@types/socket.io-client": "^3.0.0",
     "@types/uuid4": "^2.0.3",
+    "@webcontainer/api": "^1.5.1-internal.9",
     "arweave": "^1.15.5",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
@@ -40,9 +43,11 @@
     "react-dom": "^18.0.0",
     "react-markdown": "^9.0.3",
     "shadcn": "^2.3.0",
+    "socket.io-client": "^4.8.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
+    "tw-to-css": "^0.0.12",
     "uuid4": "^2.0.3",
     "warp-arbundles": "^1.0.4"
   },

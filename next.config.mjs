@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  reactStrictMode: false,
   images: {
     unoptimized: true,
     remotePatterns: [
@@ -11,6 +12,9 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  env: {
+    BACKEND_URL: 'http://localhost:5000',
   },
 };
 

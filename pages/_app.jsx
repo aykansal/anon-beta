@@ -11,7 +11,7 @@ function App({ Component, pageProps }) {
       disableTransitionOnChange
     >
       <Component {...pageProps} />
-      <Toaster />
+      <Toaster position='bottom-center' />
     </Provider>
   );
 }

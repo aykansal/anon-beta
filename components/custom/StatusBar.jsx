@@ -3,8 +3,7 @@ import { Loader2Icon, GitBranchIcon, CheckCircleIcon } from 'lucide-react';
 
 const StatusBar = ({
   activeProject,
-  isSaving,
-  isGenerating,
+  status, // New status prop
   connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting'
 }) => {
   return (
@@ -18,19 +17,11 @@ const StatusBar = ({
           </span>
         </div>
 
-        {/* Save Status */}
-        {isSaving && (
+        {/* Status Message */}
+        {status && (
           <div className="flex items-center gap-1 text-primary">
             <Loader2Icon size={12} className="animate-spin" />
-            <span>Saving...</span>
-          </div>
-        )}
-
-        {/* Generation Status */}
-        {isGenerating && (
-          <div className="flex items-center gap-1 text-primary">
-            <Loader2Icon size={12} className="animate-spin" />
-            <span>Generating Code...</span>
+            <span>{status}</span>
           </div>
         )}
       </div>
