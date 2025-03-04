@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { fetchMessagesAR, messageAR, runLua } from '@/lib/arkit';
 import WalletConnect from '@/components/anon/WalletConnect';
 import styles from './ProjectDetails.module.css';
+import { message, result, createDataItemSigner } from '@permaweb/aoconnect';
 
 const ProjectDetails = () => {
   const router = useRouter();
@@ -64,6 +65,53 @@ const ProjectDetails = () => {
     }
   };
 
+  const addChat = async (chatId, chatName) => {
+    if (!window.arweaveWallet) {
+      alert('No Arconnect detected');
+      return;
+    }
+    await window.arweaveWallet.connect(
+      ['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'ACCESS_TOKENS'],
+      {
+        name: 'Anon',
+        logo: 'https://arweave.net/jAvd7Z1CBd8gVF2D6ESj7SMCCUYxDX_z3vpp5aHdaYk',
+      },
+      {
+        host: 'g8way.io',
+        port: 443,
+        protocol: 'https',
+      }
+    );
+    console.log('connected');
+
+    try {
+      const messageId = await message({
+        process: 'AQbp1f6Jgm0SfHzr7l50t4gf-Iv2kpEbpHgNaGGQwD4',
+        tags: [
+          { name: 'Action', value: 'AddChat' },
+          { name: 'ChatId', value: chatId },
+          { name: 'ChatName', value: chatName },
+        ],
+        signer: createDataItemSigner(globalThis.arweaveWallet),
+      });
+      console.log('addChat() messageId:', messageId);
+      const _result = await result({
+        message: messageId,
+        process: 'AQbp1f6Jgm0SfHzr7l50t4gf-Iv2kpEbpHgNaGGQwD4',
+      });
+      console.log('addChat() _result:', _result);
+      const response = _result.Messages[0].Data;
+      console.log('addChat() response:', response);
+    } catch (e) {
+      console.error('addChat() error!', e);
+      toast({
+        description: 'Failed to add chat.',
+        status: 'error',
+        duration: 2000,
+      });
+    }
+  };
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.container}>
@@ -91,6 +139,12 @@ const ProjectDetails = () => {
                 <h3>Process ID</h3>
                 <p className={styles.processId}>{processId}</p>
               </div>
+
+              <div>
+                <h1>Test anon handler</h1>
+                <button onClick={() => addChat('123', 'testChat')}>send</button>
+              </div>
+
               <div className={styles.statCard}>
                 <h3>Total Transactions</h3>
                 <p>{stats.totalTransactions}</p>

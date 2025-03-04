@@ -27,13 +27,13 @@ export const DEPENDENCIES = {
     typescript: "~5.7.2",
     "react-swipeable": "^6.1.0",
     'framer-motion': '^4.1.17',
+    "react-toastify": "11.0.5"
   },
   devDependencies: {
     "@types/node": "20.12.13",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@eslint/js": "^9.21.0",
-    "globals": "^15.15.0",
     "@typescript-eslint/eslint-plugin": "6.13.1",
     "@typescript-eslint/parser": "6.13.1",
     "typescript-eslint": "^8.24.1",
@@ -41,6 +41,7 @@ export const DEPENDENCIES = {
   }
 };
 
+// "globals": "^15.15.0",
 export const defaultFiles_2 = {
   '/.prettierignore':
     `**/*.md

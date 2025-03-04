@@ -120,8 +120,107 @@
   }
 }
 
+/* Custom styling for react-mentions */
+.mentions-input {
+  width: 100%;
+}
+
+.mentions__suggestions {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.mentions__suggestions__item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  cursor: pointer;
+}
+
+.mentions__suggestions__item--focused {
+  background-color: #f7fafc;
+}
+
+/* Hide preview actions */
 .sp-preview-actions {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
+}
+
+/* Custom styles for Sandpack */
+.sp-wrapper {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sp-layout {
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: var(--background) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex: 1 !important;
+}
+
+.sp-file-explorer {
+  min-width: 200px !important;
+  max-width: 300px !important;
+  width: 25% !important;
+  height: 100% !important;
+  overflow: auto !important;
+  border-right: 1px solid var(--border) !important;
+  flex-shrink: 0 !important;
+}
+
+.sp-code-editor {
+  height: 100% !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+.sp-tabs {
+  background: var(--background) !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex-shrink: 0 !important;
+}
+
+.sp-code-editor > div:last-child {
+  flex: 1 !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+.sp-preview-container {
+  height: 100% !important;
+  background: var(--background) !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.sp-preview-iframe {
+  height: 100% !important;
+  background: white !important;
+}
+
+/* Fix for editor content */
+.cm-editor {
+  height: 100% !important;
+  flex: 1 !important;
+}
+
+.cm-scroller {
+  height: 100% !important;
 }

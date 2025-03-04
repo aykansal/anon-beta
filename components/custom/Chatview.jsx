@@ -4,15 +4,53 @@ import axios from 'axios';
 import Markdown from 'react-markdown';
 import { Loader2Icon } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
-import ExtrasCopy from '@/data/Extras copy';
+import { MentionsInput, Mention } from 'react-mentions';
 import { toast } from 'sonner';
+
+// Custom styling for react-mentions
+const mentionsInputStyle = {
+  input: {
+    width: '100%',
+    height: '44px',
+    padding: '9px 12px',
+    border: '1px solid #e2e8f0',
+    borderRadius: '6px',
+    fontSize: '14px',
+    backgroundColor: 'transparent',
+    color: 'inherit',
+  },
+  suggestions: {
+    list: {
+      backgroundColor: 'var(--background)',
+      border: '1px solid var(--border)',
+      borderRadius: '6px',
+      fontSize: '14px',
+      maxHeight: '200px',
+      overflow: 'auto',
+      position: 'absolute',
+      bottom: '100%',
+      left: 0,
+      right: 0,
+      marginBottom: '8px',
+    },
+    item: {
+      padding: '8px 12px',
+      borderBottom: '1px solid var(--border)',
+      color: 'var(--foreground)',
+      '&focused': {
+        backgroundColor: 'var(--accent)',
+      },
+    },
+  },
+};
 
 const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [userInput, setuserInput] = useState('');
   const [message, setmessage] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [, setFiles] = useState(ExtrasCopy.DEFAULT_FILE);
+  const [files, setFiles] = useState({});
+  const [mentionedFiles, setMentionedFiles] = useState([]);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -26,9 +64,10 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   useEffect(() => {
     if (activeProject?.id) {
       fetchMessages(activeProject.id);
+      fetchProjectFiles(activeProject.id);
     } else {
       setmessage([]);
-      setFiles(Extras.DEFAULT_FILE);
+      setFiles({});
     }
     console.log('Active project changed in Chatview:', activeProject);
   }, [activeProject]);
@@ -58,46 +97,68 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
     }
   };
 
+  const fetchProjectFiles = async (projectId) => {
+    try {
+      const response = await axios.get(
+        `${process.env.BACKEND_URL}/projects/${projectId}`
+      );
+      if (response.data?.codebase) {
+        setFiles(response.data.codebase);
+      }
+    } catch (error) {
+      console.error('Error fetching project files:', error);
+    }
+  };
+
+  // Function to get file suggestions for mentions
+  const getFileSuggestions = (search) => {
+    const fileList = Object.keys(files);
+    return fileList
+      .filter((filename) =>
+        filename.toLowerCase().includes(search.toLowerCase())
+      )
+      .map((filename) => ({
+        id: filename,
+        display: filename,
+      }));
+  };
+
+  // Handle file mention
+  const handleFileMention = (id, display) => {
+    setMentionedFiles((prev) => [...prev, { id, display }]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userInput.trim() || loading || !activeProject?.id) return;
 
-    const newMessage = { role: 'user', content: userInput?.trim() };
+    // Create file context from mentioned files
+    const fileContext = mentionedFiles.reduce((acc, file) => {
+      if (files[file.id]) {
+        acc[file.id] = files[file.id];
+      }
+      return acc;
+    }, {});
+
+    const newMessage = {
+      role: 'user',
+      content: userInput?.trim(),
+    };
+
     setuserInput('');
+    setMentionedFiles([]);
 
     try {
       setLoading(true);
       onGenerateStart?.();
       setmessage((prev) => [...prev, newMessage]);
 
-      // Create request body
+      // Simplified request body with only fileContext
       const requestBody = {
         prompt: newMessage,
         projectId: activeProject.id,
+        fileContext,
       };
-
-      // Include current project files, not just for first message
-      // This ensures the AI always has the latest file versions
-      const currentProjectFiles = {};
-
-      // Dispatch event to request current files from Codeview
-      window.dispatchEvent(new CustomEvent('requestCurrentFiles'));
-
-      // Set up listener for the response
-      const filesHandler = (event) => {
-        Object.assign(currentProjectFiles, event.detail);
-        window.removeEventListener('getCurrentFiles', filesHandler);
-      };
-
-      window.addEventListener('getCurrentFiles', filesHandler);
-
-      // Wait a brief moment for the event to complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Add the current project files to the request
-      if (Object.keys(currentProjectFiles).length > 0) {
-        requestBody.templateFiles = currentProjectFiles;
-      }
 
       const response = await axios.post(
         `${process.env.BACKEND_URL}/chat/`,
@@ -132,12 +193,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Failed to send message', {
-        action: {
-          label: 'Resend',
-          onClick: () => handleSubmit(),
-        },
-      });
+      toast.error('Failed to send message');
     } finally {
       setLoading(false);
       onGenerateEnd?.();
@@ -230,23 +286,33 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
           )}
         </div>
       </div>
-      {/* Chat Input */}
+      {/* Modified Chat Input */}
       <div className="shrink-0 bg-background p-4">
         <form onSubmit={handleSubmit}>
           <div className="flex gap-2">
-            <input
-              type="text"
-              value={userInput}
-              onChange={(e) => {
-                setuserInput(e.target.value);
-                // if (e.target.value.length > 450)
-                //   toast.warning('Approaching 500-character limit!');
-              }}
-              // maxLength={500}
-              placeholder="Type your message..."
-              className="flex-1 bg-background border rounded-md px-4 py-2"
-              disabled={loading}
-            />
+            <div className="flex-1 relative">
+              <MentionsInput
+                value={userInput}
+                onChange={(e) => setuserInput(e.target.value)}
+                style={mentionsInputStyle}
+                placeholder="Use @ to mention files"
+                disabled={loading}
+              >
+                <Mention
+                  trigger="@"
+                  data={getFileSuggestions}
+                  onAdd={handleFileMention}
+                  appendSpaceOnAdd
+                  displayTransform={(id) => `@${id}`}
+                  style={{
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-foreground)',
+                    padding: '0 4px',
+                    borderRadius: '3px',
+                  }}
+                />
+              </MentionsInput>
+            </div>
             <button
               type="submit"
               className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50"
@@ -254,14 +320,6 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
             >
               {loading ? <Loader2Icon className="animate-spin" /> : 'Send'}
             </button>
-            {loading && (
-              <button
-                onClick={() => setLoading(false)} // Add abort logic if possible
-                className="bg-destructive text-white px-4 py-2 rounded-md"
-              >
-                Cancel
-              </button>
-            )}
           </div>
         </form>
       </div>

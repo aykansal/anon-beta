@@ -288,8 +288,8 @@ const ProjectsPage = () => {
 
       {/* Main Content */}
       {activeProject ? (
-        <div id="main-container" className="flex flex-1 min-h-0">
-          <div style={{ width: `${splitPosition}%` }} className="h-full">
+        <div id="main-container" className="flex flex-1 min-h-0 overflow-hidden">
+          <div style={{ width: `${splitPosition}%` }} className="h-full min-h-0">
             <Codeview
               theme="dark"
               files={files}
@@ -298,7 +298,7 @@ const ProjectsPage = () => {
               activeProject={activeProject}
             />
           </div>
-          <div style={{ width: `${100 - splitPosition}%` }} className="h-full">
+          <div style={{ width: `${100 - splitPosition}%` }} czlassName="h-full min-h-0 border-l border-border">
             <Chatview
               activeProject={activeProject}
               onGenerateStart={() => setIsGenerating(true)}
@@ -323,14 +323,16 @@ const ProjectsPage = () => {
       )}
 
       {/* Status Bar */}
-      <StatusBar
-        isCreating={isCreating}
-        activeProject={activeProject}
-        isSaving={isSavingCode}
-        isGenerating={isGenerating}
-        connectionStatus={connectionStatus}
-        status={status} // Pass the status to StatusBar
-      />
+      <div className="shrink-0">
+        <StatusBar
+          isCreating={isCreating}
+          activeProject={activeProject}
+          isSaving={isSavingCode}
+          isGenerating={isGenerating}
+          connectionStatus={connectionStatus}
+          status={status}
+        />
+      </div>
     </div>
   );
 };
