@@ -14,7 +14,7 @@ const nextConfig = {
     ],
   },
   env: {
-    BACKEND_URL: 'https://bbe4-2409-40d1-1a-7ecd-85bf-5c62-fb5f-527.ngrok-free.app',
+    BACKEND_URL: 'https://pretty-primarily-tahr.ngrok-free.app',
   },
 };
 
