@@ -14,7 +14,7 @@ const nextConfig = {
     ],
   },
   env: {
-    BACKEND_URL: 'https://pretty-primarily-tahr.ngrok-free.app',
+    BACKEND_URL: 'https://vybeide-be.onrender.com'
   },
 };
 

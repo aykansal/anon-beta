@@ -6,6 +6,7 @@ import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
+import { connectWallet } from '@/lib/arkit2';
 
 const ProjectsPage = () => {
   const [files, setFiles] = useState({});
@@ -19,6 +20,7 @@ const ProjectsPage = () => {
   const [error, setError] = useState(null); // Global error state for UI feedback
   const [isCreating, setIsCreating] = useState(false);
   const [status, setStatus] = useState(''); // New state for handling status
+  const [walletAddress, setWalletAddress] = useState('');
 
   // Validate environment variable
   const backendUrl = process.env.BACKEND_URL;
@@ -30,8 +32,9 @@ const ProjectsPage = () => {
     try {
       setConnectionStatus('connecting');
       setError(null); // Clear previous errors
+      const walletAddres = await window?.arweaveWallet?.getActiveAddress();
       const res = await axios.get(
-        `${backendUrl}/projects?walletAddress=ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI`
+        `${backendUrl}/projects?walletAddress=${walletAddres}`
       );
 
       if (!res.data || typeof res.data.projects === 'undefined') {
@@ -193,15 +196,6 @@ const ProjectsPage = () => {
     // Add actual run logic here if needed
   };
 
-  const handleRefreshProject = () => {
-    if (!activeProject) {
-      toast.error('No project selected to refresh');
-      return;
-    }
-    fetchProjects();
-    toast.info('Refreshing project...');
-  };
-
   const startResizing = (e) => {
     setIsResizing(true);
     document.addEventListener('mousemove', handleResizing);
@@ -230,10 +224,6 @@ const ProjectsPage = () => {
   };
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
     console.log('Active project changed:', activeProject);
   }, [activeProject]);
 
@@ -252,6 +242,41 @@ const ProjectsPage = () => {
       window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
   }, []);
 
+  const fetchData = async () => {
+    try {
+      const connectionStatus = await connectWallet();
+      if (connectionStatus === 'connected wallet successfully') {
+        const walletAddress = await window.arweaveWallet.getActiveAddress();
+        setWalletAddress(walletAddress);
+        const user = await axios.post(
+          `${process.env.BACKEND_URL}/user/create`,
+          {
+            name: 'test',
+            walletAddress,
+          }
+        );
+        console.log(user.data);
+      }
+    } catch (error) {
+      console.error('Error during wallet connection or user creation:', error);
+    }
+  };
+
+  useEffect(async () => {
+    await fetchData();
+    await fetchProjects();
+  }, []);
+
+  const handleRefreshProject = () => {
+    if (!activeProject) {
+      toast.error('No project selected to refresh');
+      return;
+    }
+
+    fetchData();
+    fetchProjects();
+    toast.info('Refreshing project...');
+  };
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Title Bar */}
@@ -288,8 +313,14 @@ const ProjectsPage = () => {
 
       {/* Main Content */}
       {activeProject ? (
-        <div id="main-container" className="flex flex-1 min-h-0 overflow-hidden">
-          <div style={{ width: `${splitPosition}%` }} className="h-full min-h-0">
+        <div
+          id="main-container"
+          className="flex flex-1 min-h-0 overflow-hidden"
+        >
+          <div
+            style={{ width: `${splitPosition}%` }}
+            className="h-full min-h-0"
+          >
             <Codeview
               theme="dark"
               files={files}
@@ -298,7 +329,10 @@ const ProjectsPage = () => {
               activeProject={activeProject}
             />
           </div>
-          <div style={{ width: `${100 - splitPosition}%` }} czlassName="h-full min-h-0 border-l border-border">
+          <div
+            style={{ width: `${100 - splitPosition}%` }}
+            czlassName="h-full min-h-0 border-l border-border"
+          >
             <Chatview
               activeProject={activeProject}
               onGenerateStart={() => setIsGenerating(true)}
