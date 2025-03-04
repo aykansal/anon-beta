@@ -1,7 +1,7 @@
 export const DEPENDENCIES = {
   dependencies: {
-    react: "^19.0.0",
-    "react-dom": "^19.0.0",
+    react: "^18.0.0",
+    "react-dom": "^18.0.0",
     axios: "^1.7.9",
     arweave: "1.15.5",
     "arweave-wallet-kit": "1.1.0",

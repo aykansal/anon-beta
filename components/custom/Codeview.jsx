@@ -316,7 +316,7 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
   };
 
   console.log('sandpackfiles', sandpackFiles);
-
+console.log(validatedDependencies)
   return (
     <SandpackProvider
       theme={theme}
@@ -326,7 +326,7 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
         environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
-          ...validatedDependencies,
+          // ...validatedDependencies,
         },
         devDependencies: {
           ...DEPENDENCIES.devDependencies,
@@ -556,17 +556,17 @@ return (
 }
 export default App;
 `.trim(),
-  '/src/components/Sample.tsx': `
-import React from 'react';
-function Sample() {
-return (
-    <>
-      <div className="bg-green-200">Alias Test</div>     
-    </>
-  )
-}
-export default Sample;
-`.trim(),
+//   '/src/components/Sample.tsx': `
+// import React from 'react';
+// function Sample() {
+// return (
+//     <>
+//       <div className="bg-green-200">Alias Test</div>     
+//     </>
+//   )
+// }
+// export default Sample;
+// `.trim(),
   '/src/index.css': `
 body{
   background-color: #353935	;
