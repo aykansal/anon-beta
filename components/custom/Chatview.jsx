@@ -112,7 +112,8 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
 
   // Function to get file suggestions for mentions
   const getFileSuggestions = (search) => {
-    const fileList = Object.keys(files);
+    console.log('inside mention\n', files);
+    const fileList = Object.values(files.map((file) => file.filePath));
     return fileList
       .filter((filename) =>
         filename.toLowerCase().includes(search.toLowerCase())

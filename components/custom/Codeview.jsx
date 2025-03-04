@@ -24,6 +24,7 @@ import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
 import { DEPENDENCIES } from '@/data/defaultFiles';
 import { twj } from 'tw-to-css';
+import { connect, createDataItemSigner } from '@permaweb/aoconnect/browser';
 
 const SandpackDownloader = ({ onDownload, disabled }) => {
   const { sandpack } = useSandpack();
@@ -96,6 +97,7 @@ const validateNpmPackage = async (packageName) => {
     return false;
   }
 };
+let normalizedCodebase = {};
 
 const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
   const [activeView, setActiveView] = useState('code');
@@ -113,7 +115,6 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
         );
         if (response.data) {
           // Normalize codebase array into an object with file paths as keys
-          let normalizedCodebase = {};
           if (Array.isArray(response.data.codebase)) {
             response.data.codebase.forEach((file) => {
               // Use filePath as key, prefixed with '/' if not already
@@ -122,6 +123,7 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
                 : `/${file.filePath}`;
               normalizedCodebase[filePath] = file.code; // Use code directly as string
             });
+            console.log('inside 1st\n', normalizedCodebase);
           } else if (typeof response.data.codebase === 'object') {
             // If it's already an object, ensure keys are proper paths
             normalizedCodebase = Object.entries(response.data.codebase).reduce(
@@ -132,8 +134,10 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
               },
               {}
             );
+            console.log('inside 2nd\n', normalizedCodebase);
           } else {
             normalizedCodebase = defaultFiles_3; // Fallback to default if invalid
+            console.log('inside 3rd\n', normalizedCodebase);
           }
           setCurrentProject({ ...response.data, codebase: normalizedCodebase });
           console.log('Normalized codebase:', normalizedCodebase);
@@ -246,15 +250,56 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
     );
   };
 
-  const onAction = (actionType) => {
+  const onAction = async (actionType) => {
     setAction({
       Action: actionType,
       timeStamp: Date.now(),
     });
     if (actionType === 'runlua') {
       toast.info('Running Lua code...');
+      // Fix the code to check both '/index.lua' and 'index.lua'
+      const luaCodeToBeEval =
+        currentProject?.codebase['/index.lua'] ||
+        currentProject?.codebase['index.lua'];
+
+      if (!luaCodeToBeEval) {
+        toast.error('No Lua code found in the project.');
+        return;
+      }
+      try {
+        const ao = connect();
+        const messageId = await ao.message({
+          process: currentProject?.processId,
+          data: `${luaCodeToBeEval}`,
+          signer: createDataItemSigner(globalThis.arweaveWallet),
+          tags: [
+            { name: 'Name', value: 'Anon' },
+            { name: 'Version', value: '0.2.1' },
+            {
+              name: 'Authority',
+              value: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY',
+            },
+            { name: 'Action', value: 'Eval' },
+            { name: 'Description', value: currentProject?.description },
+          ],
+        });
+        console.log(messageId);
+
+        const result = await ao.result({
+          process: currentProject?.processId,
+          message: messageId,
+        });
+        console.log(result);
+
+        result.id = messageId;
+        console.log(result);
+        toast.info('Completed the Lua Code');
+      } catch (error) {
+        toast.error('Error in Eval Lua Code: ' + error.message);
+      }
     } else if (actionType === 'deploy') {
       toast.info('Deploying project...');
+      // Deployment logic should be handled here
     }
   };
 
@@ -263,13 +308,14 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
     Object.keys(codebaseFiles).length > 0
       ? Object.keys(codebaseFiles)
       : ['/src/App.tsx', '/src/components/Sample.tsx'];
-  console.log('visibleFiles:', visibleFiles);
+  // console.log('visibleFiles:', visibleFiles);
 
   const sandpackFiles = {
     ...defaultFiles_3,
     ...codebaseFiles,
   };
-  console.log('sandpackFiles:', sandpackFiles);
+
+  console.log('sandpackfiles', sandpackFiles);
 
   return (
     <SandpackProvider
