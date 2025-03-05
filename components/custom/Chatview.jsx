@@ -48,7 +48,6 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   const [userInput, setuserInput] = useState('');
   const [message, setmessage] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [files, setFiles] = useState({});
   const [mentionedFiles, setMentionedFiles] = useState([]);
   const messagesEndRef = useRef(null);
@@ -60,17 +59,6 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
   useEffect(() => {
     scrollToBottom();
   }, [message, loading]);
-
-  useEffect(() => {
-    if (activeProject?.id) {
-      fetchMessages(activeProject.id);
-      fetchProjectFiles(activeProject.id);
-    } else {
-      setmessage([]);
-      setFiles({});
-    }
-    console.log('Active project changed in Chatview:', activeProject);
-  }, [activeProject]);
 
   const fetchMessages = async (projectId) => {
     try {
@@ -106,6 +94,10 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
         setFiles(response.data.codebase);
       }
     } catch (error) {
+      if(error.response.data.erro==="No code found for project"){
+        toast.error('No code found for project');
+        return;
+      }
       console.error('Error fetching project files:', error);
     }
   };
@@ -131,7 +123,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!userInput.trim() || loading || !activeProject?.id) return;
+    if (!userInput.trim() || loading || !activeProject?.projectId) return;
 
     // Create file context from mentioned files
     const fileContext = mentionedFiles.reduce((acc, file) => {
@@ -157,7 +149,7 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
       // Simplified request body with only fileContext
       const requestBody = {
         prompt: newMessage,
-        projectId: activeProject.id,
+        projectId: activeProject.projectId,
         fileContext,
       };
 
@@ -170,8 +162,8 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
         setmessage((prev) => [
           ...prev,
           {
-            role: response.data.role,
-            content: response.data.content,
+            role: response?.data?.role,
+            content: response?.data?.content,
           },
         ]);
 
@@ -223,13 +215,24 @@ const Chatview = ({ activeProject, onGenerateStart, onGenerateEnd }) => {
     return markdownContent;
   };
 
-  if (!activeProject?.id) {
+  if (!activeProject.projectId) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
         <p>Select a project to start chatting</p>
       </div>
     );
   }
+
+  useEffect(() => {
+    if (activeProject) {
+      fetchMessages(activeProject?.projectId);
+      fetchProjectFiles(activeProject?.projectId);
+    } else {
+      setmessage([]);
+      setFiles({});
+    }
+    console.log('Active project changed in Chatview:', activeProject);
+  }, [activeProject]);
 
   return (
     <div className="h-full flex flex-col bg-background">

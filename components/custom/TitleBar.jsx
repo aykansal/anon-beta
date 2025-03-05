@@ -25,6 +25,8 @@ const TitleBar = ({
   const [newProjectName, setNewProjectName] = useState('');
 
   const handleProjectChange = (e) => {
+    console.log(e.target.value);
+    console.log(e.target.value);
     const projectId = parseInt(e.target.value);
     if (!Array.isArray(projects)) {
       console.error('Projects is not an array');
@@ -50,16 +52,17 @@ const TitleBar = ({
       <div className="h-10 px-2 flex items-center gap-2">
         {/* Project Selection */}
         <select
-          value={activeProject?.id || ''}
+          value={activeProject?.projectId || ''}
           onChange={handleProjectChange}
           className="h-7 px-2 bg-background border rounded text-sm"
         >
           <option value="">Select Project</option>
-          {projects?.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
+          {projects.length > 0 &&
+            projects?.map((project) => (
+              <option key={project.projectId} value={project.projectId}>
+                {project.name}
+              </option>
+            ))}
         </select>
         {/* Separator */}
         <div className="w-px h-4 bg-border mx-1" />

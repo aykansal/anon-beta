@@ -1,61 +1,83 @@
 import { useState, useEffect } from 'react';
 import { connectWallet, useQuickWallet } from '@/lib/arkit';
-import Modal from './modal';
-import { Button } from '../ui/button';
-import styles from './styles/WalletConnect.module.css';
+
+export const Modal = ({ isOpen, onClose, onWalletSelect }) => {
+  const [hasArweaveWallet, setHasArweaveWallet] = useState(false);
+
+  useEffect(() => {
+    // Check if arweave wallet is available in the browser
+    setHasArweaveWallet(!!window.arweaveWallet);
+  }, []);
+
+  if (!isOpen) return null;
+
+  return (
+    <div>
+      <div>
+        <div>
+          <h2>Connect Wallet</h2>
+          <button onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+
+        <div>
+          {hasArweaveWallet && (
+            <button onClick={() => onWalletSelect('arweave')}>
+              Arweave Wallet
+            </button>
+          )}
+
+          <button onClick={() => onWalletSelect('quick')}>
+            Quick Wallet
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProfileModal = ({ isOpen, onClose, walletData, onDisconnect }) => {
   if (!isOpen) return null;
 
   return (
-    <div className={styles.profileOverlay} onClick={onClose}>
-      <div
-        className={styles.profileContent}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className={styles.profileHeader}>
+    <div onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <div>
           <h2>Profile</h2>
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label="Close"
-          >
+          <button onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        <div className={styles.profileBody}>
-          <div className={styles.avatarSection}>
-            <div className={styles.avatar}>
+        <div>
+          <div>
+            <div>
               {/* Default avatar circle with first letter of address */}
               {walletData.address[0]}
             </div>
           </div>
 
-          <div className={styles.walletDetails}>
-            <div className={styles.addressSection}>
-              <span className={styles.label}>Address</span>
-              <span className={styles.address}>{walletData.address}</span>
+          <div>
+            <div>
+              <span>Address</span>
+              <span>{walletData.address}</span>
             </div>
 
-            <div className={styles.balanceSection}>
-              <span className={styles.label}>Balance</span>
-              <span className={styles.balance}>0 AR</span>
+            <div>
+              <span>Balance</span>
+              <span>0 AR</span>
             </div>
 
-            <div className={styles.walletType}>
-              <span className={styles.label}>Wallet Type</span>
-              <span className={styles.type}>{walletData.type}</span>
+            <div>
+              <span>Wallet Type</span>
+              <span>{walletData.type}</span>
             </div>
           </div>
 
-          <Button
-            onClick={onDisconnect}
-            className={styles.disconnectButton}
-            variant="destructive"
-          >
+          <button onClick={onDisconnect}>
             Disconnect
-          </Button>
+          </button>
         </div>
       </div>
     </div>
@@ -64,7 +86,6 @@ const ProfileModal = ({ isOpen, onClose, walletData, onDisconnect }) => {
 
 const WalletConnect = ({
   onWalletConnected, // Optional callback when wallet is connected
-  buttonClassName, // Optional custom button styling
   buttonText = 'Connect Wallet', // Optional custom button text
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -136,29 +157,26 @@ const WalletConnect = ({
   };
 
   return (
-    <div className={styles.container}>
+    <div>
       {!walletData ? (
-        <Button
+        <button
           onClick={() => setIsModalOpen(true)}
-          className={buttonClassName}
           disabled={isConnecting}
         >
           {isConnecting ? 'Connecting...' : buttonText}
-        </Button>
+        </button>
       ) : (
-        <Button
+        <button
           onClick={() => setIsProfileOpen(true)}
-          className={styles.walletButton}
-          variant="outline"
         >
-          <div className={styles.walletButtonContent}>
-            <div className={styles.walletIndicator} />
+          <div>
+            <div />
             <span>
               {walletData.address.slice(0, 4)}...{walletData.address.slice(-4)}
             </span>
-            <span className={styles.balance}>0 AR</span>
+            <span>0 AR</span>
           </div>
-        </Button>
+        </button>
       )}
 
       <Modal

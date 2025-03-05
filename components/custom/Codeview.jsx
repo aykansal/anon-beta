@@ -91,9 +91,20 @@ const validateNpmPackage = async (packageName) => {
     const response = await axios.get(
       `https://registry.npmjs.org/${packageName}`
     );
-    return response.status === 200;
+    if (response.status === 200) {
+      return {
+        status: true,
+        name: response.data.name,
+        latestVersion: response.data.dist - tags.latest,
+      };
+    } else {
+      console.warn(
+        `Package validation failed for ${packageName}:`,
+        response.status
+      );
+      return { status: false };
+    }
   } catch (error) {
-    console.warn(`Package validation failed for ${packageName}:`, error.status);
     return false;
   }
 };
@@ -123,7 +134,7 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
                 : `/${file.filePath}`;
               normalizedCodebase[filePath] = file.code; // Use code directly as string
             });
-            console.log('inside 1st\n', normalizedCodebase);
+            // console.log('inside 1st\n', normalizedCodebase);
           } else if (typeof response.data.codebase === 'object') {
             // If it's already an object, ensure keys are proper paths
             normalizedCodebase = Object.entries(response.data.codebase).reduce(
@@ -134,26 +145,32 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
               },
               {}
             );
-            console.log('inside 2nd\n', normalizedCodebase);
+            // console.log('inside 2nd\n', normalizedCodebase);
           } else {
             normalizedCodebase = defaultFiles_3; // Fallback to default if invalid
-            console.log('inside 3rd\n', normalizedCodebase);
+            // console.log('inside 3rd\n', normalizedCodebase);
           }
           setCurrentProject({ ...response.data, codebase: normalizedCodebase });
-          console.log('Normalized codebase:', normalizedCodebase);
+          // console.log('Normalized codebase:', normalizedCodebase);
         }
       } catch (error) {
-        console.error('Error loading project code:', error);
+        if (error.response.data.error === 'No code found for project') {
+          toast.error('Prompt to create vibe with the code');
+          return;
+        }
+
         toast.error('Failed to load code');
+        console.error('Error loading project code:', error);
+        return;
       } finally {
         setLoading(false);
       }
     };
 
-    if (activeProject?.id) {
-      fetchProjectCode(activeProject.id);
+    if (activeProject?.projectId) {
+      fetchProjectCode(activeProject?.projectId);
     }
-  }, [activeProject?.id]);
+  }, [activeProject.projectId]);
 
   useEffect(() => {
     const handleCodebaseUpdate = (event) => {
@@ -221,10 +238,10 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
       const validatedPackages = {};
       for (const [packageName, version] of Object.entries(packages)) {
         const isValid = await validateNpmPackage(packageName);
-        if (isValid) {
-          validatedPackages[packageName] = version;
+        if (isValid.status) {
+          validatedPackages[isValid.name] = isValid.latestVersion;
         } else {
-          console.warn(`Package ${packageName} not found in npm registry`);
+          console.warn(`Package validation failed for ${packageName}:`);
           toast.error(`Package ${packageName} not found in npm registry`);
         }
       }
@@ -315,18 +332,19 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
     ...codebaseFiles,
   };
 
-  console.log('sandpackfiles', sandpackFiles);
-console.log(validatedDependencies)
+  // console.log('sandpackfiles', sandpackFiles);
+  // console.log(validatedDependencies);
+
   return (
     <SandpackProvider
       theme={theme}
-      template="vite"
+      // template="vite"
       customSetup={{
         entry: '/src/main.tsx',
         environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
-          // ...validatedDependencies,
+          ...validatedDependencies,
         },
         devDependencies: {
           ...DEPENDENCIES.devDependencies,
@@ -344,7 +362,9 @@ console.log(validatedDependencies)
       files={sandpackFiles}
       options={{
         visibleFiles,
-        activeFile: visibleFiles[0],
+        activeFile: visibleFiles.find(
+          (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
+        ),
         readOnly: isEditorDisabled(),
         externalResources: [
           'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
@@ -457,7 +477,7 @@ console.log(validatedDependencies)
                     showTabs={true}
                     showLineNumbers={true}
                     showInlineErrors={true}
-                    wrapContent={true}
+                    wrapContent={false}
                     closableTabs={true}
                     readOnly={isEditorDisabled()}
                     style={{ height: '100%', minHeight: '0', flex: '1' }}
@@ -514,10 +534,9 @@ dist-ssr
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <title>Vite + React + TS</title>
+    <script src="https://cdn.tailwindcss.com"/>
+    <title>Default Template Anon</title>
   </head>
   <body>
     <div id="root"></div>
@@ -545,35 +564,26 @@ dist-ssr
   ).trim(),
   '/src/App.tsx': `
 import React from 'react';
-import Sample from '@/components/Sample.tsx';
+
 function App() {
-return (
-    <>
-      <div className="bg-red-200">Hello world</div>     
-      <Sample/>
-    </>
-  )
+  return (
+    <div className="h-screen flex items-center justify-center bg-gray-900">
+      <p className="text-gray-300 font-semibold text-xl text-center px-4">
+        Write a Prompt and Get Vibin on AO !!
+      </p>
+    </div>
+  );
 }
+
 export default App;
 `.trim(),
-//   '/src/components/Sample.tsx': `
-// import React from 'react';
-// function Sample() {
-// return (
-//     <>
-//       <div className="bg-green-200">Alias Test</div>     
-//     </>
-//   )
-// }
-// export default Sample;
-// `.trim(),
-  '/src/index.css': `
+  '/src/styles/index.css': `
 body{
   background-color: #353935	;
 }`.trim(),
   '/src/main.tsx': `import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import '@/styles/index.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

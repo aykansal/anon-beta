@@ -205,14 +205,13 @@
 
 .sp-preview-container {
   height: 100% !important;
-  background: var(--background) !important;
+  /* background: var(--background) !important; */
   flex: 1 !important;
   min-width: 0 !important;
 }
 
 .sp-preview-iframe {
   height: 100% !important;
-  background: white !important;
 }
 
 /* Fix for editor content */

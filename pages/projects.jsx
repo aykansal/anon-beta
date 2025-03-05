@@ -24,6 +24,7 @@ const ProjectsPage = () => {
 
   // Validate environment variable
   const backendUrl = process.env.BACKEND_URL;
+
   if (!backendUrl) {
     throw new Error('BACKEND_URL environment variable is not set');
   }
@@ -36,12 +37,12 @@ const ProjectsPage = () => {
       const res = await axios.get(
         `${backendUrl}/projects?walletAddress=${walletAddres}`
       );
-
       if (!res.data || typeof res.data.projects === 'undefined') {
         throw new Error('Invalid response format from server');
       }
 
       if (res.data.projects.length > 0) {
+        console.log(res.data.projects);
         setProjects(res.data.projects);
         setActiveProject(res.data.projects[0]);
         toast.success('Projects fetched successfully');
@@ -119,7 +120,7 @@ const ProjectsPage = () => {
         processId,
         sandboxId: 'null',
         name: projectName,
-        walletAddress: 'ww5nJTj6dD6Q6oIg-bOm20y2yawWDqDcQbQDcmwGOlI',
+        walletAddress: walletAddress,
       });
 
       if (!res.data?.project) {
@@ -150,7 +151,7 @@ const ProjectsPage = () => {
 
   const handleSaveCode = async (updatedFiles) => {
     try {
-      if (!activeProject?.id) {
+      if (!activeProject.projectId) {
         throw new Error('No active project selected to save code');
       }
 
@@ -166,10 +167,13 @@ const ProjectsPage = () => {
       setConnectionStatus('connecting');
       setError(null);
 
-      await axios.post(`${backendUrl}/projects/${activeProject.id}/code`, {
-        files: updatedFiles,
-        sandboxId: Date.now().toString(),
-      });
+      await axios.post(
+        `${backendUrl}/projects/${activeProject.projectId}/code`,
+        {
+          files: updatedFiles,
+          sandboxId: Date.now().toString(),
+        }
+      );
 
       setFiles(updatedFiles);
       setConnectionStatus('connected');
@@ -193,13 +197,6 @@ const ProjectsPage = () => {
     }
     setStatus('Running Project...'); // Set status to running
     toast.info('Running project...');
-    // Add actual run logic here if needed
-  };
-
-  const startResizing = (e) => {
-    setIsResizing(true);
-    document.addEventListener('mousemove', handleResizing);
-    document.addEventListener('mouseup', stopResizing);
   };
 
   const handleResizing = (e) => {
@@ -258,25 +255,45 @@ const ProjectsPage = () => {
         console.log(user.data);
       }
     } catch (error) {
+      if (error.status === 300) {
+        toast.info('Welcome back !!', {
+          position: 'top-right',
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        return;
+      }
       console.error('Error during wallet connection or user creation:', error);
     }
   };
 
-  useEffect(async () => {
-    await fetchData();
-    await fetchProjects();
-  }, []);
-
-  const handleRefreshProject = () => {
+  const handleRefreshProject = async () => {
     if (!activeProject) {
       toast.error('No project selected to refresh');
       return;
     }
 
-    fetchData();
-    fetchProjects();
+    await fetchData();
+    await fetchProjects();
     toast.info('Refreshing project...');
   };
+
+  useEffect(() => {
+    const fetchDataAndProjects = async () => {
+      try {
+        await fetchData();
+        await fetchProjects();
+      } catch (error) {
+        console.error('Error in fetching data or projects:', error);
+      }
+    };
+    fetchDataAndProjects();
+  }, []);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Title Bar */}
@@ -331,7 +348,7 @@ const ProjectsPage = () => {
           </div>
           <div
             style={{ width: `${100 - splitPosition}%` }}
-            czlassName="h-full min-h-0 border-l border-border"
+            className="h-full min-h-0 border-l border-border"
           >
             <Chatview
               activeProject={activeProject}

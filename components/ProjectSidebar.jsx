@@ -31,7 +31,7 @@ const ProjectSidebar = ({
               key={project.id}
               onClick={() => onProjectSelect(project)}
               className={`p-3 rounded-md cursor-pointer ${
-                activeProject?.id === project.id
+                activeProject.projectId === project.id
                   ? 'bg-primary text-primary-foreground'
                   : 'hover:bg-accent'
               }`}
