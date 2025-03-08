@@ -7,6 +7,7 @@ import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
 import { connectWallet } from '@/lib/arkit2';
+import { Octokit } from '@octokit/core';
 
 const ProjectsPage = () => {
   const [files, setFiles] = useState({});
@@ -21,6 +22,7 @@ const ProjectsPage = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [status, setStatus] = useState(''); // New state for handling status
   const [walletAddress, setWalletAddress] = useState('');
+  const [githubToken, setGithubToken] = useState(null);
 
   // Validate environment variable
   const backendUrl = process.env.BACKEND_URL;
@@ -32,7 +34,7 @@ const ProjectsPage = () => {
   const fetchProjects = async () => {
     try {
       setConnectionStatus('connecting');
-      setError(null); // Clear previous errors
+      setError(null);
       const walletAddres = await window?.arweaveWallet?.getActiveAddress();
       const res = await axios.get(
         `${backendUrl}/projects?walletAddress=${walletAddres}`
@@ -42,13 +44,34 @@ const ProjectsPage = () => {
       }
 
       if (res.data.projects.length > 0) {
-        console.log(res.data.projects);
         setProjects(res.data.projects);
-        setActiveProject(res.data.projects[0]);
+        
+        // Get the stored project ID from localStorage
+        const storedProjectId = localStorage.getItem('activeProjectId');
+        
+        if (storedProjectId) {
+          // Find the stored project in the fetched projects
+          const storedProject = res.data.projects.find(
+            (p) => p.projectId === storedProjectId
+          );
+          if (storedProject) {
+            setActiveProject(storedProject);
+          } else {
+            // If stored project not found, set first project as active
+            setActiveProject(res.data.projects[0]);
+            localStorage.setItem('activeProjectId', res.data.projects[0].projectId);
+          }
+        } else {
+          // If no stored project, set first project as active
+          setActiveProject(res.data.projects[0]);
+          localStorage.setItem('activeProjectId', res.data.projects[0].projectId);
+        }
+        
         toast.success('Projects fetched successfully');
       } else {
         setProjects([]);
         setActiveProject(null);
+        localStorage.removeItem('activeProjectId');
         toast.info('No projects found! Create a new project');
       }
       setConnectionStatus('connected');
@@ -70,16 +93,48 @@ const ProjectsPage = () => {
         setActiveProject(null);
         setFiles({});
         setError(null);
+        localStorage.removeItem('activeProjectId');
         return;
       }
 
-      if (!project.id || typeof project.id !== 'number') {
+      if (!project.projectId) {
         throw new Error('Invalid project ID');
       }
 
       setConnectionStatus('connecting');
       setError(null);
-      setActiveProject(project);
+
+      // Store the selected project ID in localStorage
+      localStorage.setItem('activeProjectId', project.projectId);
+
+      // Fetch project details including codebase
+      const response = await axios.get(
+        `${backendUrl}/projects/${project.projectId}`
+      );
+
+      if (response.data) {
+        // Update the active project with full project data
+        setActiveProject(project);
+
+        // Update files if codebase exists
+        if (response.data.codebase) {
+          if (Array.isArray(response.data.codebase)) {
+            const normalizedCodebase = {};
+            response.data.codebase.forEach((file) => {
+              const filePath = file.filePath.startsWith('/')
+                ? file.filePath
+                : `/${file.filePath}`;
+              normalizedCodebase[filePath] = file.code;
+            });
+            setFiles(normalizedCodebase);
+          } else {
+            setFiles(response.data.codebase);
+          }
+        } else {
+          setFiles({});
+        }
+      }
+
       setConnectionStatus('connected');
       toast.success(`Selected project: ${project.name}`);
     } catch (error) {
@@ -89,6 +144,7 @@ const ProjectsPage = () => {
       toast.error(errorMessage);
       setConnectionStatus('disconnected');
       setActiveProject(null);
+      localStorage.removeItem('activeProjectId');
     }
   };
 
@@ -145,47 +201,6 @@ const ProjectsPage = () => {
       setConnectionStatus('disconnected');
     } finally {
       setIsCreating(false); // Reset isCreating after completion
-      setStatus(''); // Reset status after completion
-    }
-  };
-
-  const handleSaveCode = async (updatedFiles) => {
-    try {
-      if (!activeProject.projectId) {
-        throw new Error('No active project selected to save code');
-      }
-
-      if (
-        !updatedFiles ||
-        typeof updatedFiles !== 'object' ||
-        Object.keys(updatedFiles).length === 0
-      ) {
-        throw new Error('No files provided to save');
-      }
-
-      setStatus('Saving Code...'); // Set status to saving
-      setConnectionStatus('connecting');
-      setError(null);
-
-      await axios.post(
-        `${backendUrl}/projects/${activeProject.projectId}/code`,
-        {
-          files: updatedFiles,
-          sandboxId: Date.now().toString(),
-        }
-      );
-
-      setFiles(updatedFiles);
-      setConnectionStatus('connected');
-      toast.success('Code saved successfully');
-    } catch (error) {
-      console.error('Error saving code:', error);
-      const errorMessage =
-        error.response?.data?.error || error.message || 'Failed to save code';
-      setError(errorMessage);
-      toast.error(errorMessage);
-      setConnectionStatus('disconnected');
-    } finally {
       setStatus(''); // Reset status after completion
     }
   };
@@ -294,9 +309,217 @@ const ProjectsPage = () => {
     fetchDataAndProjects();
   }, []);
 
+  const handleSaveToGithub = async () => {
+    try {
+      if (!activeProject) {
+        throw new Error('No active project selected');
+      }
+
+      if (!githubToken) {
+        window.location.href = `${backendUrl}/auth/github`;
+        return;
+      }
+
+      setStatus('Checking GitHub repository...');
+      setConnectionStatus('connecting');
+      setError(null);
+      localStorage.setItem('githubToken', githubToken);
+      const store = localStorage.getItem('githubToken');
+
+      const octokit = new Octokit({
+        auth: store,
+      });
+
+      let repoOwner;
+      let repoExists = false;
+      let currentCommitSha;
+      let currentTreeSha;
+
+      // Check if repository exists and get current HEAD
+      try {
+        const userResponse = await octokit.request('GET /user', {
+          headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+        });
+        repoOwner = userResponse.data.login;
+
+        const repoResponse = await octokit.request(
+          'GET /repos/{owner}/{repo}',
+          {
+            owner: repoOwner,
+            repo: activeProject.name,
+            headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+          }
+        );
+        repoExists = true;
+        toast.info('Found existing repository');
+
+        // Get the latest commit SHA from the main branch
+        const branchResponse = await octokit.request(
+          'GET /repos/{owner}/{repo}/branches/{branch}',
+          {
+            owner: repoOwner,
+            repo: activeProject.name,
+            branch: 'main', // Assuming 'main' is the default branch
+            headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+          }
+        );
+        currentCommitSha = branchResponse.data.commit.sha;
+        currentTreeSha = branchResponse.data.commit.commit.tree.sha;
+      } catch (checkError) {
+        if (checkError.status === 404) {
+          setStatus('Creating new GitHub repository...');
+          const createResponse = await octokit.request('POST /user/repos', {
+            name: activeProject.name,
+            description: 'Created with Vybe IDE',
+            private: true,
+            headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+          });
+          repoOwner = createResponse.data.owner.login;
+          toast.success('New repository created successfully!');
+        } else {
+          throw checkError;
+        }
+      }
+
+      // Fetch and prepare files to commit
+      setStatus('Fetching project files...');
+      const filesToCommitResponse = await axios.get(
+        `${backendUrl}/projects/${activeProject.projectId}`
+      );
+      const codebase = filesToCommitResponse.data.codebase;
+
+      if (!codebase || codebase.length === 0) {
+        console.log('No files to commit');
+        toast.error('No files to commit');
+        return;
+      }
+
+      const filesToCommit = {};
+      codebase.forEach((file) => {
+        const cleanPath = file.filePath.startsWith('/')
+          ? file.filePath.substring(1)
+          : file.filePath;
+        filesToCommit[cleanPath] = file.code;
+      });
+
+      console.log('Prepared files to commit:', filesToCommit);
+
+      // Prepare tree objects for batch commit
+      setStatus('Preparing batch commit...');
+      const treeItems = [];
+      for (const [filePath, content] of Object.entries(filesToCommit)) {
+        if (!content || typeof content !== 'string') {
+          console.warn(`Skipping ${filePath}: Invalid or empty content`);
+          continue;
+        }
+
+        // Create a blob for each file
+        const blobResponse = await octokit.request(
+          'POST /repos/{owner}/{repo}/git/blobs',
+          {
+            owner: repoOwner,
+            repo: activeProject.name,
+            content: btoa(content),
+            encoding: 'base64',
+            headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+          }
+        );
+
+        treeItems.push({
+          path: filePath,
+          mode: '100644', // Regular file mode
+          type: 'blob',
+          sha: blobResponse.data.sha,
+        });
+      }
+
+      if (treeItems.length === 0) {
+        toast.error('No valid files to commit');
+        return;
+      }
+
+      // Create a new tree
+      const treeResponse = await octokit.request(
+        'POST /repos/{owner}/{repo}/git/trees',
+        {
+          owner: repoOwner,
+          repo: activeProject.name,
+          tree: treeItems,
+          base_tree: repoExists ? currentTreeSha : undefined, // Use base tree if repo exists
+          headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+        }
+      );
+
+      // Create a new commit
+      setStatus('Committing files to GitHub...');
+      const commitResponse = await octokit.request(
+        'POST /repos/{owner}/{repo}/git/commits',
+        {
+          owner: repoOwner,
+          repo: activeProject.name,
+          message: 'Batch commit from Vybe IDE',
+          tree: treeResponse.data.sha,
+          parents: repoExists && currentCommitSha ? [currentCommitSha] : [],
+          headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+        }
+      );
+
+      // Update the main branch reference
+      await octokit.request('PATCH /repos/{owner}/{repo}/git/refs/{ref}', {
+        owner: repoOwner,
+        repo: activeProject.name,
+        ref: 'heads/main', // Assuming 'main' is the default branch
+        sha: commitResponse.data.sha,
+        headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+      });
+
+      toast.success('Files successfully batch committed to GitHub!');
+      setConnectionStatus('connected');
+    } catch (error) {
+      console.error('Error committing to GitHub:', error);
+      const errorMessage =
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to commit to GitHub';
+      setError(errorMessage);
+      toast.error('Error committing to GitHub:', {
+        description: 'Check dev console for more details',
+      });
+      setConnectionStatus('disconnected');
+    } finally {
+      setStatus('');
+    }
+  };
+
+  useEffect(() => {
+    const handleGitHubAuth = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessToken = urlParams.get('access_token');
+
+      if (accessToken) {
+        setGithubToken(accessToken);
+        localStorage.setItem('githubToken', accessToken);
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.pathname
+        );
+        toast.success('Successfully connected to GitHub');
+      }
+    };
+
+    handleGitHubAuth();
+  }, []);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('githubToken');
+    if (storedToken) {
+      setGithubToken(storedToken);
+    }
+  }, []);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Title Bar */}
       <div className="shrink-0">
         <TitleBar
           projects={projects}
@@ -305,13 +528,10 @@ const ProjectsPage = () => {
           onCreateProject={handleCreateProject}
           setIsCreating={setIsCreating}
           isCreating={isCreating}
-          onSave={() =>
-            activeProject
-              ? handleSaveCode(files)
-              : toast.error('No project selected to save')
-          }
+          onSave={handleSaveToGithub}
           onRun={handleRunProject}
           onRefresh={handleRefreshProject}
+          githubConnected={!!githubToken}
         />
       </div>
 
@@ -344,6 +564,7 @@ const ProjectsPage = () => {
               isSaving={isSavingCode}
               isGenerating={isGenerating}
               activeProject={activeProject}
+              onCommit={handleSaveToGithub} // Pass the commit function
             />
           </div>
           <div

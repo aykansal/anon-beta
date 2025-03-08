@@ -7,23 +7,15 @@ import {
   RunIcon,
   useSandpack,
 } from '@codesandbox/sandpack-react';
-
 import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
 import { useContext, useEffect, useState } from 'react';
 import SandPackPreviewClient from './SandPackPreviewClient';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { ActionContext } from '@/context/ActionContext';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
-import { DEPENDENCIES } from '@/data/defaultFiles';
-import { twj } from 'tw-to-css';
+import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect/browser';
 
 const SandpackDownloader = ({ onDownload, disabled }) => {
@@ -77,7 +69,6 @@ const SandpackDownloader = ({ onDownload, disabled }) => {
         'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
-      style={twj('text-red-300')}
       title="Export"
     >
       <ExportIcon size={12} />
@@ -85,19 +76,19 @@ const SandpackDownloader = ({ onDownload, disabled }) => {
     </button>
   );
 };
-
 const validateNpmPackage = async (packageName) => {
   try {
     const response = await axios.get(
       `https://registry.npmjs.org/${packageName}`
     );
-    if (response.status === 200) {
+
+    if (response?.status === 200) {
       return {
         status: true,
         name: response.data.name,
-        latestVersion: response.data.dist - tags.latest,
+        latestVersion: response.data['dist-tags'].latest,
       };
-    } else {
+    } else if (response?.status === 404) {
       console.warn(
         `Package validation failed for ${packageName}:`,
         response.status
@@ -105,12 +96,19 @@ const validateNpmPackage = async (packageName) => {
       return { status: false };
     }
   } catch (error) {
-    return false;
+    console.error(`Error validating package ${packageName}:`, error.message);
+    return { status: false };
   }
 };
 let normalizedCodebase = {};
 
-const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
+const Codeview = ({
+  activeProject,
+  isSaving,
+  isGenerating,
+  theme,
+  onCommit,
+}) => {
   const [activeView, setActiveView] = useState('code');
   const [loading, setLoading] = useState(false);
   const { action, setAction } = useContext(ActionContext);
@@ -128,7 +126,6 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
           // Normalize codebase array into an object with file paths as keys
           if (Array.isArray(response.data.codebase)) {
             response.data.codebase.forEach((file) => {
-              // Use filePath as key, prefixed with '/' if not already
               const filePath = file.filePath.startsWith('/')
                 ? file.filePath
                 : `/${file.filePath}`;
@@ -236,13 +233,13 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
   useEffect(() => {
     const validateDependencies = async (packages) => {
       const validatedPackages = {};
-      for (const [packageName, version] of Object.entries(packages)) {
-        const isValid = await validateNpmPackage(packageName);
+      for (const pkg of packages) {
+        const isValid = await validateNpmPackage(pkg.packageName);
         if (isValid.status) {
           validatedPackages[isValid.name] = isValid.latestVersion;
         } else {
-          console.warn(`Package validation failed for ${packageName}:`);
-          toast.error(`Package ${packageName} not found in npm registry`);
+          console.warn(`Package validation failed for ${pkg.packageName}:`);
+          toast.error(`Package ${pkg.packageName} not found in npm registry`);
         }
       }
       return validatedPackages;
@@ -257,6 +254,7 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
     };
     updateDependencies();
   }, [currentProject?.externalPackages]);
+
   const isEditorDisabled = () => {
     return (
       !activeProject ||
@@ -277,7 +275,8 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
       // Fix the code to check both '/index.lua' and 'index.lua'
       const luaCodeToBeEval =
         currentProject?.codebase['/index.lua'] ||
-        currentProject?.codebase['index.lua'];
+        currentProject?.codebase['/src/lib/index.lua'] ||
+        currentProject?.codebase['index.lua'] ;
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -316,7 +315,16 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
       }
     } else if (actionType === 'deploy') {
       toast.info('Deploying project...');
-      // Deployment logic should be handled here
+    } else if (actionType === 'commit') {
+      if (!onCommit) {
+        toast.error('Commit functionality not available');
+        return;
+      }
+      try {
+        await onCommit(); // Call the passed commit function
+      } catch (error) {
+        console.error('Commit failed:', error);
+      }
     }
   };
 
@@ -325,22 +333,17 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
     Object.keys(codebaseFiles).length > 0
       ? Object.keys(codebaseFiles)
       : ['/src/App.tsx', '/src/components/Sample.tsx'];
-  // console.log('visibleFiles:', visibleFiles);
 
   const sandpackFiles = {
     ...defaultFiles_3,
     ...codebaseFiles,
   };
 
-  // console.log('sandpackfiles', sandpackFiles);
-  // console.log(validatedDependencies);
-
   return (
     <SandpackProvider
       theme={theme}
-      // template="vite"
       customSetup={{
-        entry: '/src/main.tsx',
+        entry: '/index.tsx',
         environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
@@ -393,7 +396,7 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
                 className={cn(
                   'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors',
                   activeView === view.id
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-background text-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                   isEditorDisabled() && 'opacity-50 cursor-not-allowed'
                 )}
@@ -404,42 +407,26 @@ const Codeview = ({ activeProject, isSaving, isGenerating, theme }) => {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onAction('runlua')}
-                    disabled={isEditorDisabled()}
-                    className={cn(
-                      'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-                      isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-                    )}
-                  >
-                    <GitBranch size={12} /> Commit
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Save changes to the AO process</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onAction('runlua')}
-                    disabled={isEditorDisabled()}
-                    className={cn(
-                      'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-                      isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-                    )}
-                  >
-                    <RunIcon size={12} /> Run Lua
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Execute Lua code on the AO process
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <button
+              onClick={() => onAction('commit')} // Trigger commit action
+              disabled={isEditorDisabled()}
+              className={cn(
+                'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <GitBranch size={12} /> Commit
+            </button>
+            <button
+              onClick={() => onAction('runlua')}
+              disabled={isEditorDisabled()}
+              className={cn(
+                'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <RunIcon size={12} /> Run Lua
+            </button>
             <SandpackDownloader
               onDownload={onAction}
               disabled={isEditorDisabled()}
@@ -500,120 +487,3 @@ const views = [
   { id: 'code', icon: CodeIcon, label: 'Code' },
   { id: 'preview', icon: EyeIcon, label: 'Preview' },
 ];
-
-export const defaultFiles_3 = {
-  '/.gitignore': `
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-`.trim(),
-  '/index.html': `
-  <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"/>
-    <title>Default Template Anon</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
-`.trim(),
-  '/package.json': JSON.stringify(
-    {
-      name: 'vite-react-typescript-starter',
-      private: true,
-      version: '0.0.0',
-      type: 'module',
-      scripts: {
-        dev: 'vite',
-        build: 'tsc -b && vite build',
-        lint: 'eslint .',
-        preview: 'vite preview',
-      },
-      dependencies: DEPENDENCIES.dependencies,
-      devDependencies: DEPENDENCIES.devDependencies,
-    },
-    null,
-    2
-  ).trim(),
-  '/src/App.tsx': `
-import React from 'react';
-
-function App() {
-  return (
-    <div className="h-screen flex items-center justify-center bg-gray-900">
-      <p className="text-gray-300 font-semibold text-xl text-center px-4">
-        Write a Prompt and Get Vibin on AO !!
-      </p>
-    </div>
-  );
-}
-
-export default App;
-`.trim(),
-  '/src/styles/index.css': `
-body{
-  background-color: #353935	;
-}`.trim(),
-  '/src/main.tsx': `import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import '@/styles/index.css'
-import App from './App.tsx'
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)`.trim(),
-  '/tsconfig.json': JSON.stringify(
-    {
-      compilerOptions: {
-        target: 'ES2020',
-        lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-        module: 'ESNext',
-        skipLibCheck: true,
-        moduleResolution: 'bundler',
-        allowImportingTsExtensions: true,
-        isolatedModules: true,
-        noEmit: true,
-        jsx: 'react-jsx',
-        strict: true,
-        baseUrl: '/',
-        paths: {
-          '@/*': ['src/*'],
-          '@/assets/*': ['src/assets/*'],
-          '@/components/*': ['src/components/*'],
-        },
-      },
-      include: ['src'],
-    },
-    null,
-    2
-  ).trim(),
-};

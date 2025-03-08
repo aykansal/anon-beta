@@ -10,6 +10,14 @@ import {
   BookOpenIcon,
   GitBranch,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const TitleBar = ({
   projects,
@@ -21,19 +29,24 @@ const TitleBar = ({
   onRefresh,
   isCreating = false,
   setIsCreating,
+  githubConnected = false,
 }) => {
   const [newProjectName, setNewProjectName] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleProjectChange = (e) => {
-    console.log(e.target.value);
-    console.log(e.target.value);
-    const projectId = parseInt(e.target.value);
+    // const projectId = parseInt(e.target.value);
+    const projectId = e.target.value;
     if (!Array.isArray(projects)) {
       console.error('Projects is not an array');
       return;
     }
-    const selectedProject = projects.find((p) => p.id === projectId);
-    onProjectSelect(selectedProject);
+    const selectedProject = projects.find((p) => p.projectId === projectId);
+    if (selectedProject) {
+      onProjectSelect(selectedProject);
+    } else {
+      console.error('Project not found with ID:', projectId);
+    }
   };
 
   const handleCreateSubmit = async (e) => {
@@ -42,19 +55,19 @@ const TitleBar = ({
     if (newProject) {
       onCreateProject(newProject);
       setNewProjectName('');
-      // setIsCreating(false);
+      setIsDialogOpen(false);
     }
   };
 
   return (
-    <div className="border-b bg-background">
+    <div className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* Main Toolbar */}
-      <div className="h-10 px-2 flex items-center gap-2">
+      <div className="h-12 px-4 flex items-center gap-3">
         {/* Project Selection */}
         <select
           value={activeProject?.projectId || ''}
           onChange={handleProjectChange}
-          className="h-7 px-2 bg-background border rounded text-sm"
+          className="h-8 px-3 bg-secondary/80 border-border/50 rounded-md text-sm font-medium focus:outline-none focus:ring-0 focus:border-border"
         >
           <option value="">Select Project</option>
           {projects.length > 0 &&
@@ -64,112 +77,125 @@ const TitleBar = ({
               </option>
             ))}
         </select>
+
         {/* Separator */}
-        <div className="w-px h-4 bg-border mx-1" />
+        <div className="w-px h-5 bg-border/50" />
+
         {/* Action Buttons */}
         <button
-          onClick={() => setIsCreating(true)}
-          className="h-7 px-2 flex items-center gap-1 hover:bg-accent rounded-md text-sm"
+          onClick={() => setIsDialogOpen(true)}
+          className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-secondary/50 rounded-md text-sm font-medium"
           title="New Project"
         >
-          <PlusIcon size={14} />
+          <PlusIcon size={16} />
           <span>New</span>
         </button>
+
         <button
           onClick={onSave}
           disabled={!activeProject}
-          className="h-7 px-2 flex items-center gap-1 hover:bg-accent rounded-md text-sm disabled:opacity-50"
-          title="Save Project"
+          className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-secondary/50 rounded-md text-sm font-medium disabled:opacity-40"
+          title={githubConnected ? 'Push to GitHub' : 'Connect GitHub'}
         >
-          <GitBranch size={14} />
-          <span>Commit</span>
+          <GitBranch size={16} />
+          <span>{githubConnected ? 'Push to GitHub' : 'Connect GitHub'}</span>
         </button>
+
         <button
           onClick={onRun}
           disabled={!activeProject}
-          className="h-7 px-2 flex items-center gap-1 hover:bg-accent rounded-md text-sm disabled:opacity-50"
+          className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-secondary/50 rounded-md text-sm font-medium disabled:opacity-40"
           title="Run Project"
         >
-          <PlayIcon size={14} />
+          <PlayIcon size={16} />
           <span>Run Lua</span>
         </button>
+
         <button
           onClick={onRefresh}
           disabled={!activeProject}
-          className="h-7 px-2 flex items-center gap-1 hover:bg-accent rounded-md text-sm disabled:opacity-50"
+          className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-secondary/50 rounded-md text-sm font-medium disabled:opacity-40"
           title="Refresh Project"
         >
-          <RefreshCwIcon size={14} />
+          <RefreshCwIcon size={16} />
           <span>Refresh</span>
         </button>
+
         {/* Separator */}
-        <div className="w-px h-4 bg-border mx-1" />
+        <div className="w-px h-5 bg-border/50" />
+
         {/* Additional Tools */}
         <button
-          className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
+          className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-secondary/50 rounded-md"
           title="Search"
         >
-          <SearchIcon size={14} />
+          <SearchIcon size={16} />
         </button>
+
         <button
-          className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
+          className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-secondary/50 rounded-md"
           title="File Explorer"
         >
-          <FolderIcon size={14} />
+          <FolderIcon size={16} />
         </button>
-        <div className="flex-1" /> {/* Spacer */}
+
+        <div className="flex-1" />
+
         {/* Right-side buttons */}
         <button
-          className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
+          className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-secondary/50 rounded-md"
           title="Documentation"
         >
-          <BookOpenIcon size={14} />
+          <BookOpenIcon size={16} />
         </button>
+
         <button
-          className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
+          className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-secondary/50 rounded-md"
           title="Help"
         >
-          <HelpCircleIcon size={14} />
+          <HelpCircleIcon size={16} />
         </button>
+
         <button
-          className="h-7 w-7 flex items-center justify-center hover:bg-accent rounded-md"
+          className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-secondary/50 rounded-md"
           title="Settings"
         >
-          <SettingsIcon size={14} />
+          <SettingsIcon size={16} />
         </button>
       </div>
 
-      {/* New Project Form */}
-      {isCreating && (
-        <form onSubmit={handleCreateSubmit} className="p-2 border-t">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-              placeholder="Enter project name..."
-              className="flex-1 h-8 px-2 bg-background border rounded text-sm"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="h-8 px-3 bg-primary text-primary-foreground rounded text-sm"
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsCreating(false);
-                setNewProjectName('');
-              }}
-              className="h-8 px-3 border rounded text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+      {/* Create Project Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="projectName" className="text-sm font-medium leading-none">
+                  Project Name
+                </label>
+                <input
+                  id="projectName"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-full p-2 rounded-md border border-border bg-background text-foreground"
+                  placeholder="Enter project name"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Create Project</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

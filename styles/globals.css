@@ -51,73 +51,78 @@
   }
 
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 0 0% 7%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 0 0% 9%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 0 0% 9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
+    --primary: 140 100% 54%;
     --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
+    --muted: 0 0% 12%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
+    --accent: 140 100% 54%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
+    --border: 0 0% 15%;
+    --input: 0 0% 12%;
+    --ring: 140 100% 54%;
+    --chart-1: 140 100% 54%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 9%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 140 100% 54%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 140 100% 54%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border transition-colors duration-150;
   }
 
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Refined button styles */
+  button {
+    @apply transition-colors duration-150;
+  }
+
+  /* Elegant input styles */
+  input, select {
+    @apply bg-secondary border-border focus:outline-none focus:ring-0 focus:border-border transition-colors duration-150;
+  }
 }
 
-@layer base {
-  :root {
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+/* Refined scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  .dark {
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
 }
 
 /* Custom styling for react-mentions */
@@ -183,6 +188,15 @@
   flex-shrink: 0 !important;
 }
 
+/* Remove hover effects from file explorer items */
+.sp-file-explorer [data-active="false"]:hover {
+  background: transparent !important;
+}
+
+.sp-file-explorer [data-active="true"] {
+  background: hsl(var(--secondary)) !important;
+}
+
 .sp-code-editor {
   height: 100% !important;
   flex: 1 !important;
@@ -197,6 +211,15 @@
   flex-shrink: 0 !important;
 }
 
+/* Remove hover effects from tabs */
+.sp-tabs [role="tab"]:hover {
+  background: transparent !important;
+}
+
+.sp-tabs [role="tab"][data-active="true"] {
+  background: hsl(var(--secondary)) !important;
+}
+
 .sp-code-editor > div:last-child {
   flex: 1 !important;
   min-height: 0 !important;
@@ -205,7 +228,6 @@
 
 .sp-preview-container {
   height: 100% !important;
-  /* background: var(--background) !important; */
   flex: 1 !important;
   min-width: 0 !important;
 }

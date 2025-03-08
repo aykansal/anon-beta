@@ -16,6 +16,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@google/generative-ai": "^0.21.0",
+    "@octokit/core": "^6.1.4",
     "@permaweb/aoconnect": "^0.0.63",
     "@radix-ui/react-dialog": "^1.1.5",
     "@radix-ui/react-separator": "^1.1.1",

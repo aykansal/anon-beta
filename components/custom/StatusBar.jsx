@@ -7,43 +7,43 @@ const StatusBar = ({
   connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting'
 }) => {
   return (
-    <div className="h-6 shrink-0 bg-muted border-t px-2 flex items-center text-xs text-muted-foreground">
-      <div className="flex-1 flex items-center gap-4">
+    <div className="h-8 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/50 px-4 flex items-center text-xs font-medium text-muted-foreground">
+      <div className="flex-1 flex items-center gap-6">
         {/* Project Status */}
-        <div className="flex items-center gap-1">
-          <GitBranchIcon size={12} />
-          <span>
+        <div className="flex items-center gap-2">
+          <GitBranchIcon size={13} className="text-primary/70" />
+          <span className="hover:text-foreground transition-colors">
             {activeProject ? activeProject.name : 'No project selected'}
           </span>
         </div>
 
         {/* Status Message */}
         {status && (
-          <div className="flex items-center gap-1 text-primary">
-            <Loader2Icon size={12} className="animate-spin" />
-            <span>{status}</span>
+          <div className="flex items-center gap-2">
+            <Loader2Icon size={13} className="animate-spin text-primary/70" />
+            <span className="text-primary/90">{status}</span>
           </div>
         )}
       </div>
 
       {/* Connection Status */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         {connectionStatus === 'connected' && (
           <>
-            <CheckCircleIcon size={12} className="text-success" />
-            <span>Connected</span>
+            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px] shadow-primary"></div>
+            <span className="hover:text-foreground transition-colors">Connected</span>
           </>
         )}
         {connectionStatus === 'connecting' && (
           <>
-            <Loader2Icon size={12} className="animate-spin text-warning" />
-            <span>Connecting...</span>
+            <Loader2Icon size={13} className="animate-spin text-primary/70" />
+            <span className="text-primary/90">Connecting...</span>
           </>
         )}
         {connectionStatus === 'disconnected' && (
           <>
-            <div className="w-2 h-2 rounded-full bg-destructive" />
-            <span>Disconnected</span>
+            <div className="w-2 h-2 rounded-full bg-destructive shadow-[0_0_6px] shadow-destructive"></div>
+            <span className="text-destructive/90">Disconnected</span>
           </>
         )}
       </div>
