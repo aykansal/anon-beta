@@ -11,7 +11,7 @@ import {
   transactionAR,
 } from '@/lib/arkit';
 import WalletConnect from '@/components/anon/WalletConnect';
-import styles from './test.module.css';
+import styles from '@/styles/test.module.css';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect/browser';
 import axios from 'axios';
 

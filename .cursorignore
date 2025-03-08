@@ -1,0 +1,7 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+
+out/
+node_modules/
+.next/
+bun.lockb
+package-lock.json

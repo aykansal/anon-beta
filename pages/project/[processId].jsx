@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
-import { fetchMessagesAR, messageAR, runLua } from '@/lib/arkit';
+import { fetchMessagesAR } from '@/lib/arkit';
 import WalletConnect from '@/components/anon/WalletConnect';
-import styles from './ProjectDetails.module.css';
+import styles from '@/styles/ProjectDetails.module.css';
 import { message, result, createDataItemSigner } from '@permaweb/aoconnect';
 
 const ProjectDetails = () => {
