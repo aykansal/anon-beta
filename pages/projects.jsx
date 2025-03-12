@@ -8,6 +8,8 @@ import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
 import { connectWallet } from '@/lib/arkit2';
 import { Octokit } from '@octokit/core';
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const ProjectsPage = () => {
   const [files, setFiles] = useState({});
@@ -23,6 +25,7 @@ const ProjectsPage = () => {
   const [status, setStatus] = useState(''); // New state for handling status
   const [walletAddress, setWalletAddress] = useState('');
   const [githubToken, setGithubToken] = useState(null);
+  const [isChatVisible, setIsChatVisible] = useState(true);
 
   // Validate environment variable
   const backendUrl = process.env.BACKEND_URL;
@@ -520,7 +523,7 @@ const ProjectsPage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <div className="shrink-0">
+      <div className="shrink-0 border-b border-border">
         <TitleBar
           projects={projects}
           activeProject={activeProject}
@@ -532,16 +535,17 @@ const ProjectsPage = () => {
           onRun={handleRunProject}
           onRefresh={handleRefreshProject}
           githubConnected={!!githubToken}
+          className="bg-background"
         />
       </div>
 
-      {/* Error Display */}
+      {/* Error Display - Updated colors */}
       {error && (
-        <div className="bg-destructive/10 px-4 py-2 text-destructive shrink-0 flex justify-between items-center">
+        <div className="bg-destructive/5 px-4 py-2 text-destructive flex justify-between items-center border-b border-destructive/10">
           <p>{error}</p>
           <button
             onClick={fetchProjects}
-            className="text-sm underline hover:text-destructive-dark"
+            className="text-sm text-destructive hover:text-destructive/80"
           >
             Retry
           </button>
@@ -555,38 +559,69 @@ const ProjectsPage = () => {
           className="flex flex-1 min-h-0 overflow-hidden"
         >
           <div
-            style={{ width: `${splitPosition}%` }}
-            className="h-full min-h-0"
+            style={{ 
+              width: isChatVisible ? `${splitPosition}%` : '100%',
+              transition: 'width 0.3s ease-in-out'
+            }}
+            className="h-full min-h-0 relative flex"
           >
-            <Codeview
-              theme="dark"
-              files={files}
-              isSaving={isSavingCode}
-              isGenerating={isGenerating}
-              activeProject={activeProject}
-              onCommit={handleSaveToGithub} // Pass the commit function
-            />
+            {/* Code Editor Container */}
+            <div className="flex-1 relative">
+              <Codeview
+                theme="dark"
+                files={files}
+                isSaving={isSavingCode}
+                isGenerating={isGenerating}
+                activeProject={activeProject}
+                onCommit={handleSaveToGithub}
+              />
+            </div>
+            
+            {/* Toggle Chat Button - Repositioned */}
+            <div className="relative w-0">
+              <button
+                onClick={() => setIsChatVisible(!isChatVisible)}
+                className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors border border-border"
+                title={isChatVisible ? "Hide Chat" : "Show Chat"}
+              >
+                {isChatVisible ? (
+                  <PanelRightClose size={16} />
+                ) : (
+                  <PanelRightOpen size={16} />
+                )}
+              </button>
+            </div>
           </div>
-          <div
+
+          {/* Animated Chat Panel */}
+          <motion.div
             style={{ width: `${100 - splitPosition}%` }}
-            className="h-full min-h-0 border-l border-border"
+            animate={{
+              width: isChatVisible ? `${100 - splitPosition}%` : '0%',
+              opacity: isChatVisible ? 1 : 0,
+            }}
+            transition={{
+              duration: 0.3,
+              ease: [0.32, 0.72, 0, 1]
+            }}
+            className="h-full min-h-0 border-l border-border relative"
           >
-            <Chatview
-              activeProject={activeProject}
-              onGenerateStart={() => setIsGenerating(true)}
-              onGenerateEnd={() => setIsGenerating(false)}
-            />
-          </div>
+            {isChatVisible && (
+              <Chatview
+                activeProject={activeProject}
+                onGenerateStart={() => setIsGenerating(true)}
+                onGenerateEnd={() => setIsGenerating(false)}
+              />
+            )}
+          </motion.div>
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-background">
-          <div className="text-center text-muted-foreground">
-            <h3 className="text-lg font-medium mb-2">No Project Selected</h3>
+          <div className="text-center">
+            <h3 className="text-lg font-medium mb-2 text-foreground">No Project Selected</h3>
             <button
-              onClick={() => {
-                setIsCreating(true);
-              }}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md"
+              onClick={() => setIsCreating(true)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90"
             >
               Create a New Project
             </button>
@@ -594,8 +629,8 @@ const ProjectsPage = () => {
         </div>
       )}
 
-      {/* Status Bar */}
-      <div className="shrink-0">
+      {/* Status Bar - Updated colors */}
+      <div className="shrink-0 border-t border-border">
         <StatusBar
           isCreating={isCreating}
           activeProject={activeProject}
@@ -603,6 +638,7 @@ const ProjectsPage = () => {
           isGenerating={isGenerating}
           connectionStatus={connectionStatus}
           status={status}
+          className="bg-background"
         />
       </div>
     </div>

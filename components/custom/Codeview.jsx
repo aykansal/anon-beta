@@ -17,6 +17,7 @@ import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
 import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect/browser';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SandpackDownloader = ({ onDownload, disabled }) => {
   const { sandpack } = useSandpack();
@@ -341,9 +342,22 @@ const Codeview = ({
 
   return (
     <SandpackProvider
-      theme={theme}
+      theme={{
+        colors: {
+          surface1: 'hsl(var(--background))',
+          surface2: 'hsl(var(--card))',
+          surface3: 'hsl(var(--muted))',
+          clickable: 'hsl(var(--muted-foreground))',
+          base: 'hsl(var(--foreground))',
+          disabled: 'hsl(var(--muted-foreground))',
+          hover: 'hsl(var(--accent))',
+          accent: 'hsl(var(--primary))',
+          error: 'hsl(var(--destructive))',
+          errorSurface: 'hsl(var(--destructive)/0.1)',
+        },
+      }}
       customSetup={{
-        entry: '/index.tsx',
+        entry: 'main.tsx',
         environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
@@ -389,21 +403,24 @@ const Codeview = ({
         <div className="h-10 px-2 flex items-center justify-between border-b border-border shrink-0">
           <div className="inline-flex h-7 gap-1 bg-muted rounded-md p-1">
             {views.map((view) => (
-              <button
+              <motion.button
                 key={view.id}
                 onClick={() => setActiveView(view.id)}
                 disabled={isEditorDisabled()}
                 className={cn(
-                  'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors',
+                  'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
+                  view.className,
                   activeView === view.id
                     ? 'bg-background text-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                   isEditorDisabled() && 'opacity-50 cursor-not-allowed'
                 )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <view.icon size={12} />
                 {view.label}
-              </button>
+              </motion.button>
             ))}
           </div>
           <div className="flex items-center gap-2">
@@ -439,8 +456,8 @@ const Codeview = ({
           {/* Loading Overlay */}
           {(isSaving || isGenerating || loading || action === 'deploy') && (
             <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="bg-primary/10 px-6 py-3 rounded-lg text-primary flex items-center gap-3">
-                <Loader2Icon className="animate-spin" />
+              <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">
+                <Loader2Icon className="animate-spin text-primary" />
                 <p>
                   {loading
                     ? 'Loading code...'
@@ -455,26 +472,55 @@ const Codeview = ({
               </div>
             </div>
           )}
-          <SandpackLayout className="h-full min-h-0">
-            {activeView === 'code' ? (
-              <>
-                <SandpackFileExplorer />
-                <div className="flex-1 min-w-0 h-full flex flex-col">
-                  <SandpackCodeEditor
-                    showTabs={true}
-                    showLineNumbers={true}
-                    showInlineErrors={true}
-                    wrapContent={false}
-                    closableTabs={true}
-                    readOnly={isEditorDisabled()}
-                    style={{ height: '100%', minHeight: '0', flex: '1' }}
-                  />
-                </div>
-              </>
-            ) : (
-              <SandPackPreviewClient />
+          
+          {/* Static Code View */}
+          <div className={`h-full absolute inset-0 ${activeView === 'preview' ? 'invisible' : 'visible'}`}>
+            <SandpackLayout className="h-full min-h-0">
+              <SandpackFileExplorer />
+              <div className="flex-1 min-w-0 h-full flex flex-col">
+                <SandpackCodeEditor
+                  showTabs={true}
+                  showLineNumbers={true}
+                  showInlineErrors={true}
+                  wrapContent={false}
+                  closableTabs={true}
+                  readOnly={isEditorDisabled()}
+                  style={{ height: '100%', minHeight: '0', flex: '1' }}
+                />
+              </div>
+            </SandpackLayout>
+          </div>
+
+          {/* Animated Preview with Fixed Positioning */}
+          <AnimatePresence mode="wait">
+            {activeView === 'preview' && (
+              <motion.div
+                key="preview-view"
+                initial={{ transform: 'translateX(100%)' }}
+                animate={{ transform: 'translateX(0%)' }}
+                exit={{ transform: 'translateX(100%)' }}
+                transition={{ 
+                  duration: 0.3,
+                  ease: [0.32, 0.72, 0, 1] // Custom easing function for smoother motion
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                  willChange: 'transform',
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden'
+                }}
+                className="h-full bg-background"
+              >
+                <SandpackLayout className="h-full min-h-0">
+                  <SandPackPreviewClient />
+                </SandpackLayout>
+              </motion.div>
             )}
-          </SandpackLayout>
+          </AnimatePresence>
         </div>
       </div>
     </SandpackProvider>
@@ -484,6 +530,16 @@ const Codeview = ({
 export default Codeview;
 
 const views = [
-  { id: 'code', icon: CodeIcon, label: 'Code' },
-  { id: 'preview', icon: EyeIcon, label: 'Preview' },
+  {
+    id: 'code',
+    icon: CodeIcon,
+    label: 'Code',
+    className: 'origin-left transition-transform duration-200'
+  },
+  {
+    id: 'preview',
+    icon: EyeIcon,
+    label: 'Preview',
+    className: 'origin-right transition-transform duration-200'
+  },
 ];

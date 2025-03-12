@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import Markdown from 'react-markdown';
 import { useState, useEffect, useRef } from 'react';
 import { MentionsInput, Mention } from 'react-mentions';
-import { FileInput, FolderInput, Loader2Icon } from 'lucide-react';
+import { FileInput, FolderInput, Loader2Icon, RefreshCw } from 'lucide-react';
 
 const getFolderStructure = (files) => {
   const structure = {};
@@ -81,17 +81,11 @@ const mentionsInputStyle = {
     width: '100%',
     height: '44px',
     padding: '9px 12px',
-    border: '1px solid hsl(var(--border))',
     borderRadius: '6px',
     fontSize: '14px',
     backgroundColor: 'hsl(var(--background))',
     color: 'hsl(var(--foreground))',
-    transition: 'all 150ms',
-    '&:focus': {
-      outline: 'none',
-      borderColor: 'hsl(var(--border))',
-      boxShadow: '0 0 0 1px hsl(var(--border) / 0.2)',
-    },
+    border: '1px solid hsl(var(--border))',
     '&::placeholder': {
       color: 'hsl(var(--muted-foreground))',
     },
@@ -102,55 +96,14 @@ const mentionsInputStyle = {
       border: '1px solid hsl(var(--border))',
       borderRadius: '6px',
       fontSize: '13px',
-      maxHeight: '300px',
-      minWidth: '300px',
-      overflow: 'auto',
-      position: 'absolute',
-      bottom: '100%',
-      left: 0,
-      right: 0,
-      marginBottom: '8px',
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
-      zIndex: 50,
     },
     item: {
       padding: '6px 10px',
       borderBottom: '1px solid hsl(var(--border))',
       color: 'hsl(var(--muted-foreground))',
-      cursor: 'pointer',
-      transition: 'all 150ms',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px',
-      fontSize: '12px',
-      position: 'relative',
-      '&.folder': {
-        fontWeight: '500',
-        color: 'hsl(var(--foreground))',
-        backgroundColor: 'hsl(var(--secondary) / 0.3)',
-        '&:before': {
-          content: <FolderInput />,
-          fontSize: '14px',
-        },
-      },
-      '&.file': {
-        paddingLeft: '24px',
-        '&:before': {
-          content: <FileInput />,
-          fontSize: '14px',
-          opacity: 0.5,
-        },
-      },
       '&:hover': {
         backgroundColor: 'hsl(var(--secondary))',
         color: 'hsl(var(--foreground))',
-      },
-      '&focused': {
-        backgroundColor: 'hsl(var(--secondary))',
-        color: 'hsl(var(--foreground))',
-      },
-      '&:last-child': {
-        borderBottom: 'none',
       },
     },
   },
@@ -171,6 +124,8 @@ const Chatview = ({
   const [selectedFramework, setSelectedFramework] = useState('React');
   const [luaEnabled, setLuaEnabled] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState(new Set());
+  const [failedMessage, setFailedMessage] = useState(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -234,7 +189,7 @@ const Chatview = ({
     });
 
     // If it's just @ without search, show folder structure
-    if (!search) {
+    if (!search) {  
       const structure = getFolderStructure(files);
       const suggestions = flattenFileStructure(structure);
       // Only show files from expanded folders
@@ -295,33 +250,72 @@ const Chatview = ({
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!userInput.trim() || loading || !activeProject?.projectId) return;
+    e?.preventDefault();
 
-    const fileContext = mentionedFiles.reduce((acc, file) => {
-      if (files[file.id]) {
-        acc[file.id] = files[file.id];
-      }
-      return acc;
-    }, {});
+    if (!userInput.trim() && !failedMessage) return;
 
-    const newMessage = {
+    const messageToSend = failedMessage || userInput;
+
+    // Reset failed message if we're retrying
+    if (failedMessage) {
+      setFailedMessage(null);
+      setIsRetrying(true);
+    }
+
+    // Clear input unless we're retrying
+    if (!isRetrying) {
+      setuserInput('');
+    }
+
+    // Don't need this as we'll handle it with retry button
+    // if (!activeProject) return;
+
+    // Add the user message to the local messages immediately
+    const tempUserMessageId = `temp-${Date.now()}`;
+    const userMessage = {
+      id: tempUserMessageId,
+      content: messageToSend,
       role: 'user',
-      content: userInput?.trim(),
+      timestamp: new Date().toISOString(),
     };
 
-    setuserInput('');
-    setMentionedFiles([]);
+    // Only add user message to UI if we're not retrying
+    if (!isRetrying) {
+      setmessage((prev) => [...prev, userMessage]);
+    }
 
     try {
-      setLoading(true);
-      onGenerateStart?.();
-      setmessage((prev) => [...prev, newMessage]);
+      if (onGenerateStart) {
+        onGenerateStart();
+      }
 
+      // Add a temporary loading message
+      const tempSystemMessageId = `temp-${Date.now() + 1}`;
+      setmessage((prev) => [
+        ...prev.filter((m) => !isRetrying || m.id !== tempSystemMessageId), // Remove previous loading message if retrying
+        {
+          id: tempSystemMessageId,
+          content:
+            '<div class="loading-indicator"><Loader2Icon className="animate-spin" size={18} /></div>',
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+          isLoading: true,
+        },
+      ]);
+
+      // Scroll to bottom after adding messages
+      setTimeout(scrollToBottom, 100);
+
+      // Make API call
       const requestBody = {
-        prompt: newMessage,
+        prompt: messageToSend,
         projectId: activeProject.projectId,
-        fileContext,
+        fileContext: mentionedFiles.reduce((acc, file) => {
+          if (files[file.id]) {
+            acc[file.id] = files[file.id];
+          }
+          return acc;
+        }, {}),
         framework: selectedFramework,
         luaEnabled,
       };
@@ -331,38 +325,53 @@ const Chatview = ({
         requestBody
       );
 
-      if (response.data?.content) {
-        setmessage((prev) => [
-          ...prev,
-          {
-            role: response?.data?.role,
-            content: response?.data?.content,
-          },
-        ]);
+      // Update messages, removing the loading indicator and adding the real response
+      setmessage((prev) => [
+        ...prev.filter((m) => m.id !== tempSystemMessageId), // Remove loading message
+        {
+          id: response.data.id || `msg-${Date.now()}`,
+          content: response.data.content,
+          role: 'assistant',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
 
-        if (response.data.content.codebase) {
-          const formattedFiles = {};
-          response.data.content.codebase.forEach((file) => {
-            formattedFiles[file.filePath] = {
-              code: file.code,
-              hidden: false,
-              active: true,
-            };
-          });
+      // Reset retry state if we were retrying
+      if (isRetrying) {
+        setIsRetrying(false);
+      }
 
-          window.dispatchEvent(
-            new CustomEvent('codebaseUpdate', {
-              detail: formattedFiles,
-            })
-          );
-        }
+      // Scroll to bottom after receiving response
+      setTimeout(scrollToBottom, 100);
+
+      if (onGenerateEnd) {
+        onGenerateEnd();
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Failed to send message');
-    } finally {
-      setLoading(false);
-      onGenerateEnd?.();
+      console.error('Failed to send message:', error);
+
+      // Remove the loading indicator
+      setmessage((prev) => prev.filter((m) => !m.isLoading));
+
+      // Store the failed message for retry
+      setFailedMessage(messageToSend);
+
+      // Reset retry state
+      setIsRetrying(false);
+
+      // Show error toast
+      toast.error('Failed to send message. Please try again.');
+
+      if (onGenerateEnd) {
+        onGenerateEnd();
+      }
+    }
+  };
+
+  // Function to handle retry
+  const handleRetry = () => {
+    if (failedMessage) {
+      handleSubmit();
     }
   };
 
@@ -413,31 +422,47 @@ const Chatview = ({
               {Array.isArray(message) &&
                 message.map((msg, index) => (
                   <div
-                    key={index}
+                    key={msg.id || index}
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${
                         msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-foreground'
                       }`}
                     >
-                      <Markdown className="prose prose-sm dark:prose-invert max-w-none">
-                        {renderMessageContent(msg)}
-                      </Markdown>
+                      {msg.isLoading ? (
+                        <div className="flex items-center justify-center">
+                          <Loader2Icon
+                            className="animate-spin text-muted-foreground"
+                            size={18}
+                          />
+                        </div>
+                      ) : (
+                        <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                          {renderMessageContent(msg)}
+                        </Markdown>
+                      )}
                     </div>
                   </div>
                 ))}
 
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="max-w-[85%] sm:max-w-[75%] p-3 rounded-lg bg-muted animate-pulse">
-                    <div className="flex items-center space-x-2">
-                      <Loader2Icon className="animate-spin" />
-                      <span>Thinking...</span>
-                    </div>
-                  </div>
+              {/* Retry button for failed messages */}
+              {failedMessage && (
+                <div className="flex items-center justify-center mt-2">
+                  <button
+                    onClick={handleRetry}
+                    disabled={isRetrying}
+                    className="flex items-center gap-2 bg-destructive/10 hover:bg-destructive/20 text-destructive py-1.5 px-3 rounded-md text-sm font-medium transition-colors"
+                  >
+                    {isRetrying ? (
+                      <Loader2Icon className="animate-spin" size={14} />
+                    ) : (
+                      <RefreshCw size={14} />
+                    )}
+                    Try again
+                  </button>
                 </div>
               )}
               <div ref={messagesEndRef} />
@@ -445,7 +470,7 @@ const Chatview = ({
           )}
         </div>
       </div>
-      <div className="shrink-0 bg-background p-4">
+      <div className="shrink-0 bg-background border-t border-border p-4">
         <div className="flex items-center gap-2 mb-2">
           {showLuaToggle && (
             <label className="flex items-center gap-1.5 cursor-pointer">
@@ -474,7 +499,7 @@ const Chatview = ({
             <select
               value={selectedFramework}
               onChange={(e) => setSelectedFramework(e.target.value)}
-              className="bg-background border border-border rounded-md px-2 py-1"
+              className="bg-background border border-border rounded-md px-2 py-1 text-foreground"
             >
               <option value="React">React</option>
               <option value="Nextjs">Nextjs</option>
@@ -519,9 +544,24 @@ const Chatview = ({
             <button
               type="submit"
               className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50"
-              disabled={loading}
+              disabled={(!userInput.trim() && !failedMessage) || isRetrying}
             >
-              {loading ? <Loader2Icon className="animate-spin" /> : 'Send'}
+              {isRetrying ? (
+                <Loader2Icon className="animate-spin" size={20} />
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-5 h-5"
+                >
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
+              )}
             </button>
           </div>
         </form>
