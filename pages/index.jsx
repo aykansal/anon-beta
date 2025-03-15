@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { useTheme } from 'next-themes';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,15 +28,23 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background dark relative overflow-hidden">
-      {/* Morse Code Background Pattern */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* Rich Interactive Background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="morse-pattern opacity-5"></div>
+        <div className="particle-overlay"></div>
+        <div className="grid-lines"></div>
+        <div className="tech-circles"></div>
+        <div className="floating-elements"></div>
+        <div className="glow-effect"></div>
       </div>
 
       <Head>
         <title>VYBE AI - Project Generator</title>
         <meta name="description" content="Generate coding projects with VYBE AI" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
       <main className="flex flex-col items-center justify-center w-full flex-1 px-4 sm:px-8 md:px-20 text-center z-10">
@@ -46,10 +56,13 @@ export default function Home() {
             <span className="morse-dot animate-morse-3"></span>
             <span className="morse-dash animate-morse-1"></span>
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-3 text-primary tracking-tight morse-title relative">
-            VYBE AI
-            <span className="absolute -right-6 top-0 text-xs text-primary/60 morse-blink">_</span>
-          </h1>
+          <div className="relative">
+            <div className="header-glow"></div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-3 text-primary tracking-tight morse-title relative">
+              VYBE AI
+              <span className="absolute -right-6 top-0 text-xs text-primary/60 morse-blink">_</span>
+            </h1>
+          </div>
           <div className="flex items-center justify-center space-x-2 mt-4">
             <span className="morse-dot animate-morse-3"></span>
             <span className="morse-dash animate-morse-2"></span>
@@ -58,38 +71,45 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Prompt Section with Moving Border Light */}
-        <div className="w-full max-w-2xl">
+        {/* Prompt Section with Enhanced Visual Elements */}
+        <div className="w-full max-w-2xl relative">
+          <div className="absolute -top-10 -left-10 w-20 h-20 tech-decoration"></div>
+          <div className="absolute -bottom-10 -right-10 w-20 h-20 tech-decoration-2"></div>
+          
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="relative group">
               <div className="moving-border"></div>
+              <div className="pulse-ring"></div>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Describe your project idea... (Shift+Enter to submit)"
-                className="w-full p-4 h-20 bg-card text-card-foreground rounded-lg resize-none border-none outline-none relative z-10"
+                className="w-full p-4 h-20 bg-card/80 backdrop-blur-sm text-card-foreground rounded-lg resize-none border-none outline-none relative z-10"
                 required
                 aria-label="Project idea input"
               />
               
-              {/* Morse Code Corner Indicators */}
+              {/* Enhanced Corner Indicators */}
               <div className="absolute top-2 right-2 flex space-x-1 opacity-40 z-20">
-                <span className="h-1 w-1 bg-primary rounded-full"></span>
+                <span className="h-1 w-1 bg-primary rounded-full pulse-dot"></span>
                 <span className="h-1 w-3 bg-primary rounded-full"></span>
               </div>
               <div className="absolute bottom-2 left-2 flex space-x-1 opacity-40 z-20">
                 <span className="h-1 w-3 bg-primary rounded-full"></span>
-                <span className="h-1 w-1 bg-primary rounded-full"></span>
+                <span className="h-1 w-1 bg-primary rounded-full pulse-dot"></span>
               </div>
+              
+              {/* Tech Decorations */}
+              <div className="tech-brackets"></div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground font-mono rounded-lg hover:bg-primary/90 transition-all duration-300 outline-none relative ${
+              className={`w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground font-mono rounded-lg hover:bg-primary/90 transition-all duration-300 outline-none relative flex items-center justify-center gap-2 ${
                 isLoading ? 'opacity-75 cursor-not-allowed' : ''
-              }`}
+              } button-glow`}
               aria-label="Generate project button"
             >
               {isLoading ? (
@@ -117,26 +137,77 @@ export default function Home() {
                   Transmitting...
                 </span>
               ) : (
-                <span className="flex items-center">
-                  <span className="mr-2">•—•</span>
-                  Generate Project
-                </span>
+                <>
+                  <span className="flex items-center">
+                    <span className="mr-2">•—•</span>
+                    Generate Project
+                  </span>
+                  <span className="text-primary-foreground/50 text-xs border border-primary-foreground/20 rounded px-1 ml-1 hidden sm:inline-flex items-center">
+                    <span className="mr-1">⇧</span>
+                    <span>↵</span>
+                  </span>
+                </>
               )}
             </button>
           </form>
         </div>
-
-        {/* Info Tag */}
-        <div className="mt-12 text-xs text-muted-foreground flex items-center space-x-2 animate-fade-in delay-400">
-          <span className="px-2 py-1 bg-secondary rounded-full font-mono tracking-wider border-none">• • •—• • •</span>
-          <span>✨ Signal Processing</span>
-        </div>
       </main>
 
-      {/* Footer */}
-      <footer className="w-full py-3 border-t border-primary/20 bg-primary/5 relative z-10">
-        <div className="text-center text-muted-foreground text-sm">
-          © {new Date().getFullYear()} VYBE AI - <span className="font-mono tracking-wider">• • — • •</span> the right vibe
+      {/* Enhanced Footer */}
+      <footer className="w-full py-4 relative z-10 footer-gradient">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <div className="flex items-center mb-3 sm:mb-0">
+              <div className="text-foreground/90">
+                © {new Date().getFullYear()} VYBE AI <span className="font-mono tracking-wider text-xs text-primary/60">• • — • •</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-5">
+              {/* Theme Switcher */}
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="theme-switch-btn"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                  </svg>
+                )}
+              </button>
+              <a href="#" className="social-link" aria-label="Twitter">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+                </svg>
+              </a>
+              <a href="#" className="social-link" aria-label="GitHub">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+              </a>
+              <a href="#" className="social-link" aria-label="Discord">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 9a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v7a5 5 0 0 0 5 5h4"></path>
+                  <circle cx="15" cy="15" r="1"></circle>
+                  <circle cx="18" cy="18" r="1"></circle>
+                  <circle cx="21" cy="21" r="1"></circle>
+                </svg>
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
 
@@ -181,6 +252,33 @@ export default function Home() {
         @keyframes letterFade {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
+        }
+        @keyframes particleFloat {
+          0%, 100% { transform: translateY(0) translateX(0); }
+          25% { transform: translateY(-5px) translateX(5px); }
+          50% { transform: translateY(-10px) translateX(0); }
+          75% { transform: translateY(-5px) translateX(-5px); }
+        }
+        @keyframes buttonGlow {
+          0%, 100% { box-shadow: 0 0 5px 0 rgba(var(--primary-rgb), 0.3), 0 0 10px 0 rgba(var(--primary-rgb), 0.1); }
+          50% { box-shadow: 0 0 10px 2px rgba(var(--primary-rgb), 0.5), 0 0 20px 5px rgba(var(--primary-rgb), 0.2); }
+        }
+        @keyframes pulseDot {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.5); }
+        }
+        @keyframes rotateElement {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes floatElement {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+        @keyframes pulseRing {
+          0% { transform: scale(0.8); opacity: 0.3; }
+          50% { transform: scale(1); opacity: 0.1; }
+          100% { transform: scale(0.8); opacity: 0.3; }
         }
         
         .animate-fade-in { animation: fadeIn 1s ease-out forwards; }
@@ -279,6 +377,530 @@ export default function Home() {
           100% {
             background-position: -200% 0;
           }
+        }
+        
+        /* Enhanced premium styles */
+        .particle-overlay {
+          position: absolute;
+          inset: 0;
+          background-image: 
+            radial-gradient(circle at 20% 30%, rgba(var(--primary-rgb), 0.08) 0%, transparent 8%),
+            radial-gradient(circle at 80% 20%, rgba(var(--primary-rgb), 0.08) 0%, transparent 10%),
+            radial-gradient(circle at 40% 70%, rgba(var(--primary-rgb), 0.08) 0%, transparent 12%),
+            radial-gradient(circle at 70% 60%, rgba(var(--primary-rgb), 0.08) 0%, transparent 6%);
+          animation: particleFloat 15s ease-in-out infinite;
+        }
+        
+        .grid-lines {
+          position: absolute;
+          inset: 0;
+          background-size: 40px 40px;
+          background-image: 
+            linear-gradient(to right, rgba(var(--primary-rgb), 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(var(--primary-rgb), 0.03) 1px, transparent 1px);
+          opacity: 0.5;
+        }
+        
+        .tech-circles {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+        }
+        
+        .tech-circles::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle at center, transparent 60%, rgba(var(--primary-rgb), 0.03) 60%, rgba(var(--primary-rgb), 0.03) 62%, transparent 62%),
+                      radial-gradient(circle at center, transparent 70%, rgba(var(--primary-rgb), 0.03) 70%, rgba(var(--primary-rgb), 0.03) 72%, transparent 72%);
+          background-size: 100px 100px;
+          animation: rotateElement 120s linear infinite;
+        }
+        
+        .floating-elements {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+        }
+        
+        .floating-elements::before {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          background-image: 
+            radial-gradient(circle at 10% 10%, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.05) 1%, transparent 1%),
+            radial-gradient(circle at 90% 20%, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.05) 1%, transparent 1%),
+            radial-gradient(circle at 30% 80%, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.05) 1%, transparent 1%),
+            radial-gradient(circle at 70% 40%, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.05) 1%, transparent 1%),
+            radial-gradient(circle at 20% 30%, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.05) 1%, transparent 1%),
+            radial-gradient(circle at 80% 90%, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--primary-rgb), 0.05) 1%, transparent 1%);
+          background-size: 120px 120px;
+          animation: floatElement 20s ease-in-out infinite;
+        }
+        
+        .glow-effect {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 30% 20%, rgba(var(--primary-rgb), 0.1) 0%, transparent 25%),
+            radial-gradient(circle at 70% 60%, rgba(var(--primary-rgb), 0.08) 0%, transparent 25%);
+          filter: blur(40px);
+          opacity: 0.6;
+        }
+        
+        .header-glow {
+          position: absolute;
+          top: -30px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 200px;
+          height: 200px;
+          background: radial-gradient(circle, rgba(var(--primary-rgb), 0.15) 0%, transparent 70%);
+          filter: blur(20px);
+          z-index: -1;
+        }
+        
+        .button-glow {
+          animation: buttonGlow 3s ease-in-out infinite;
+        }
+        
+        .premium-badge {
+          display: inline-flex;
+          position: relative;
+          padding: 2px;
+          border-radius: 30px;
+          background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.5), rgba(var(--primary-rgb), 0.1));
+          backdrop-filter: blur(10px);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .premium-badge-inner {
+          display: flex;
+          align-items: center;
+          padding: 6px 16px;
+          border-radius: 28px;
+          background: rgba(var(--card-rgb), 0.8);
+          backdrop-filter: blur(5px);
+        }
+        
+        .premium-badge-text {
+          display: flex;
+          align-items: center;
+          font-size: 14px;
+          color: hsl(var(--foreground));
+        }
+        
+        .morse-symbol {
+          font-family: monospace;
+          color: hsl(var(--primary));
+          margin-right: 8px;
+          letter-spacing: 1px;
+        }
+        
+        .premium-badge-divider {
+          width: 1px;
+          height: 14px;
+          background: linear-gradient(to bottom, transparent, hsl(var(--primary)), transparent);
+          margin: 0 8px;
+        }
+        
+        .premium-badge-label {
+          font-weight: 500;
+          letter-spacing: 0.5px;
+        }
+        
+        .footer-gradient {
+          background: linear-gradient(to top, rgba(var(--background-rgb), 1), rgba(var(--background-rgb), 0.8));
+          border-top: 1px solid rgba(var(--primary-rgb), 0.1);
+          backdrop-filter: blur(10px);
+        }
+        
+        .social-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          color: hsl(var(--muted-foreground));
+          background: rgba(var(--primary-rgb), 0.05);
+          transition: all 0.2s ease;
+        }
+        
+        .social-link:hover {
+          color: hsl(var(--primary));
+          background: rgba(var(--primary-rgb), 0.1);
+          transform: translateY(-2px);
+        }
+        
+        .pulse-dot {
+          animation: pulseDot 2s infinite;
+        }
+        
+        .tech-decoration {
+          position: absolute;
+          border: 1px dashed rgba(var(--primary-rgb), 0.2);
+          border-radius: 50%;
+          opacity: 0.6;
+          animation: rotateElement 30s linear infinite;
+        }
+        
+        .tech-decoration::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 6px;
+          height: 6px;
+          background-color: rgba(var(--primary-rgb), 0.3);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+        }
+        
+        .tech-decoration-2 {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border: 1px dashed rgba(var(--primary-rgb), 0.2);
+          border-radius: 30%;
+          opacity: 0.6;
+          animation: rotateElement 20s linear infinite reverse;
+        }
+        
+        .tech-brackets {
+          position: absolute;
+          top: -10px;
+          left: -10px;
+          right: -10px;
+          bottom: -10px;
+          pointer-events: none;
+          z-index: 1;
+        }
+        
+        .tech-brackets::before,
+        .tech-brackets::after {
+          content: '';
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          border: 1px solid rgba(var(--primary-rgb), 0.2);
+          opacity: 0.6;
+        }
+        
+        .tech-brackets::before {
+          top: 0;
+          left: 0;
+          border-right: none;
+          border-bottom: none;
+        }
+        
+        .tech-brackets::after {
+          bottom: 0;
+          right: 0;
+          border-left: none;
+          border-top: none;
+        }
+        
+        .pulse-ring {
+          position: absolute;
+          top: -5px;
+          left: -5px;
+          right: -5px;
+          bottom: -5px;
+          border-radius: 12px;
+          border: 1px solid rgba(var(--primary-rgb), 0.1);
+          z-index: 0;
+          animation: pulseRing 4s infinite;
+        }
+
+        /* Font Integration */
+        body {
+          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6, .font-heading {
+          font-family: 'Outfit', sans-serif;
+          letter-spacing: -0.02em;
+        }
+        
+        .font-mono, code, pre, .morse-symbol, button {
+          font-family: 'Space Mono', monospace;
+        }
+        
+        /* Redesigned Signal Processing Badge */
+        .signal-processor-badge {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          padding: 4px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, 
+            rgba(var(--primary-rgb), 0.8) 0%, 
+            rgba(var(--primary-rgb), 0.2) 50%,
+            rgba(var(--primary-rgb), 0.05) 100%
+          );
+          box-shadow: 
+            0 10px 25px -5px rgba(0, 0, 0, 0.1),
+            0 8px 10px -6px rgba(0, 0, 0, 0.1),
+            0 0 0 1px rgba(var(--primary-rgb), 0.3) inset;
+          backdrop-filter: blur(16px);
+          overflow: hidden;
+        }
+        
+        .signal-badge-glow {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 30% 50%, rgba(var(--primary-rgb), 0.4) 0%, transparent 70%);
+          opacity: 0.6;
+          filter: blur(20px);
+          z-index: 0;
+          animation: rotateBadgeGlow 8s linear infinite;
+        }
+        
+        @keyframes rotateBadgeGlow {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .signal-badge-content {
+          position: relative;
+          display: flex;
+          align-items: center;
+          padding: 8px 16px;
+          border-radius: 12px;
+          background: rgba(var(--background-rgb), 0.85);
+          z-index: 1;
+        }
+        
+        .signal-badge-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(var(--primary-rgb), 0.1);
+          margin-right: 12px;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .signal-wave {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .signal-wave span {
+          position: absolute;
+          border-radius: 50%;
+          border: 1px solid rgba(var(--primary-rgb), 0.5);
+          animation: signalWave 3s ease-out infinite;
+        }
+        
+        .signal-wave span:nth-child(1) {
+          width: 10px;
+          height: 10px;
+          animation-delay: 0s;
+        }
+        
+        .signal-wave span:nth-child(2) {
+          width: 20px;
+          height: 20px;
+          animation-delay: 0.3s;
+        }
+        
+        .signal-wave span:nth-child(3) {
+          width: 30px;
+          height: 30px;
+          animation-delay: 0.6s;
+        }
+        
+        @keyframes signalWave {
+          0% {
+            transform: scale(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 0;
+          }
+        }
+        
+        .signal-badge-text {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        
+        .signal-badge-morse {
+          font-family: 'Space Mono', monospace;
+          font-size: 10px;
+          color: rgba(var(--primary-rgb), 0.8);
+          letter-spacing: 1px;
+          margin-bottom: 2px;
+        }
+        
+        .signal-badge-title {
+          font-family: 'Outfit', sans-serif;
+          font-weight: 600;
+          font-size: 14px;
+          color: hsl(var(--foreground));
+          letter-spacing: 0.02em;
+          position: relative;
+        }
+        
+        .signal-badge-title::after {
+          content: '';
+          position: absolute;
+          bottom: -2px;
+          left: 0;
+          width: 100%;
+          height: 1px;
+          background: linear-gradient(to right, 
+            rgba(var(--primary-rgb), 0.8), 
+            rgba(var(--primary-rgb), 0.1)
+          );
+        }
+
+        /* Theme Switcher Button */
+        .theme-switch-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          color: hsl(var(--muted-foreground));
+          background: rgba(var(--primary-rgb), 0.05);
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .theme-switch-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at center, rgba(var(--primary-rgb), 0.1) 0%, transparent 70%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+
+        .theme-switch-btn:hover {
+          color: hsl(var(--primary));
+          background: rgba(var(--primary-rgb), 0.1);
+          transform: translateY(-2px);
+        }
+
+        .theme-switch-btn:hover::before {
+          opacity: 1;
+        }
+
+        .theme-switch-btn svg {
+          transition: transform 0.3s ease;
+        }
+
+        .theme-switch-btn:hover svg {
+          transform: rotate(15deg);
+        }
+
+        /* Light Theme Enhancements */
+        :root {
+          --primary-rgb: 140, 100, 255;
+          --background-rgb: 255, 255, 255;
+          --card-rgb: 250, 250, 252;
+        }
+
+        .light {
+          --background: 240 50% 99%;
+          --foreground: 240 10% 3.9%;
+          --card: 0 0% 100%;
+          --card-foreground: 240 10% 3.9%;
+          --popover: 0 0% 100%;
+          --popover-foreground: 240 10% 3.9%;
+          --primary: 142 76% 36%;
+          --primary-foreground: 355.7 100% 97.3%;
+          --secondary: 240 4.8% 95.9%;
+          --secondary-foreground: 240 5.9% 10%;
+          --muted: 240 4.8% 95.9%;
+          --muted-foreground: 240 3.8% 46.1%;
+          --accent: 240 4.8% 95.9%;
+          --accent-foreground: 240 5.9% 10%;
+          --destructive: 0 84.2% 60.2%;
+          --destructive-foreground: 0 0% 98%;
+          --border: 240 5.9% 90%;
+          --input: 240 5.9% 90%;
+          --ring: 142 76% 36%;
+          --primary-rgb: 46, 171, 102;
+          --background-rgb: 250, 250, 252;
+          --card-rgb: 255, 255, 255;
+        }
+
+        /* Enhanced Light Theme Background */
+        .light .morse-pattern {
+          opacity: 0.03;
+        }
+
+        .light .particle-overlay {
+          background-image: 
+            radial-gradient(circle at 20% 30%, rgba(var(--primary-rgb), 0.05) 0%, transparent 8%),
+            radial-gradient(circle at 80% 20%, rgba(var(--primary-rgb), 0.05) 0%, transparent 10%),
+            radial-gradient(circle at 40% 70%, rgba(var(--primary-rgb), 0.05) 0%, transparent 12%),
+            radial-gradient(circle at 70% 60%, rgba(var(--primary-rgb), 0.05) 0%, transparent 6%);
+        }
+
+        .light .grid-lines {
+          opacity: 0.3;
+        }
+
+        .light .tech-circles::before {
+          opacity: 0.4;
+        }
+
+        .light .floating-elements::before {
+          opacity: 0.6;
+        }
+
+        .light .glow-effect {
+          opacity: 0.3;
+        }
+
+        .light .header-glow {
+          opacity: 0.4;
+        }
+
+        .light .social-link {
+          background: rgba(var(--primary-rgb), 0.03);
+        }
+
+        .light .social-link:hover {
+          background: rgba(var(--primary-rgb), 0.08);
+        }
+
+        .light .footer-gradient {
+          background: linear-gradient(to top, 
+            rgba(var(--background-rgb), 1),
+            rgba(var(--background-rgb), 0.95)
+          );
+          border-top: 1px solid rgba(var(--primary-rgb), 0.06);
+        }
+
+        /* Dark Theme Refinements */
+        .dark {
+          --primary-rgb: 140, 255, 140;
+          --background-rgb: 18, 18, 18;
+          --card-rgb: 24, 24, 24;
         }
       `}</style>
     </div>

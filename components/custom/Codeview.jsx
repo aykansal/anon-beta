@@ -120,13 +120,17 @@ const Codeview = ({
     const fetchProjectCode = async (projectId) => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `${process.env.BACKEND_URL}/projects/${projectId}`
-        );
-        if (response.data) {
+        const response = await axios
+          .get(`${process.env.BACKEND_URL}/projects/${projectId}`)
+          .then((res) => {
+            console.log('response.data', res.data);
+            return res.data.content;
+          });
+
+          if (response) {
           // Normalize codebase array into an object with file paths as keys
-          if (Array.isArray(response.data.codebase)) {
-            response.data.codebase.forEach((file) => {
+          if (Array.isArray(response.codebase)) {
+            response.codebase.forEach((file) => {
               const filePath = file.filePath.startsWith('/')
                 ? file.filePath
                 : `/${file.filePath}`;
@@ -135,7 +139,7 @@ const Codeview = ({
             // console.log('inside 1st\n', normalizedCodebase);
           } else if (typeof response.data.codebase === 'object') {
             // If it's already an object, ensure keys are proper paths
-            normalizedCodebase = Object.entries(response.data.codebase).reduce(
+            normalizedCodebase = Object.entries(response.codebase).reduce(
               (acc, [key, value]) => {
                 const path = key.startsWith('/') ? key : `/src/${key}`;
                 acc[path] = value;
@@ -148,7 +152,7 @@ const Codeview = ({
             normalizedCodebase = defaultFiles_3; // Fallback to default if invalid
             // console.log('inside 3rd\n', normalizedCodebase);
           }
-          setCurrentProject({ ...response.data, codebase: normalizedCodebase });
+          setCurrentProject({ ...response, codebase: normalizedCodebase });
           // console.log('Normalized codebase:', normalizedCodebase);
         }
       } catch (error) {
@@ -277,7 +281,7 @@ const Codeview = ({
       const luaCodeToBeEval =
         currentProject?.codebase['/index.lua'] ||
         currentProject?.codebase['/src/lib/index.lua'] ||
-        currentProject?.codebase['index.lua'] ;
+        currentProject?.codebase['index.lua'];
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -285,6 +289,7 @@ const Codeview = ({
       }
       try {
         const ao = connect();
+        console.log('currentProject', currentProject);
         const messageId = await ao.message({
           process: currentProject?.processId,
           data: `${luaCodeToBeEval}`,
@@ -357,7 +362,7 @@ const Codeview = ({
         },
       }}
       customSetup={{
-        entry: 'main.tsx',
+        entry: '/src/main.tsx',
         environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
@@ -472,9 +477,11 @@ const Codeview = ({
               </div>
             </div>
           )}
-          
+
           {/* Static Code View */}
-          <div className={`h-full absolute inset-0 ${activeView === 'preview' ? 'invisible' : 'visible'}`}>
+          <div
+            className={`h-full absolute inset-0 ${activeView === 'preview' ? 'invisible' : 'visible'}`}
+          >
             <SandpackLayout className="h-full min-h-0">
               <SandpackFileExplorer />
               <div className="flex-1 min-w-0 h-full flex flex-col">
@@ -499,9 +506,9 @@ const Codeview = ({
                 initial={{ transform: 'translateX(100%)' }}
                 animate={{ transform: 'translateX(0%)' }}
                 exit={{ transform: 'translateX(100%)' }}
-                transition={{ 
+                transition={{
                   duration: 0.3,
-                  ease: [0.32, 0.72, 0, 1] // Custom easing function for smoother motion
+                  ease: [0.32, 0.72, 0, 1], // Custom easing function for smoother motion
                 }}
                 style={{
                   position: 'absolute',
@@ -511,7 +518,7 @@ const Codeview = ({
                   left: 0,
                   willChange: 'transform',
                   backfaceVisibility: 'hidden',
-                  WebkitBackfaceVisibility: 'hidden'
+                  WebkitBackfaceVisibility: 'hidden',
                 }}
                 className="h-full bg-background"
               >
@@ -534,12 +541,12 @@ const views = [
     id: 'code',
     icon: CodeIcon,
     label: 'Code',
-    className: 'origin-left transition-transform duration-200'
+    className: 'origin-left transition-transform duration-200',
   },
   {
     id: 'preview',
     icon: EyeIcon,
     label: 'Preview',
-    className: 'origin-right transition-transform duration-200'
+    className: 'origin-right transition-transform duration-200',
   },
 ];

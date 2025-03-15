@@ -1,18 +1,13 @@
-import Provider from '@/components/Provider';
+import { ThemeProvider } from 'next-themes';
 import '@/styles/globals.css';
 import { Toaster } from 'sonner';
 
 function App({ Component, pageProps }) {
   return (
-    <Provider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={true}>
       <Component {...pageProps} />
-      <Toaster position='bottom-center' />
-    </Provider>
+      <Toaster position="bottom-center" />
+    </ThemeProvider>
   );
 }
 
