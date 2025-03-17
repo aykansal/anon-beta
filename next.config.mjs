@@ -14,8 +14,8 @@ const nextConfig = {
     ],
   },
   env: {
-    BACKEND_URL: 'http://localhost:5000'
-    // BACKEND_URL: 'https://vybeide-be.onrender.com'
+    // BACKEND_URL: 'http://localhost:5000'
+    BACKEND_URL: 'https://vybeide-be.onrender.com'
   },
 };
 
