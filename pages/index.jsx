@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/router';
 import Footer from '@/components/Footer';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
@@ -10,6 +12,31 @@ export default function Home() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  const [email, setEmail] = useState('');
+
+  const handleSubscribe = async () => {
+    if (email.trim()) {
+      try {
+        const response = await axios.post(
+          `${process.env.BACKEND_URL}/api/subscribe`,
+          { email }
+        );
+        if (response.status === 208) {
+          toast.error('Email already subscribed.');
+          return;
+        }
+        toast.success('Subscribed successfully!');
+      } catch (error) {
+        console.error('Error subscribing:', error);
+        toast.error('Error subscribing. Please try again.');
+      } finally {
+        setEmail('');
+      }
+    } else {
+      toast.error('Please enter an email address.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,18 +101,60 @@ export default function Home() {
           </div>
           <div className="relative">
             <div className="header-glow"></div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold mb-3 text-primary tracking-tight morse-title relative">
-              VYBE AI
-              <span className="absolute -right-6 top-0 text-xs text-primary/60 morse-blink">
-                _
-              </span>
-            </h1>
-          </div>
-          <div className="flex items-center justify-center space-x-2 mt-4">
-            <span className="morse-dot animate-morse-3"></span>
-            <span className="morse-dash animate-morse-2"></span>
-            <span className="morse-dot animate-morse-1"></span>
-            <span className="morse-dash animate-morse-2"></span>
+            <div className="logo-container">
+              {/* <svg
+                width="280"
+                height="80"
+                viewBox="0 0 280 80"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="logo-svg"
+              >
+                <path
+                  d="M10 40 Q70 20, 140 40 T270 40"
+                  className="signal-wave-path"
+                  strokeDasharray="4 6"
+                />
+                <path
+                  d="M10 40 Q70 60, 140 40 T270 40"
+                  className="signal-wave-path-2"
+                  strokeDasharray="4 6"
+                />
+                
+                <path
+                  d="M40 15L60 65L80 15"
+                  className="letter-path"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                
+                <path
+                  d="M90 15L110 40L130 15M110 40L110 65"
+                  className="letter-path"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                
+                <path
+                  d="M140 15V65M140 15H160Q175 15 175 27.5T160 40H140M140 40H165Q180 40 180 52.5T165 65H140"
+                  className="letter-path"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                
+                <path
+                  d="M190 15V65M190 15H225M190 40H220M190 65H225"
+                  className="letter-path"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                <circle cx="240" cy="40" r="3" className="morse-dot-1" />
+                <circle cx="250" cy="40" r="3" className="morse-dot-2" />
+                <circle cx="260" cy="40" r="3" className="morse-dot-3" />
+              </svg> */}
+              <span className="text-6xl font-bold text-primary">ANON</span>
+            </div>
           </div>
         </div>
 
@@ -172,7 +241,14 @@ export default function Home() {
       </main>
 
       {/* Enhanced Footer */}
-      <Footer mounted={mounted} theme={theme} setTheme={setTheme} />
+      <Footer
+        mounted={mounted}
+        theme={theme}
+        setTheme={setTheme}
+        email={email}
+        setEmail={setEmail}
+        handleSubscribe={handleSubscribe}
+      />
 
       <style jsx global>{`
         @keyframes fadeIn {
@@ -1253,6 +1329,129 @@ export default function Home() {
           --primary-rgb: 140, 255, 140;
           --background-rgb: 18, 18, 18;
           --card-rgb: 24, 24, 24;
+        }
+
+        .logo-container {
+          position: relative;
+          width: 280px;
+          height: 80px;
+          margin: 0 auto;
+        }
+
+        .logo-svg {
+          width: 100%;
+          height: 100%;
+        }
+
+        .signal-wave-path,
+        .signal-wave-path-2 {
+          fill: none;
+          stroke: hsl(var(--primary));
+          stroke-width: 1;
+          opacity: 0.3;
+          animation: waveFlow 3s linear infinite;
+        }
+
+        .signal-wave-path-2 {
+          animation-delay: -1.5s;
+        }
+
+        .letter-path {
+          fill: none;
+          stroke: hsl(var(--primary));
+          stroke-width: 4;
+          stroke-dasharray: 200;
+          stroke-dashoffset: 200;
+          animation: drawLetter 2s ease forwards;
+        }
+
+        .morse-dot-1,
+        .morse-dot-2,
+        .morse-dot-3 {
+          fill: hsl(var(--primary));
+          opacity: 0;
+          animation: fadeInDot 0.5s ease forwards;
+        }
+
+        .morse-dot-1 {
+          animation-delay: 2s;
+        }
+        .morse-dot-2 {
+          animation-delay: 2.2s;
+        }
+        .morse-dot-3 {
+          animation-delay: 2.4s;
+        }
+
+        @keyframes waveFlow {
+          0% {
+            stroke-dashoffset: 20;
+          }
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes drawLetter {
+          0% {
+            stroke-dashoffset: 200;
+          }
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes fadeInDot {
+          0% {
+            opacity: 0;
+            transform: scale(0);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.2);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        /* Light theme adjustments */
+        :global(.light) .signal-wave-path,
+        :global(.light) .signal-wave-path-2 {
+          stroke: rgba(var(--warm-rgb), 0.3);
+        }
+
+        :global(.light) .letter-path {
+          stroke: hsl(var(--primary));
+        }
+
+        :global(.light) .morse-dot-1,
+        :global(.light) .morse-dot-2,
+        :global(.light) .morse-dot-3 {
+          fill: hsl(var(--primary));
+        }
+
+        /* Add a subtle glow effect */
+        .logo-svg {
+          filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), 0.2));
+        }
+
+        /* Hover effect */
+        .logo-container:hover .signal-wave-path,
+        .logo-container:hover .signal-wave-path-2 {
+          opacity: 0.5;
+        }
+
+        .logo-container:hover .letter-path {
+          stroke-width: 4.5;
+        }
+
+        .logo-container:hover .morse-dot-1,
+        .logo-container:hover .morse-dot-2,
+        .logo-container:hover .morse-dot-3 {
+          transform: scale(1.2);
+          transition: transform 0.3s ease;
         }
       `}</style>
     </div>

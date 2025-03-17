@@ -6,10 +6,10 @@ import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
-import { connectWallet } from '@/lib/arkit2';
-import { Octokit } from '@octokit/core';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Octokit } from '@octokit/core';
+import { connectWallet } from '@/lib/arkit2';
+import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 const ProjectsPage = () => {
   const [files, setFiles] = useState({});
@@ -373,7 +373,8 @@ const ProjectsPage = () => {
           setStatus('Creating new GitHub repository...');
           const createResponse = await octokit.request('POST /user/repos', {
             name: activeProject.name,
-            description: 'Created with Vybe IDE',
+            // description: 'Created with Vybe IDE',
+            description: 'Created with ANON AI',
             private: true,
             headers: { 'X-GitHub-Api-Version': '2022-11-28' },
           });
@@ -460,7 +461,8 @@ const ProjectsPage = () => {
         {
           owner: repoOwner,
           repo: activeProject.name,
-          message: 'Batch commit from Vybe IDE',
+          message: 'Batch commit from ANON AI',
+          // message: 'Batch commit from Vybe IDE',
           tree: treeResponse.data.sha,
           parents: repoExists && currentCommitSha ? [currentCommitSha] : [],
           headers: { 'X-GitHub-Api-Version': '2022-11-28' },
