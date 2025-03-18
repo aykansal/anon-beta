@@ -5,7 +5,14 @@ import { toast } from 'sonner';
 import Markdown from 'react-markdown';
 import { useState, useEffect, useRef } from 'react';
 import { MentionsInput, Mention } from 'react-mentions';
-import { FileInput, FolderInput, Loader2Icon, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
+import {
+  FileInput,
+  FolderInput,
+  Loader2Icon,
+  RefreshCw,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 
 // Add a style tag for custom CSS
 const CustomStyles = () => (
@@ -14,7 +21,7 @@ const CustomStyles = () => (
       width: 100%;
       position: relative;
     }
-    
+
     .mentions-input__control {
       width: 100%;
       min-height: 44px;
@@ -25,22 +32,24 @@ const CustomStyles = () => (
       background-color: hsl(var(--background));
       transition: max-height 0.2s ease-in-out;
     }
-    
+
     .mentions-input.expanded .mentions-input__control {
       max-height: calc(100vh - 250px);
       min-height: 200px;
     }
-    
+
     .mentions-input__highlighter {
       padding: 9px 12px;
+      padding-right: 40px;
       white-space: pre-wrap;
       word-wrap: break-word;
       word-break: break-word;
       overflow-wrap: break-word;
     }
-    
+
     .mentions-input__input {
       padding: 9px 12px !important;
+      padding-right: 40px !important;
       min-height: 44px;
       white-space: pre-wrap !important;
       word-wrap: break-word !important;
@@ -51,12 +60,12 @@ const CustomStyles = () => (
       color: hsl(var(--foreground)) !important;
       font-size: 14px !important;
     }
-    
+
     .mentions-input.expanded .mentions-input__input {
       max-height: 100%;
       min-height: 200px;
     }
-    
+
     .mentions-input__suggestions__list {
       background-color: hsl(var(--background));
       border: 1px solid hsl(var(--border));
@@ -65,13 +74,13 @@ const CustomStyles = () => (
       overflow-y: auto;
       z-index: 10;
     }
-    
+
     .mentions-input__suggestions__item {
       padding: 6px 10px;
       border-bottom: 1px solid hsl(var(--border));
       color: hsl(var(--muted-foreground));
     }
-    
+
     .mentions-input__suggestions__item--focused {
       background-color: hsl(var(--secondary));
       color: hsl(var(--foreground));
@@ -83,7 +92,7 @@ const CustomStyles = () => (
       word-wrap: break-word !important;
       overflow-wrap: break-word !important;
     }
-    
+
     .expand-button {
       position: absolute;
       right: 10px;
@@ -100,7 +109,7 @@ const CustomStyles = () => (
       justify-content: center;
       transition: background-color 0.2s ease;
     }
-    
+
     .expand-button:hover {
       background-color: hsl(var(--secondary));
       color: hsl(var(--foreground));
@@ -406,7 +415,7 @@ const Chatview = ({
           return acc;
         }, {}),
         framework: selectedFramework,
-        luaEnabled,
+        luaenabled: luaEnabled,
       };
 
       const response = await axios.post(
@@ -612,7 +621,9 @@ const Chatview = ({
                 type="button"
                 onClick={toggleInputExpand}
                 className="expand-button"
-                aria-label={isInputExpanded ? "Minimize input" : "Maximize input"}
+                aria-label={
+                  isInputExpanded ? 'Minimize input' : 'Maximize input'
+                }
               >
                 {isInputExpanded ? (
                   <Minimize2 size={16} />
