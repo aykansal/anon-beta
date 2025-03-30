@@ -1,6 +1,13 @@
-import React from 'react';
 
-const Footer = ({ mounted, theme, setTheme, email, setEmail, handleSubscribe }) => {
+import React from 'react';
+const Footer = ({
+  mounted,
+  theme,
+  setTheme,
+  email,
+  setEmail,
+  handleSubscribe,
+}) => {
   return (
     <footer className="w-full py-5 relative z-10">
       {/* Subtle tech-inspired decorative element */}
@@ -73,7 +80,7 @@ const Footer = ({ mounted, theme, setTheme, email, setEmail, handleSubscribe }) 
             {/* Theme toggle and socials */}
             <div className="flex items-center space-x-4">
               <button
-                disabled="true"
+                disabled={true}
                 onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className="p-1.5 rounded-full hover:bg-primary/10 transition-colors cursor-not-allowed"
                 aria-label="Toggle theme"

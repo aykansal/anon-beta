@@ -1,3 +1,5 @@
+'use client';
+
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
@@ -48,10 +50,10 @@ const ProjectsPage = () => {
 
       if (res.data.projects.length > 0) {
         setProjects(res.data.projects);
-        
+
         // Get the stored project ID from localStorage
         const storedProjectId = localStorage.getItem('activeProjectId');
-        
+
         if (storedProjectId) {
           // Find the stored project in the fetched projects
           const storedProject = res.data.projects.find(
@@ -62,14 +64,20 @@ const ProjectsPage = () => {
           } else {
             // If stored project not found, set first project as active
             setActiveProject(res.data.projects[0]);
-            localStorage.setItem('activeProjectId', res.data.projects[0].projectId);
+            localStorage.setItem(
+              'activeProjectId',
+              res.data.projects[0].projectId
+            );
           }
         } else {
           // If no stored project, set first project as active
           setActiveProject(res.data.projects[0]);
-          localStorage.setItem('activeProjectId', res.data.projects[0].projectId);
+          localStorage.setItem(
+            'activeProjectId',
+            res.data.projects[0].projectId
+          );
         }
-        
+
         toast.success('Projects fetched successfully');
       } else {
         setProjects([]);
@@ -561,9 +569,9 @@ const ProjectsPage = () => {
           className="flex flex-1 min-h-0 overflow-hidden"
         >
           <div
-            style={{ 
+            style={{
               width: isChatVisible ? `${splitPosition}%` : '100%',
-              transition: 'width 0.3s ease-in-out'
+              transition: 'width 0.3s ease-in-out',
             }}
             className="h-full min-h-0 relative flex"
           >
@@ -578,13 +586,13 @@ const ProjectsPage = () => {
                 onCommit={handleSaveToGithub}
               />
             </div>
-            
+
             {/* Toggle Chat Button - Repositioned */}
             <div className="relative w-0">
               <button
                 onClick={() => setIsChatVisible(!isChatVisible)}
                 className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors border border-border"
-                title={isChatVisible ? "Hide Chat" : "Show Chat"}
+                title={isChatVisible ? 'Hide Chat' : 'Show Chat'}
               >
                 {isChatVisible ? (
                   <PanelRightClose size={16} />
@@ -604,7 +612,7 @@ const ProjectsPage = () => {
             }}
             transition={{
               duration: 0.3,
-              ease: [0.32, 0.72, 0, 1]
+              ease: [0.32, 0.72, 0, 1],
             }}
             className="h-full min-h-0 border-l border-border relative"
           >
@@ -620,7 +628,9 @@ const ProjectsPage = () => {
       ) : (
         <div className="flex-1 flex items-center justify-center bg-background">
           <div className="text-center">
-            <h3 className="text-lg font-medium mb-2 text-foreground">No Project Selected</h3>
+            <h3 className="text-lg font-medium mb-2 text-foreground">
+              No Project Selected
+            </h3>
             <button
               onClick={() => setIsCreating(true)}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90"

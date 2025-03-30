@@ -1,6 +1,6 @@
+"use client";
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
 import Head from 'next/head';
 
 const WaitlistNew = () => {
@@ -36,7 +36,7 @@ const WaitlistNew = () => {
         >
           {/* Animated border glow effect - perimeter only */}
           <span className="absolute inset-0 rounded-full border border-transparent">
-            <span className="absolute inset-[-1px] rounded-full bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" 
+            <span className="absolute inset-[-1px] rounded-full bg-linear-to-r from-transparent via-orange-400/50 to-transparent" 
                   style={{ 
                     background: 'linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.5), transparent)',
                     backgroundSize: '200% 100%',
@@ -54,7 +54,7 @@ const WaitlistNew = () => {
       </div>
       
       {/* Main content */}
-      <main className="relative z-10 w-full max-w-screen-xl px-4 flex flex-col items-center">
+      <main className="relative z-10 w-full max-w-(--breakpoint-xl) px-4 flex flex-col items-center">
         {/* Coming soon text - made shorter */}
         <motion.h1 
           className="text-white text-6xl md:text-7xl font-bold mb-12"
@@ -82,7 +82,7 @@ const WaitlistNew = () => {
             {/* Email input with revolving border effect - perimeter only */}
             <div className="flex-1 relative">
               <div className="absolute inset-0 rounded-full">
-                <div className="absolute inset-[-1px] rounded-full bg-gradient-to-r from-transparent via-orange-400/50 to-transparent" 
+                <div className="absolute inset-[-1px] rounded-full bg-linear-to-r from-transparent via-orange-400/50 to-transparent" 
                       style={{ 
                         background: 'linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.5), transparent)',
                         backgroundSize: '200% 100%',
@@ -93,7 +93,7 @@ const WaitlistNew = () => {
               <input
                 type="email"
                 placeholder="Enter email"
-                className="w-full px-5 py-3 bg-black/60 rounded-full text-white outline-none relative z-10"
+                className="w-full px-5 py-3 bg-black/60 rounded-full text-white outline-hidden relative z-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

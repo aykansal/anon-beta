@@ -1,3 +1,5 @@
+'use client';
+
 // ActionContext.js
 import { createContext, useState } from 'react';
 

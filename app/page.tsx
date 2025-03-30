@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+'use client';
+
 import Head from 'next/head';
 import { useTheme } from 'next-themes';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -37,7 +39,7 @@ export default function Home() {
       toast.error('Please enter an email address.');
     }
   };
-
+  //@ts-expect-error iugnore
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (prompt.trim()) {
@@ -48,6 +50,7 @@ export default function Home() {
     }
   };
 
+  //@ts-expect-error iugnore
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
@@ -84,10 +87,10 @@ export default function Home() {
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-        <link
+        {/* <link
           href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap"
           rel="stylesheet"
-        />
+        /> */}
       </Head>
 
       <main className="flex flex-col items-center justify-center w-full flex-1 px-4 sm:px-8 md:px-20 text-center z-10">
@@ -172,7 +175,7 @@ export default function Home() {
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Describe your project idea... (Shift+Enter to submit)"
-                className="w-full p-4 h-20 bg-card/80 backdrop-blur-sm text-card-foreground rounded-lg resize-none border-none outline-none relative z-10"
+                className="w-full p-4 h-20 bg-card/80 backdrop-blur-xs text-card-foreground rounded-lg resize-none border-none outline-hidden relative z-10"
                 required
                 aria-label="Project idea input"
               />
@@ -194,7 +197,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground font-mono rounded-lg hover:bg-primary/90 transition-all duration-300 outline-none relative flex items-center justify-center gap-2 ${
+              className={`w-full sm:w-auto px-8 py-3 bg-primary text-primary-foreground font-mono rounded-lg hover:bg-primary/90 transition-all duration-300 outline-hidden relative flex items-center justify-center gap-2 ${
                 isLoading ? 'opacity-75 cursor-not-allowed' : ''
               } button-glow`}
               aria-label="Generate project button"
@@ -387,13 +390,11 @@ export default function Home() {
         @keyframes buttonGlow {
           0%,
           100% {
-            box-shadow:
-              0 0 5px 0 rgba(var(--primary-rgb), 0.3),
+            box-shadow: 0 0 5px 0 rgba(var(--primary-rgb), 0.3),
               0 0 10px 0 rgba(var(--primary-rgb), 0.1);
           }
           50% {
-            box-shadow:
-              0 0 10px 2px rgba(var(--primary-rgb), 0.5),
+            box-shadow: 0 0 10px 2px rgba(var(--primary-rgb), 0.5),
               0 0 20px 5px rgba(var(--primary-rgb), 0.2);
           }
         }
@@ -567,8 +568,7 @@ export default function Home() {
           );
           background-size: 200% 100%;
           animation: movingBorder 3s linear infinite;
-          -webkit-mask:
-            linear-gradient(#fff 0 0) content-box,
+          -webkit-mask: linear-gradient(#fff 0 0) content-box,
             linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
@@ -913,17 +913,8 @@ export default function Home() {
 
         /* Font Integration */
         body {
-          font-family:
-            'Outfit',
-            -apple-system,
-            BlinkMacSystemFont,
-            'Segoe UI',
-            Roboto,
-            Oxygen,
-            Ubuntu,
-            Cantarell,
-            'Open Sans',
-            'Helvetica Neue',
+          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+            Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
             sans-serif;
         }
 
@@ -959,8 +950,7 @@ export default function Home() {
             rgba(var(--primary-rgb), 0.2) 50%,
             rgba(var(--primary-rgb), 0.05) 100%
           );
-          box-shadow:
-            0 10px 25px -5px rgba(0, 0, 0, 0.1),
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
             0 8px 10px -6px rgba(0, 0, 0, 0.1),
             0 0 0 1px rgba(var(--primary-rgb), 0.3) inset;
           backdrop-filter: blur(16px);

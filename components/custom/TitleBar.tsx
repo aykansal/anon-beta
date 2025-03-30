@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import React, { useState } from 'react';
 import {
   PlayIcon,
@@ -60,14 +62,14 @@ const TitleBar = ({
   };
 
   return (
-    <div className="border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
       {/* Main Toolbar */}
       <div className="h-12 px-4 flex items-center gap-3">
         {/* Project Selection */}
         <select
           value={activeProject?.projectId || ''}
           onChange={handleProjectChange}
-          className="h-8 px-3 bg-secondary/80 border-border/50 rounded-md text-sm font-medium focus:outline-none focus:ring-0 focus:border-border"
+          className="h-8 px-3 bg-secondary/80 border-border/50 rounded-md text-sm font-medium focus:outline-hidden focus:ring-0 focus:border-border"
         >
           <option value="">Select Project</option>
           {projects.length > 0 &&

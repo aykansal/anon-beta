@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2Icon, GitBranchIcon, CheckCircleIcon } from 'lucide-react';
+import { Loader2Icon, GitBranchIcon} from 'lucide-react';
 
 const StatusBar = ({
   activeProject,
@@ -7,7 +7,7 @@ const StatusBar = ({
   connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting'
 }) => {
   return (
-    <div className="h-8 shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border/50 px-4 flex items-center text-xs font-medium text-muted-foreground">
+    <div className="h-8 shrink-0 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60 border-t border-border/50 px-4 flex items-center text-xs font-medium text-muted-foreground">
       <div className="flex-1 flex items-center gap-6">
         {/* Project Status */}
         <div className="flex items-center gap-2">

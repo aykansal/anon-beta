@@ -1,3 +1,5 @@
+// @ts-check
+
 import {
   SandpackProvider,
   SandpackLayout,
@@ -460,7 +462,7 @@ const Codeview = ({
         <div className="flex-1 relative min-h-0 overflow-hidden">
           {/* Loading Overlay */}
           {(isSaving || isGenerating || loading || action === 'deploy') && (
-            <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-background/50 backdrop-blur-xs z-50 flex items-center justify-center">
               <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">
                 <Loader2Icon className="animate-spin text-primary" />
                 <p>

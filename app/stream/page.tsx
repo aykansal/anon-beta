@@ -40,11 +40,11 @@ export default function Chat() {
             value={input}
             onChange={handleInputChange}
             placeholder="Type your message..."
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-none focus:ring-2 focus:ring-[#f55036]"
+            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-black focus:outline-hidden focus:ring-2 focus:ring-[#f55036]"
           />
           <button
             type="submit"
-            className="rounded-lg bg-[#f55036] px-4 py-2 text-white hover:bg-[#d94530] focus:outline-none focus:ring-2 focus:ring-[#f55036]"
+            className="rounded-lg bg-[#f55036] px-4 py-2 text-white hover:bg-[#d94530] focus:outline-hidden focus:ring-2 focus:ring-[#f55036]"
           >
             Send
           </button>

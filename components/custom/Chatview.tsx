@@ -610,7 +610,7 @@ const Chatview = ({
             <select
               value={selectedFramework}
               onChange={(e) => setSelectedFramework(e.target.value)}
-              className="bg-background border border-border rounded-md px-2 py-1 text-foreground h-[44px] flex-shrink-0"
+              className="bg-background border border-border rounded-md px-2 py-1 text-foreground h-[44px] shrink-0"
             >
               <option value="React">React</option>
               <option value="Nextjs">Nextjs</option>
@@ -676,7 +676,7 @@ const Chatview = ({
             </div>
             <button
               type="submit"
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50 h-[44px] flex items-center justify-center flex-shrink-0"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md disabled:opacity-50 h-[44px] flex items-center justify-center shrink-0"
               disabled={(!userInput.trim() && !failedMessage) || isRetrying}
             >
               {isRetrying ? (
