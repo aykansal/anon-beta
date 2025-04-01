@@ -21,7 +21,7 @@ export default function Home() {
     if (email.trim()) {
       try {
         const response = await axios.post(
-          `${process.env.BACKEND_URL}/api/subscribe`,
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/subscribe`,
           { email }
         );
         if (response.status === 208) {

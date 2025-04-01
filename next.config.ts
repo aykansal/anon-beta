@@ -1,7 +1,8 @@
+// next.config.ts
 import { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
+  // output: 'export',
   reactStrictMode: false,
   images: {
     unoptimized: true,
@@ -15,8 +16,8 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    BACKEND_URL: 'http://localhost:5000'
-    // BACKEND_URL: 'https://vybeide-be.onrender.com'
+    NEXT_PUBLIC_BACKEND_URL: 'http://localhost:5000', 
+    // NEXT_PUBLIC_BACKEND_URL: 'https://vybeide-be.onrender.com'
   },
 };
 

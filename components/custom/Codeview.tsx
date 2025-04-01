@@ -1,4 +1,4 @@
-// @ts-check
+'use client';
 
 import {
   SandpackProvider,
@@ -18,10 +18,15 @@ import { ActionContext } from '@/context/ActionContext';
 import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
 import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
-import { connect, createDataItemSigner } from '@permaweb/aoconnect/browser';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const SandpackDownloader = ({ onDownload, disabled }) => {
+const SandpackDownloader = ({
+  onDownload,
+  disabled,
+}: {
+  onDownload: (arg: string) => void;
+  disabled: boolean;
+}) => {
   const { sandpack } = useSandpack();
   const { files: sandpackFiles } = sandpack;
 
@@ -52,8 +57,9 @@ const SandpackDownloader = ({ onDownload, disabled }) => {
         toast.error('Download failed');
         console.error(err);
       } finally {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // to open the codebase in the codesandbox
+        // document.body.removeChild(link);
+        // URL.revokeObjectURL(url);
       }
     } catch (err) {
       console.error('Error generating ZIP:', err);
@@ -79,6 +85,7 @@ const SandpackDownloader = ({ onDownload, disabled }) => {
     </button>
   );
 };
+
 const validateNpmPackage = async (packageName) => {
   try {
     const response = await axios.get(
@@ -103,6 +110,7 @@ const validateNpmPackage = async (packageName) => {
     return { status: false };
   }
 };
+
 let normalizedCodebase = {};
 
 const Codeview = ({
@@ -123,24 +131,21 @@ const Codeview = ({
       try {
         setLoading(true);
         const response = await axios
-          .get(`${process.env.BACKEND_URL}/projects/${projectId}`)
+          .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`)
           .then((res) => {
             console.log('response.data', res.data);
             return res.data.content;
           });
 
-          if (response) {
-          // Normalize codebase array into an object with file paths as keys
+        if (response) {
           if (Array.isArray(response.codebase)) {
             response.codebase.forEach((file) => {
               const filePath = file.filePath.startsWith('/')
                 ? file.filePath
                 : `/${file.filePath}`;
-              normalizedCodebase[filePath] = file.code; // Use code directly as string
+              normalizedCodebase[filePath] = file.code;
             });
-            // console.log('inside 1st\n', normalizedCodebase);
-          } else if (typeof response.data.codebase === 'object') {
-            // If it's already an object, ensure keys are proper paths
+          } else if (typeof response.codebase === 'object') {
             normalizedCodebase = Object.entries(response.codebase).reduce(
               (acc, [key, value]) => {
                 const path = key.startsWith('/') ? key : `/src/${key}`;
@@ -149,32 +154,27 @@ const Codeview = ({
               },
               {}
             );
-            // console.log('inside 2nd\n', normalizedCodebase);
           } else {
-            normalizedCodebase = defaultFiles_3; // Fallback to default if invalid
-            // console.log('inside 3rd\n', normalizedCodebase);
+            normalizedCodebase = defaultFiles_3;
           }
           setCurrentProject({ ...response, codebase: normalizedCodebase });
-          // console.log('Normalized codebase:', normalizedCodebase);
         }
       } catch (error) {
-        if (error.response.data.error === 'No code found for project') {
+        if (error.response?.data?.error === 'No code found for project') {
           toast.error('Prompt to create vibe with the code');
           return;
         }
-
         toast.error('Failed to load code');
         console.error('Error loading project code:', error);
-        return;
       } finally {
         setLoading(false);
       }
     };
 
     if (activeProject?.projectId) {
-      fetchProjectCode(activeProject?.projectId);
+      fetchProjectCode(activeProject.projectId);
     }
-  }, [activeProject.projectId]);
+  }, [activeProject?.projectId]);
 
   useEffect(() => {
     const handleCodebaseUpdate = (event) => {
@@ -199,8 +199,8 @@ const Codeview = ({
                 typeof fileContent === 'object' && fileContent.code
                   ? fileContent.code
                   : typeof fileContent === 'string'
-                    ? fileContent
-                    : JSON.stringify(fileContent),
+                  ? fileContent
+                  : JSON.stringify(fileContent),
               filePath: path,
             };
           }
@@ -222,7 +222,7 @@ const Codeview = ({
     };
     window.addEventListener('requestCurrentFiles', handleCurrentFilesRequest);
     const handleTemplateFilesRequest = () => {
-      handleCurrentFilesRequest(); // Just use the same handler
+      handleCurrentFilesRequest();
     };
     window.addEventListener('requestTemplateFiles', handleTemplateFilesRequest);
     return () => {
@@ -277,9 +277,9 @@ const Codeview = ({
       Action: actionType,
       timeStamp: Date.now(),
     });
+
     if (actionType === 'runlua') {
       toast.info('Running Lua code...');
-      // Fix the code to check both '/index.lua' and 'index.lua'
       const luaCodeToBeEval =
         currentProject?.codebase['/index.lua'] ||
         currentProject?.codebase['/src/lib/index.lua'] ||
@@ -289,13 +289,19 @@ const Codeview = ({
         toast.error('No Lua code found in the project.');
         return;
       }
+
+      if (typeof window === 'undefined' || !window.arweaveWallet) {
+        toast.error('Arweave wallet not available. Please ensure it’s installed and connected.');
+        return;
+      }
+
       try {
+        const { connect, createDataItemSigner } = await import('@permaweb/aoconnect');
         const ao = connect();
-        console.log('currentProject', currentProject);
         const messageId = await ao.message({
           process: currentProject?.processId,
           data: `${luaCodeToBeEval}`,
-          signer: createDataItemSigner(globalThis.arweaveWallet),
+          signer: createDataItemSigner(window.arweaveWallet),
           tags: [
             { name: 'Name', value: 'Anon' },
             { name: 'Version', value: '0.2.1' },
@@ -307,19 +313,19 @@ const Codeview = ({
             { name: 'Description', value: currentProject?.description },
           ],
         });
-        console.log(messageId);
+        console.log('Message ID:', messageId);
 
         const result = await ao.result({
           process: currentProject?.processId,
           message: messageId,
         });
-        console.log(result);
+        console.log('Result:', result);
 
         result.id = messageId;
-        console.log(result);
-        toast.info('Completed the Lua Code');
+        toast.success('Lua code executed successfully');
       } catch (error) {
-        toast.error('Error in Eval Lua Code: ' + error.message);
+        toast.error('Error executing Lua code: ' + error.message);
+        console.error('Lua execution error:', error);
       }
     } else if (actionType === 'deploy') {
       toast.info('Deploying project...');
@@ -329,8 +335,10 @@ const Codeview = ({
         return;
       }
       try {
-        await onCommit(); // Call the passed commit function
+        await onCommit();
+        toast.success('Project committed successfully');
       } catch (error) {
+        toast.error('Commit failed');
         console.error('Commit failed:', error);
       }
     }
@@ -389,7 +397,6 @@ const Codeview = ({
         activeFile: visibleFiles.find(
           (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
         ),
-        readOnly: isEditorDisabled(),
         externalResources: [
           'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
           'https://cdn.tailwindcss.com',
@@ -432,7 +439,7 @@ const Codeview = ({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onAction('commit')} // Trigger commit action
+              onClick={() => onAction('commit')}
               disabled={isEditorDisabled()}
               className={cn(
                 'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
@@ -458,9 +465,7 @@ const Codeview = ({
           </div>
         </div>
 
-        {/* Sandpack Container with Overlay */}
         <div className="flex-1 relative min-h-0 overflow-hidden">
-          {/* Loading Overlay */}
           {(isSaving || isGenerating || loading || action === 'deploy') && (
             <div className="absolute inset-0 bg-background/50 backdrop-blur-xs z-50 flex items-center justify-center">
               <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">
@@ -469,20 +474,21 @@ const Codeview = ({
                   {loading
                     ? 'Loading code...'
                     : isSaving
-                      ? 'Saving changes...'
-                      : isGenerating
-                        ? 'Generating code...'
-                        : action === 'deploy'
-                          ? 'Deploying...'
-                          : 'Processing...'}
+                    ? 'Saving changes...'
+                    : isGenerating
+                    ? 'Generating code...'
+                    : action === 'deploy'
+                    ? 'Deploying...'
+                    : 'Processing...'}
                 </p>
               </div>
             </div>
           )}
 
-          {/* Static Code View */}
           <div
-            className={`h-full absolute inset-0 ${activeView === 'preview' ? 'invisible' : 'visible'}`}
+            className={`h-full absolute inset-0 ${
+              activeView === 'preview' ? 'invisible' : 'visible'
+            }`}
           >
             <SandpackLayout className="h-full min-h-0">
               <SandpackFileExplorer />
@@ -500,7 +506,6 @@ const Codeview = ({
             </SandpackLayout>
           </div>
 
-          {/* Animated Preview with Fixed Positioning */}
           <AnimatePresence mode="wait">
             {activeView === 'preview' && (
               <motion.div
@@ -510,7 +515,7 @@ const Codeview = ({
                 exit={{ transform: 'translateX(100%)' }}
                 transition={{
                   duration: 0.3,
-                  ease: [0.32, 0.72, 0, 1], // Custom easing function for smoother motion
+                  ease: [0.32, 0.72, 0, 1],
                 }}
                 style={{
                   position: 'absolute',

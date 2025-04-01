@@ -6,13 +6,14 @@ import Markdown from 'react-markdown';
 import { useState, useEffect, useRef } from 'react';
 import { MentionsInput, Mention } from 'react-mentions';
 import {
-  FileInput,
-  FolderInput,
   Loader2Icon,
   RefreshCw,
   Maximize2,
   Minimize2,
+  FolderInput,
+  FileInput,
 } from 'lucide-react';
+import { Input } from '../ui/input';
 
 // Add a style tag for custom CSS
 const CustomStyles = () => (
@@ -237,7 +238,7 @@ const Chatview = ({
     try {
       setLoading(true);
       const response = await axios.get(
-        `${process.env.BACKEND_URL}/chat/history/${projectId}`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/history/${projectId}`
       );
 
       const messages = response.data.messages.map((msg) => ({
@@ -261,7 +262,7 @@ const Chatview = ({
   const fetchProjectFiles = async (projectId) => {
     try {
       const response = await axios.get(
-        `${process.env.BACKEND_URL}/projects/${projectId}`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`
       );
       if (response.data?.codebase) {
         setFiles(response.data.codebase);
@@ -419,7 +420,7 @@ const Chatview = ({
       };
 
       const response = await axios.post(
-        `${process.env.BACKEND_URL}/chat/`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/`,
         requestBody
       );
 
@@ -534,7 +535,9 @@ const Chatview = ({
                 message.map((msg, index) => (
                   <div
                     key={msg.id || index}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${
+                      msg.role === 'user' ? 'justify-end' : 'justify-start'
+                    }`}
                   >
                     <div
                       className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${
@@ -551,7 +554,9 @@ const Chatview = ({
                           />
                         </div>
                       ) : (
-                        <Markdown className="prose prose-sm dark:prose-invert max-w-none">
+                        <Markdown
+                        //className="prose prose-sm dark:prose-invert max-w-none"
+                        >
                           {renderMessageContent(msg)}
                         </Markdown>
                       )}
@@ -631,7 +636,16 @@ const Chatview = ({
                   <Maximize2 size={16} />
                 )}
               </button>
-              <MentionsInput
+
+              <Input
+                value={userInput}
+                onChange={(e) => setuserInput(e.target.value)}
+                onKeyDown={handleKeyPress}
+                disabled={loading}
+                className="w-full"
+              />
+
+              {/* <MentionsInput
                 value={userInput}
                 onChange={(e) => setuserInput(e.target.value)}
                 onKeyDown={handleKeyPress}
@@ -643,7 +657,7 @@ const Chatview = ({
                 allowSuggestionsAboveCursor
                 a11ySuggestionsListLabel="Suggested files"
                 className={`mentions-input ${isInputExpanded ? 'expanded' : ''}`}
-                markup="@[__display__](__id__)"
+                // markup="@[__display__](__id__)"
                 autoComplete="off"
               >
                 <Mention
@@ -672,7 +686,7 @@ const Chatview = ({
                     </div>
                   )}
                 />
-              </MentionsInput>
+              </MentionsInput> */}
             </div>
             <button
               type="submit"

@@ -3,14 +3,12 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
-import { spawnProcess } from '@/lib/arkit';
 import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/core';
-import { connectWallet } from '@/lib/arkit2';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
 
 const ProjectsPage = () => {
@@ -30,10 +28,10 @@ const ProjectsPage = () => {
   const [isChatVisible, setIsChatVisible] = useState(true);
 
   // Validate environment variable
-  const backendUrl = process.env.BACKEND_URL;
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   if (!backendUrl) {
-    throw new Error('BACKEND_URL environment variable is not set');
+    throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
   }
 
   const fetchProjects = async () => {
@@ -174,7 +172,12 @@ const ProjectsPage = () => {
       setStatus('Creating Project...'); // Set status to creating
       setConnectionStatus('connecting');
       setError(null);
-      const processId = await spawnProcess(projectName, [
+
+      // Get the actual spawnProcess function
+      const spawnProcessFn = await import('@/lib/arkit').then(
+        (mod) => mod.spawnProcess
+      );
+      const processId = await spawnProcessFn(projectName, [
         { name: 'Action', value: 'create-project' },
       ]);
       console.log(processId);
@@ -267,17 +270,17 @@ const ProjectsPage = () => {
 
   const fetchData = async () => {
     try {
+      const connectWallet = await import('@/lib/arkit2').then(
+        (mod) => mod.connectWallet
+      );
       const connectionStatus = await connectWallet();
       if (connectionStatus === 'connected wallet successfully') {
         const walletAddress = await window.arweaveWallet.getActiveAddress();
         setWalletAddress(walletAddress);
-        const user = await axios.post(
-          `${process.env.BACKEND_URL}/user/create`,
-          {
-            name: 'test',
-            walletAddress,
-          }
-        );
+        const user = await axios.post(`${backendUrl}/user/create`, {
+          name: 'test',
+          walletAddress,
+        });
         console.log(user.data);
       }
     } catch (error) {
