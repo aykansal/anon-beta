@@ -1,5 +1,25 @@
 'use client';
 
+interface ProjectType {
+  createdAt: string;
+  description: string | null;
+  id: number;
+  latestMessage: {
+    integrationText: {
+      content: {
+        codebase: { filePath: string; code: string }[];
+        externalPackages: string[];
+      };
+    };
+  } | null;
+  name: string;
+  processId: string;
+  projectId: string;
+  sandboxId: string;
+  updatedAt: string;
+  walletAddress: string;
+}
+
 import {
   SandpackProvider,
   SandpackLayout,
@@ -80,13 +100,13 @@ const SandpackDownloader = ({
       )}
       title="Export"
     >
-      <ExportIcon size={12} />
+      <ExportIcon />
       Export
     </button>
   );
 };
 
-const validateNpmPackage = async (packageName) => {
+const validateNpmPackage = async (packageName: string) => {
   try {
     const response = await axios.get(
       `https://registry.npmjs.org/${packageName}`
@@ -106,6 +126,7 @@ const validateNpmPackage = async (packageName) => {
       return { status: false };
     }
   } catch (error) {
+    // @ts-expect-error ignore type error
     console.error(`Error validating package ${packageName}:`, error.message);
     return { status: false };
   }
@@ -117,49 +138,86 @@ const Codeview = ({
   activeProject,
   isSaving,
   isGenerating,
-  theme,
   onCommit,
+}: {
+  activeProject: ProjectType;
+  isSaving: boolean;
+  isGenerating: boolean;
+  onCommit: () => void;
 }) => {
   const [activeView, setActiveView] = useState('code');
   const [loading, setLoading] = useState(false);
   const { action, setAction } = useContext(ActionContext);
-  const [currentProject, setCurrentProject] = useState({});
+  const [currentProject, setCurrentProject] = useState<ProjectType | null>(
+    null
+  );
   const [validatedDependencies, setValidatedDependencies] = useState({});
 
   useEffect(() => {
-    const fetchProjectCode = async (projectId) => {
+    const fetchProjectCode = async (projectId: string) => {
       try {
         setLoading(true);
-        const response = await axios
-          .get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`)
+        const response: {
+          createdAt: string;
+          description: string | null;
+          id: number;
+          latestMessage: {
+            integrationText: {
+              content: {
+                codebase: { filePath: string; code: string }[];
+              };
+            };
+          } | null;
+          name: string;
+          processId: string;
+          projectId: string;
+          sandboxId: string;
+          updatedAt: string;
+          walletAddress: string;
+        } = await axios
+          .get(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject.walletAddress}`
+          )
           .then((res) => {
-            console.log('response.data', res.data);
-            return res.data.content;
+            // console.log('response.data inside codeview\n\n', res.data);
+            return res.data;
           });
 
-        if (response) {
-          if (Array.isArray(response.codebase)) {
-            response.codebase.forEach((file) => {
-              const filePath = file.filePath.startsWith('/')
-                ? file.filePath
-                : `/${file.filePath}`;
-              normalizedCodebase[filePath] = file.code;
-            });
+        if (response.latestMessage) {
+          if (
+            Array.isArray(
+              response.latestMessage.integrationText.content.codebase
+            )
+          ) {
+            response.latestMessage.integrationText.content.codebase.forEach(
+              (file: { filePath: string; code: string }) => {
+                const filePath = file.filePath.startsWith('/')
+                  ? file.filePath
+                  : `/${file.filePath}`;
+                // @ts-expect-error ignore type error
+                normalizedCodebase[filePath] = file.code;
+              }
+            );
+            // @ts-expect-error ignore type error
           } else if (typeof response.codebase === 'object') {
+            // @ts-expect-error ignore type error
             normalizedCodebase = Object.entries(response.codebase).reduce(
-              (acc, [key, value]) => {
+              (acc: { [key: string]: string }, [key, value]) => {
                 const path = key.startsWith('/') ? key : `/src/${key}`;
+                // @ts-expect-error ignore type error
                 acc[path] = value;
                 return acc;
               },
-              {}
+              {} as { [key: string]: string }
             );
           } else {
             normalizedCodebase = defaultFiles_3;
           }
+          // @ts-expect-error ignore type error
           setCurrentProject({ ...response, codebase: normalizedCodebase });
         }
       } catch (error) {
+        // @ts-expect-error ignore type error
         if (error.response?.data?.error === 'No code found for project') {
           toast.error('Prompt to create vibe with the code');
           return;
@@ -174,37 +232,38 @@ const Codeview = ({
     if (activeProject?.projectId) {
       fetchProjectCode(activeProject.projectId);
     }
-  }, [activeProject?.projectId]);
+  }, [activeProject]);
 
   useEffect(() => {
-    const handleCodebaseUpdate = (event) => {
-      setCurrentProject((prev) => ({
-        ...prev,
-        codebase: event.detail,
-      }));
+    const handleCodebaseUpdate = (activeProject: ProjectType) => {
+      setCurrentProject(activeProject);
     };
-    window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
-    return () =>
-      window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
-  }, []);
+
+    handleCodebaseUpdate(activeProject);
+  }, [activeProject]);
 
   useEffect(() => {
     const handleCurrentFilesRequest = () => {
-      const currentFiles = {};
-      if (currentProject && currentProject.codebase) {
-        Object.entries(currentProject.codebase).forEach(
-          ([path, fileContent]) => {
-            currentFiles[path] = {
-              code:
-                typeof fileContent === 'object' && fileContent.code
-                  ? fileContent.code
-                  : typeof fileContent === 'string'
-                  ? fileContent
-                  : JSON.stringify(fileContent),
-              filePath: path,
-            };
-          }
-        );
+      const currentFiles: {
+        [key: string]: { code: string; filePath: string; isTemplate?: boolean };
+      } = {};
+      if (
+        currentProject &&
+        currentProject.latestMessage?.integrationText?.content.codebase
+      ) {
+        Object.entries(
+          currentProject.latestMessage.integrationText.content.codebase
+        ).forEach(([path, fileContent]) => {
+          currentFiles[path] = {
+            code:
+              typeof fileContent === 'object' && fileContent.code
+                ? fileContent.code
+                : typeof fileContent === 'string'
+                ? fileContent
+                : JSON.stringify(fileContent),
+            filePath: path,
+          };
+        });
       } else {
         Object.entries(defaultFiles_3).forEach(([path, code]) => {
           currentFiles[path] = {
@@ -238,11 +297,19 @@ const Codeview = ({
   }, [currentProject]);
 
   useEffect(() => {
-    const validateDependencies = async (packages) => {
-      const validatedPackages = {};
+    const validateDependencies = async (
+      packages: { packageName: string }[]
+    ): Promise<{ [key: string]: string }> => {
+      const validatedPackages: { [key: string]: string } = {};
       for (const pkg of packages) {
-        const isValid = await validateNpmPackage(pkg.packageName);
+        // @ts-expect-error ignore type error
+        const isValid: {
+          status: boolean;
+          name?: string;
+          latestVersion?: string;
+        } = await validateNpmPackage(pkg.packageName);
         if (isValid.status) {
+          // @ts-expect-error ignore type error
           validatedPackages[isValid.name] = isValid.latestVersion;
         } else {
           console.warn(`Package validation failed for ${pkg.packageName}:`);
@@ -252,15 +319,21 @@ const Codeview = ({
       return validatedPackages;
     };
     const updateDependencies = async () => {
-      if (currentProject?.externalPackages) {
+      if (
+        // @ts-expect-error ignore type error
+        currentProject?.latestMessage?.integrationText?.content.codebase
+          .externalPackages
+      ) {
         const validPackages = await validateDependencies(
-          currentProject.externalPackages
+          // @ts-expect-error ignore type error
+          currentProject?.latestMessage?.integrationText?.content?.codebase
+            .externalPackages
         );
         setValidatedDependencies(validPackages);
       }
     };
     updateDependencies();
-  }, [currentProject?.externalPackages]);
+  }, [currentProject]);
 
   const isEditorDisabled = () => {
     return (
@@ -272,7 +345,7 @@ const Codeview = ({
     );
   };
 
-  const onAction = async (actionType) => {
+  const onAction = async (actionType: string) => {
     setAction({
       Action: actionType,
       timeStamp: Date.now(),
@@ -281,9 +354,18 @@ const Codeview = ({
     if (actionType === 'runlua') {
       toast.info('Running Lua code...');
       const luaCodeToBeEval =
-        currentProject?.codebase['/index.lua'] ||
-        currentProject?.codebase['/src/lib/index.lua'] ||
-        currentProject?.codebase['index.lua'];
+        currentProject?.latestMessage?.integrationText?.content.codebase[
+          // @ts-expect-error ignore type error
+          '/index.lua'
+        ] ||
+        currentProject?.latestMessage?.integrationText?.content.codebase[
+          // @ts-expect-error ignore type error
+          '/src/lib/index.lua'
+        ] ||
+        currentProject?.latestMessage?.integrationText?.content.codebase[
+          // @ts-expect-error ignore type error
+          'index.lua'
+        ];
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -291,12 +373,17 @@ const Codeview = ({
       }
 
       if (typeof window === 'undefined' || !window.arweaveWallet) {
-        toast.error('Arweave wallet not available. Please ensure it’s installed and connected.');
+        toast.error(
+          `Arweave wallet not available. Please ensure it’s installed and connected.`
+        );
         return;
       }
 
       try {
-        const { connect, createDataItemSigner } = await import('@permaweb/aoconnect');
+        const { connect, createDataItemSigner } = await import(
+          '@permaweb/aoconnect'
+        );
+        // @ts-expect-error ignore type error
         const ao = connect();
         const messageId = await ao.message({
           process: currentProject?.processId,
@@ -310,6 +397,7 @@ const Codeview = ({
               value: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY',
             },
             { name: 'Action', value: 'Eval' },
+            // @ts-expect-error ignore type error
             { name: 'Description', value: currentProject?.description },
           ],
         });
@@ -319,11 +407,15 @@ const Codeview = ({
           process: currentProject?.processId,
           message: messageId,
         });
-        console.log('Result:', result);
+        // console.log('Result:', result);
 
+        // @ts-expect-error ignore type error
         result.id = messageId;
         toast.success('Lua code executed successfully');
+        // @ts-expect-error ignore type error
+        setCurrentProject({ ...currentProject, latestMessage: result });
       } catch (error) {
+        // @ts-expect-error ignore type error
         toast.error('Error executing Lua code: ' + error.message);
         console.error('Lua execution error:', error);
       }
@@ -344,7 +436,10 @@ const Codeview = ({
     }
   };
 
-  const codebaseFiles = currentProject.codebase || {};
+  console.log('currentProject', currentProject);
+
+  // @ts-expect-error ignore type error
+  const codebaseFiles = currentProject?.codebase || {};
   const visibleFiles =
     Object.keys(codebaseFiles).length > 0
       ? Object.keys(codebaseFiles)
@@ -373,7 +468,7 @@ const Codeview = ({
       }}
       customSetup={{
         entry: '/src/main.tsx',
-        environment: 'vite',
+        // environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
           ...validatedDependencies,
@@ -381,15 +476,15 @@ const Codeview = ({
         devDependencies: {
           ...DEPENDENCIES.devDependencies,
         },
-        vite: {
-          resolve: {
-            alias: {
-              '@': '/src',
-              '@/assets': '/src/assets',
-              '@/components': '/src/components',
-            },
-          },
-        },
+        // vite: {
+        //   resolve: {
+        //     alias: {
+        //       '@': '/src',
+        //       '@/assets': '/src/assets',
+        //       '@/components': '/src/components',
+        //     },
+        //   },
+        // },
       }}
       files={sandpackFiles}
       options={{
@@ -456,7 +551,7 @@ const Codeview = ({
                 isEditorDisabled() && 'opacity-50 cursor-not-allowed'
               )}
             >
-              <RunIcon size={12} /> Run Lua
+              <RunIcon /> Run Lua
             </button>
             <SandpackDownloader
               onDownload={onAction}

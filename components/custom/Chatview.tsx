@@ -4,15 +4,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import Markdown from 'react-markdown';
 import { useState, useEffect, useRef } from 'react';
-import { MentionsInput, Mention } from 'react-mentions';
-import {
-  Loader2Icon,
-  RefreshCw,
-  Maximize2,
-  Minimize2,
-  FolderInput,
-  FileInput,
-} from 'lucide-react';
+import { Loader2Icon, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import { Input } from '../ui/input';
 
 // Add a style tag for custom CSS
@@ -118,98 +110,114 @@ const CustomStyles = () => (
   `}</style>
 );
 
-const getFolderStructure = (files) => {
-  const structure = {};
+// const getFolderStructure = (files) => {
+//   const structure = {};
 
-  // Convert array to object with filePaths
-  const fileMap = {};
-  Object.entries(files).forEach(([_, file]) => {
-    if (file && file.filePath) {
-      fileMap[file.filePath] = file.code;
-    }
-  });
+//   // Convert array to object with filePaths
+//   const fileMap = {};
+//   Object.entries(files).forEach(([, file]) => {
+//     //@ts-expect-error ignore
+//     if (file && file.filePath) {
+//       //@ts-expect-error ignore
+//       fileMap[file.filePath] = file.code;
+//     }
+//   });
 
-  // Now process the file paths
-  Object.keys(fileMap).forEach((filePath) => {
-    const parts = filePath.split('/').filter(Boolean);
-    let current = structure;
+//   // Now process the file paths
+//   Object.keys(fileMap).forEach((filePath) => {
+//     const parts = filePath.split('/').filter(Boolean);
+//     let current = structure;
 
-    parts.forEach((part, index) => {
-      if (index === parts.length - 1) {
-        // It's a file
-        if (!current._files) current._files = [];
-        current._files.push({
-          name: part,
-          fullPath: filePath,
-          code: fileMap[filePath],
-        });
-      } else {
-        // It's a directory
-        if (!current[part]) current[part] = {};
-        current = current[part];
-      }
-    });
-  });
+//     parts.forEach((part, index) => {
+//       if (index === parts.length - 1) {
+//         // It's a file
+//         //@ts-expect-error ignore
+//         if (!current._files) current._files = [];
+//         //@ts-expect-error ignore
+//         current._files.push({
+//           name: part,
+//           fullPath: filePath,
+//           //@ts-expect-error ignore
+//           code: fileMap[filePath],
+//         });
+//       } else {
+//         // It's a directory
+//         //@ts-expect-error ignore
 
-  return structure;
-};
+//         if (!current[part]) current[part] = {};
+//         //@ts-expect-error ignore
+//         current = current[part];
+//       }
+//     });
+//   });
 
-const flattenFileStructure = (structure, prefix = '') => {
-  let suggestions = [];
+//   return structure;
+// };
 
-  // Add folders first
-  Object.keys(structure).forEach((key) => {
-    if (key !== '_files') {
-      suggestions.push({
-        id: `${prefix}${key}/`,
-        display: `${prefix}${key}/`,
-        isFolder: true,
-      });
+// const flattenFileStructure = (structure, prefix = '') => {
+//   //@ts-expect-error ignore
+//   let suggestions = [];
 
-      // Add nested items
-      suggestions = suggestions.concat(
-        flattenFileStructure(structure[key], `${prefix}${key}/`)
-      );
-    }
-  });
+//   // Add folders first
+//   Object.keys(structure).forEach((key) => {
+//     if (key !== '_files') {
+//       suggestions.push({
+//         id: `${prefix}${key}/`,
+//         display: `${prefix}${key}/`,
+//         isFolder: true,
+//       });
 
-  // Add files
-  if (structure._files) {
-    structure._files.forEach((file) => {
-      suggestions.push({
-        id: file.fullPath,
-        display: file.fullPath,
-        isFile: true,
-      });
-    });
-  }
+//       // Add nested items
+//       //@ts-expect-error ignore
 
-  return suggestions;
-};
+//       suggestions = suggestions.concat(
+//         flattenFileStructure(structure[key], `${prefix}${key}/`)
+//       );
+//     }
+//   });
 
-const mentionsInputStyle = {
-  input: {
-    width: '100%',
-    backgroundColor: 'hsl(var(--background))',
-    color: 'hsl(var(--foreground))',
-    fontSize: '14px',
-    '&::placeholder': {
-      color: 'hsl(var(--muted-foreground))',
-    },
-  },
-  suggestions: {
-    item: {
-      color: 'hsl(var(--muted-foreground))',
-      '&:hover': {
-        color: 'hsl(var(--foreground))',
-      },
-    },
-  },
-};
+//   // Add files
+//   if (structure._files) {
+//     //@ts-expect-error ignore
+//     structure._files.forEach((file) => {
+//       suggestions.push({
+//         id: file.fullPath,
+//         display: file.fullPath,
+//         isFile: true,
+//       });
+//     });
+//   }
+
+//   //@ts-expect-error ignore
+//   return suggestions;
+// };
+
+// const mentionsInputStyle = {
+//   input: {
+//     width: '100%',
+//     backgroundColor: 'hsl(var(--background))',
+//     color: 'hsl(var(--foreground))',
+//     fontSize: '14px',
+//     '&::placeholder': {
+//       color: 'hsl(var(--muted-foreground))',
+//     },
+//   },
+//   suggestions: {
+//     item: {
+//       color: 'hsl(var(--muted-foreground))',
+//       '&:hover': {
+//         color: 'hsl(var(--foreground))',
+//       },
+//     },
+//   },
+// };
 
 const Chatview = ({
+  //@ts-expect-error ignore
   activeProject,
+  //@ts-expect-error ignore
   onGenerateStart,
+  //@ts-expect-error ignore
   onGenerateEnd,
   showLuaToggle = true,
 }) => {
@@ -217,16 +225,17 @@ const Chatview = ({
   const [message, setmessage] = useState([]);
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState({});
-  const [mentionedFiles, setMentionedFiles] = useState([]);
+  const [mentionedFiles] = useState([]);
   const messagesEndRef = useRef(null);
   const [selectedFramework, setSelectedFramework] = useState('React');
   const [luaEnabled, setLuaEnabled] = useState(false);
-  const [expandedFolders, setExpandedFolders] = useState(new Set());
+  // const [expandedFolders, setExpandedFolders] = useState(new Set());
   const [failedMessage, setFailedMessage] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
 
   const scrollToBottom = () => {
+    //@ts-expect-error ignore
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -234,32 +243,7 @@ const Chatview = ({
     scrollToBottom();
   }, [message, loading]);
 
-  const fetchMessages = async (projectId) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/history/${projectId}`
-      );
-
-      const messages = response.data.messages.map((msg) => ({
-        ...msg,
-        content: msg.role === 'model' ? JSON.parse(msg.content) : msg.content,
-      }));
-      setmessage(messages);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      toast.error('Failed to load chat messages', {
-        action: {
-          label: 'Resend',
-          onClick: () => fetchMessages(),
-        },
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchProjectFiles = async (projectId) => {
+  const fetchProjectFiles = async (projectId: string) => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`
@@ -268,7 +252,8 @@ const Chatview = ({
         setFiles(response.data.codebase);
       }
     } catch (error) {
-      if (error.response.data.erro === 'No code found for project') {
+      //@ts-expect-error ignore
+      if (error.response.data.error === 'No code found for project') {
         toast.error('No code found for project');
         return;
       }
@@ -276,78 +261,79 @@ const Chatview = ({
     }
   };
 
-  const getFileSuggestions = (search) => {
-    if (!files || !Array.isArray(files)) return [];
+  // const getFileSuggestions = (search) => {
+  //   if (!files || !Array.isArray(files)) return [];
 
-    // Convert array to object with filePaths
-    const fileMap = {};
-    Object.entries(files).forEach(([_, file]) => {
-      if (file && file.filePath) {
-        fileMap[file.filePath] = file.code;
-      }
-    });
+  //   // Convert array to object with filePaths
+  //   const fileMap = {};
+  //   Object.entries(files).forEach(([_, file]) => {
+  //     if (file && file.filePath) {
+  //       fileMap[file.filePath] = file.code;
+  //     }
+  //   });
 
-    // If it's just @ without search, show folder structure
-    if (!search) {
-      const structure = getFolderStructure(files);
-      const suggestions = flattenFileStructure(structure);
-      // Only show files from expanded folders
-      return suggestions.filter((suggestion) => {
-        if (suggestion.isFile) {
-          // Check if parent folder is expanded
-          const folderPath =
-            suggestion.id.split('/').slice(0, -1).join('/') + '/';
-          return expandedFolders.has(folderPath);
-        }
-        return true; // Always show folders
-      });
-    }
+  //   // If it's just @ without search, show folder structure
+  //   if (!search) {
+  //     const structure = getFolderStructure(files);
+  //     const suggestions = flattenFileStructure(structure);
+  //     // Only show files from expanded folders
+  //     return suggestions.filter((suggestion) => {
+  //       if (suggestion.isFile) {
+  //         // Check if parent folder is expanded
+  //         const folderPath =
+  //           suggestion.id.split('/').slice(0, -1).join('/') + '/';
+  //         return expandedFolders.has(folderPath);
+  //       }
+  //       return true; // Always show folders
+  //     });
+  //   }
 
-    // If there's a search term, search across all files
-    const searchLower = search.toLowerCase();
-    return Object.entries(files)
-      .filter(
-        ([_, file]) =>
-          file &&
-          file.filePath &&
-          file.filePath.toLowerCase().includes(searchLower)
-      )
-      .map(([_, file]) => ({
-        id: file.filePath,
-        display: file.filePath,
-        isFile: true,
-      }));
-  };
+  //   // If there's a search term, search across all files
+  //   const searchLower = search.toLowerCase();
+  //   return Object.entries(files)
+  //     .filter(
+  //       ([_, file]) =>
+  //         file &&
+  //         file.filePath &&
+  //         file.filePath.toLowerCase().includes(searchLower)
+  //     )
+  //     .map(([_, file]) => ({
+  //       id: file.filePath,
+  //       display: file.filePath,
+  //       isFile: true,
+  //     }));
+  // };
 
-  const handleFileMention = (id, display) => {
-    // Find the file in the array
-    const mentionedFile = Object.values(files).find(
-      (file) => file.filePath === id
-    );
-    if (mentionedFile) {
-      setMentionedFiles((prev) => [
-        ...prev,
-        {
-          id,
-          display,
-          code: mentionedFile.code,
-        },
-      ]);
-    }
-  };
+  // const handleFileMention = (id, display) => {
+  //   // Find the file in the array
+  //   const mentionedFile = Object.values(files).find(
+  //     (file) => file.filePath === id
+  //   );
+  //   if (mentionedFile) {
+  //     setMentionedFiles((prev) => [
+  //       ...prev,
+  //       {
+  //         id,
+  //         display,
+  //         code: mentionedFile.code,
+  //       },
+  //     ]);
+  //   }
+  // };
 
-  const handleFolderClick = (folderId) => {
-    setExpandedFolders((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(folderId)) {
-        newSet.delete(folderId);
-      } else {
-        newSet.add(folderId);
-      }
-      return newSet;
-    });
-  };
+  // const handleFolderClick = (folderId) => {
+  //   setExpandedFolders((prev) => {
+  //     const newSet = new Set(prev);
+  //     if (newSet.has(folderId)) {
+  //       newSet.delete(folderId);
+  //     } else {
+  //       newSet.add(folderId);
+  //     }
+  //     return newSet;
+  //   });
+  // };
 
+  // @ts-expect-error ignore
   const handleSubmit = async (e) => {
     e?.preventDefault();
 
@@ -380,6 +366,7 @@ const Chatview = ({
 
     // Only add user message to UI if we're not retrying
     if (!isRetrying) {
+      // @ts-expect-error ignore
       setmessage((prev) => [...prev, userMessage]);
     }
 
@@ -390,7 +377,9 @@ const Chatview = ({
 
       // Add a temporary loading message
       const tempSystemMessageId = `temp-${Date.now() + 1}`;
+      // @ts-expect-error ignore
       setmessage((prev) => [
+        // @ts-expect-error ignore
         ...prev.filter((m) => !isRetrying || m.id !== tempSystemMessageId), // Remove previous loading message if retrying
         {
           id: tempSystemMessageId,
@@ -409,8 +398,11 @@ const Chatview = ({
       const requestBody = {
         prompt: { role: 'user', content: messageToSend },
         projectId: activeProject.projectId,
+
         fileContext: mentionedFiles.reduce((acc, file) => {
+          // @ts-expect-error ignore
           if (files[file.id]) {
+            // @ts-expect-error ignore
             acc[file.id] = files[file.id];
           }
           return acc;
@@ -423,9 +415,12 @@ const Chatview = ({
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/`,
         requestBody
       );
+      // @ts-expect-error ignore
 
       // Update messages, removing the loading indicator and adding the real response
       setmessage((prev) => [
+        // @ts-expect-error ignore
+
         ...prev.filter((m) => m.id !== tempSystemMessageId), // Remove loading message
         {
           id: response.data.id || `msg-${Date.now()}`,
@@ -448,11 +443,13 @@ const Chatview = ({
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+      // @ts-expect-error ignore
 
       // Remove the loading indicator
       setmessage((prev) => prev.filter((m) => !m.isLoading));
 
       // Store the failed message for retry
+      // @ts-expect-error ignore
       setFailedMessage(messageToSend);
 
       // Reset retry state
@@ -470,10 +467,11 @@ const Chatview = ({
   // Function to handle retry
   const handleRetry = () => {
     if (failedMessage) {
+      // @ts-expect-error ignore
       handleSubmit();
     }
   };
-
+  // @ts-expect-error ignore
   const renderMessageContent = (msg) => {
     if (msg.role === 'user') {
       return msg.content;
@@ -489,9 +487,11 @@ const Chatview = ({
   };
 
   // Add a new function to handle key press events
+  // @ts-expect-error ignore
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      // @ts-expect-error ignore
       handleSubmit();
     }
   };
@@ -501,15 +501,27 @@ const Chatview = ({
     setIsInputExpanded(!isInputExpanded);
   };
 
-  if (!activeProject.projectId) {
-    return (
-      <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
-        <p>Select a project to start chatting</p>
-      </div>
-    );
-  }
-
   useEffect(() => {
+    const fetchMessages = async (projectId: string) => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/history/${projectId}`
+        );
+        // @ts-expect-error ignore
+        const messages = response.data.messages.map((msg) => ({
+          ...msg,
+          content: msg.role === 'model' ? JSON.parse(msg.content) : msg.content,
+        }));
+        setmessage(messages);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        toast.error('Failed to load chat messages');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (activeProject) {
       fetchMessages(activeProject?.projectId);
       fetchProjectFiles(activeProject?.projectId);
@@ -519,6 +531,14 @@ const Chatview = ({
     }
     console.log('Active project changed in Chatview:', activeProject);
   }, [activeProject]);
+
+  if (!activeProject.projectId) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
+        <p>Select a project to start chatting</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -534,18 +554,23 @@ const Chatview = ({
               {Array.isArray(message) &&
                 message.map((msg, index) => (
                   <div
+                    // @ts-expect-error ignore
+
                     key={msg.id || index}
                     className={`flex ${
+                      // @ts-expect-error ignore
                       msg.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     <div
                       className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${
+                        // @ts-expect-error ignore
                         msg.role === 'user'
                           ? 'bg-primary/10 text-primary'
                           : 'bg-muted text-foreground'
                       }`}
                     >
+                      {/*@ts-expect-error ignore */}
                       {msg.isLoading ? (
                         <div className="flex items-center justify-center">
                           <Loader2Icon

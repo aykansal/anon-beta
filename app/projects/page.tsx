@@ -10,22 +10,34 @@ import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ProjectType } from '@/lib/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const ProjectsPage = () => {
-  const [files, setFiles] = useState({});
-  const [projects, setProjects] = useState([]);
-  const [isResizing, setIsResizing] = useState(false);
-  const [splitPosition, setSplitPosition] = useState(70);
-  const [isSavingCode, setIsSavingCode] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [activeProject, setActiveProject] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('connected');
-  const [error, setError] = useState(null); // Global error state for UI feedback
-  const [isCreating, setIsCreating] = useState(false);
-  const [status, setStatus] = useState(''); // New state for handling status
-  const [walletAddress, setWalletAddress] = useState('');
-  const [githubToken, setGithubToken] = useState(null);
-  const [isChatVisible, setIsChatVisible] = useState(true);
+  const [files, setFiles] = useState<Record<string, File>>({});
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const [splitPosition, setSplitPosition] = useState<number>(70);
+  const [isSavingCode, setIsSavingCode] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [activeProject, setActiveProject] = useState<ProjectType | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<string>('connected');
+  const [error, setError] = useState<Error | null>(null); // Global error state for UI feedback
+  const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [status, setStatus] = useState<string>(''); // New state for handling status
+  const [walletAddress, setWalletAddress] = useState<string>('');
+  const [githubToken, setGithubToken] = useState<string | null>(null);
+  const [isChatVisible, setIsChatVisible] = useState<boolean>(true);
+  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [newProjectName, setNewProjectName] = useState<string>('');
 
   // Validate environment variable
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -90,13 +102,13 @@ const ProjectsPage = () => {
         error.response?.data?.error ||
         error.message ||
         'Failed to fetch projects';
-      setError(errorMessage);
+      setError(new Error(errorMessage));
       toast.error(errorMessage);
       setConnectionStatus('disconnected');
     }
   };
 
-  const handleProjectSelect = async (project) => {
+  const handleProjectSelect = async (project: ProjectType) => {
     try {
       if (!project) {
         setActiveProject(null);
@@ -149,7 +161,7 @@ const ProjectsPage = () => {
     } catch (error) {
       console.error('Error selecting project:', error);
       const errorMessage = error.message || 'Failed to load project';
-      setError(errorMessage);
+      setError(new Error(errorMessage));
       toast.error(errorMessage);
       setConnectionStatus('disconnected');
       setActiveProject(null);
@@ -157,7 +169,7 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleCreateProject = async (projectName) => {
+  const handleCreateProject = async (projectName: string) => {
     try {
       if (
         !projectName ||
@@ -210,7 +222,7 @@ const ProjectsPage = () => {
         error.response?.data?.error ||
         error.message ||
         'Error creating project';
-      setError(errorMessage);
+      setError(new Error(errorMessage));
       toast.error(errorMessage);
       setConnectionStatus('disconnected');
     } finally {
@@ -228,45 +240,24 @@ const ProjectsPage = () => {
     toast.info('Running project...');
   };
 
-  const handleResizing = (e) => {
-    if (isResizing) {
-      const container = document.getElementById('main-container');
-      if (!container) {
-        console.warn('Main container not found for resizing');
-        return;
-      }
-      const containerWidth = container.offsetWidth;
-      const newPosition = (e.clientX / containerWidth) * 100;
-      if (newPosition >= 30 && newPosition <= 85) {
-        setSplitPosition(newPosition);
-      }
-    }
-  };
-
-  const stopResizing = () => {
-    setIsResizing(false);
-    document.removeEventListener('mousemove', handleResizing);
-    document.removeEventListener('mouseup', stopResizing);
-  };
-
   useEffect(() => {
     console.log('Active project changed:', activeProject);
   }, [activeProject]);
 
-  useEffect(() => {
-    const handleCodebaseUpdate = (event) => {
-      if (!event.detail || typeof event.detail !== 'object') {
-        console.warn('Invalid codebase update event:', event);
-        return;
-      }
-      const newCodebase = event.detail;
-      setFiles(newCodebase);
-    };
+  // useEffect(() => {
+  //   const handleCodebaseUpdate = (event) => {
+  //     if (!event.detail || typeof event.detail !== 'object') {
+  //       console.warn('Invalid codebase update event:', event);
+  //       return;
+  //     }
+  //     const newCodebase = event.detail;
+  //     setFiles(newCodebase);
+  //   };
 
-    window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
-    return () =>
-      window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
-  }, []);
+  //   window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
+  //   return () =>
+  //     window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
+  // }, []);
 
   const fetchData = async () => {
     try {
@@ -497,7 +488,7 @@ const ProjectsPage = () => {
         error.response?.data?.error ||
         error.message ||
         'Failed to commit to GitHub';
-      setError(errorMessage);
+      setError(new Error(errorMessage));
       toast.error('Error committing to GitHub:', {
         description: 'Check dev console for more details',
       });
@@ -534,6 +525,16 @@ const ProjectsPage = () => {
     }
   }, []);
 
+  const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const newProject = newProjectName.trim();
+    if (newProject) {
+      await handleCreateProject(newProject);
+      setNewProjectName('');
+      setIsDialogOpen(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <div className="shrink-0 border-b border-border">
@@ -548,14 +549,14 @@ const ProjectsPage = () => {
           onRun={handleRunProject}
           onRefresh={handleRefreshProject}
           githubConnected={!!githubToken}
-          className="bg-background"
+          // className="bg-background"
         />
       </div>
 
       {/* Error Display - Updated colors */}
       {error && (
         <div className="bg-destructive/5 px-4 py-2 text-destructive flex justify-between items-center border-b border-destructive/10">
-          <p>{error}</p>
+          <p>{error.message}</p>
           <button
             onClick={fetchProjects}
             className="text-sm text-destructive hover:text-destructive/80"
@@ -581,8 +582,7 @@ const ProjectsPage = () => {
             {/* Code Editor Container */}
             <div className="flex-1 relative">
               <Codeview
-                theme="dark"
-                files={files}
+                // files={files}
                 isSaving={isSavingCode}
                 isGenerating={isGenerating}
                 activeProject={activeProject}
@@ -635,7 +635,7 @@ const ProjectsPage = () => {
               No Project Selected
             </h3>
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => setIsDialogOpen(true)}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90"
             >
               Create a New Project
@@ -644,16 +644,56 @@ const ProjectsPage = () => {
         </div>
       )}
 
+      {/* Create Project Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="projectName"
+                  className="text-sm font-medium leading-none"
+                >
+                  Project Name
+                </label>
+                <input
+                  id="projectName"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-full p-2 rounded-md border border-border bg-background text-foreground"
+                  placeholder="Enter project name"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Create Project</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Status Bar - Updated colors */}
       <div className="shrink-0 border-t border-border">
         <StatusBar
-          isCreating={isCreating}
+          // isCreating={isCreating}
           activeProject={activeProject}
-          isSaving={isSavingCode}
-          isGenerating={isGenerating}
+          // isSaving={isSavingCode}
+          // isGenerating={isGenerating}
           connectionStatus={connectionStatus}
           status={status}
-          className="bg-background"
+          // className="bg-background"
         />
       </div>
     </div>

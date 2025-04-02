@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 'use client';
 
 import {
@@ -51,6 +49,7 @@ export default function ConnectButton() {
       const balance = await window.arweaveWallet.tokenBalance(tokenId);
 
       setUserData({
+        // @ts-expect-error ignore type error
         balance: `${balance} AR`,
         address,
         trimmedAddress,
@@ -75,7 +74,10 @@ export default function ConnectButton() {
   };
 
   const handleCopyAddress = () => {
+    // @ts-expect-error ignore type error
+
     if (userData?.address) {
+      // @ts-expect-error ignore type error
       navigator.clipboard.writeText(userData.address).then(() => {
         setCopying(true);
         setTimeout(() => setCopying(false), 2000);
@@ -91,8 +93,10 @@ export default function ConnectButton() {
     <Dialog>
       <DialogTrigger className="flex justify-center items-center space-x-3 bg-linear-to-r hover:bg-linear-to-r from-slate-900 hover:from-slate-800 to-slate-800 hover:to-slate-700 p-2 rounded-lg transition-all duration-200 cursor-pointer">
         <div className="font-medium text-[#A6E433] text-sm">
+          {/* @ts-expect-error ignore type error */}
           {userData.balance}
         </div>
+        {/* @ts-expect-error ignore type error */}
         <div className="text-gray-400 text-xs">{userData.trimmedAddress}</div>
       </DialogTrigger>
 
@@ -120,7 +124,9 @@ export default function ConnectButton() {
           </div>
 
           <div className="text-center">
+            {/* @ts-expect-error ignore type error */}
             <p className="text-gray-300 text-sm">{userData.address}</p>
+            {/* @ts-expect-error ignore type error */}
             <p className="text-gray-400 text-xs">{userData.balance}</p>
           </div>
 

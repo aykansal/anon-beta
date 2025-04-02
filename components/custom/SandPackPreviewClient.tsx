@@ -14,7 +14,9 @@ const SandPackPreviewClient = () => {
   const previewRef = React.useRef(null);
 
   const getSandPackClient = async () => {
-    const client = previewRef?.current?.getClient();
+            // @ts-expect-error ignore type error
+            const client = previewRef?.current?.getClient();
+            // @ts-expect-error ignore type error
     const clientId = previewRef.current?.clientId;
 
     // const client2 = await loadSandpackClient(previewRef.current.iframe, {

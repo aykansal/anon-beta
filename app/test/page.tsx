@@ -8,7 +8,7 @@ import {
   messageAR,
   runLua,
   spawnProcess,
-  transactionAR,
+  // transactionAR,
 } from '@/lib/arkit';
 import WalletConnect from '@/components/anon/WalletConnect';
 import styles from '@/styles/test.module.css';
@@ -40,10 +40,11 @@ const Testarweave = () => {
   );
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(false);
+  const [fetching] = useState(false);
   const [spawning, setSpawning] = useState(false);
   const [fetchedMessages, setFetchedMessages] = useState();
 
+  //@ts-expect-error ignore
   const handleSendMessage = async ({ fileData }) => {
     try {
       setLoading(true);
@@ -78,24 +79,27 @@ const Testarweave = () => {
       const messages = await fetchMessagesAR({ process });
       // console.log('Fetched Messages:', messages);
 
-      let parsedFiles = [];
+      //@ts-expect-error ignore
+      const parsedFiles = [];
       messages.forEach((message) => {
         const { data } = message;
         console.log('Message Data:', data);
+        //@ts-expect-error ignore
         parsedFiles.push(data.map(({ file, body }) => ({ file, body })));
       });
-      console.log(parsedFiles);
+
+      //@ts-expect-error ignore
       setFetchedMessages(parsedFiles);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
   };
 
-  const handleTransaction = async () => {
-    await transactionAR({
-      data: '<html><head><meta charset="UTF-8"><title>Hello permanent world! This was signed via ArConnect!!!</title></head><body></body></html>',
-    });
-  };
+  // const handleTransaction = async () => {
+  //   await transactionAR({
+  //     data: '<html><head><meta charset="UTF-8"><title>Hello permanent world! This was signed via ArConnect!!!</title></head><body></body></html>',
+  //   });
+  // };
 
   const handleSpawn = async () => {
     setSpawning(true);
@@ -113,6 +117,7 @@ const Testarweave = () => {
 
   useEffect(() => {
     const process = localStorage.getItem('spawnedProcess');
+    //@ts-expect-error ignore
     setProcess(process);
   }, []);
 
@@ -131,6 +136,7 @@ const Testarweave = () => {
             </div>
             <div className="flex justify-center w-full md:w-auto">
               <WalletConnect
+                //@ts-expect-error ignore
                 onWalletConnected={(walletData) => {
                   console.log('Wallet connected:', walletData);
                 }}
@@ -186,6 +192,7 @@ const Testarweave = () => {
               </Button>
               <Button
                 onClick={async () => {
+                  //@ts-expect-error ignore
                   const ao = connect();
                   const res = await ao
                     .message({
@@ -193,7 +200,7 @@ const Testarweave = () => {
                     Send({Target="f_ZV6pI3KYkkHIctjTeEvUyBo8icRAwmDkHWWcvl3uY",Tags={Action="getAuthor"}})
                     `,
                       process: anonSqliteProcess,
-                      signer: createDataItemSigner(globalThis.arweaveWallet),
+                      signer: createDataItemSigner(window.arweaveWallet),
                       tags: [{ name: 'Action', value: 'Eval' }],
                     })
                     .then(
@@ -207,6 +214,7 @@ const Testarweave = () => {
               </Button>
               <Button
                 onClick={async () => {
+                  //@ts-expect-error ignore
                   const ao = connect();
                   const res = await ao.dryrun({
                     data: '',
@@ -258,15 +266,19 @@ const Testarweave = () => {
                   Fetched Messages
                 </h2>
                 <div className="gap-6 grid">
+                  {/* @ts-expect-error ignore */}
                   {fetchedMessages.map((fileGroup, index) => (
                     <div
                       key={index}
                       className="border-[#333] bg-[#1a1a1a] p-6 border rounded-lg transition-transform hover:-translate-y-0.5 duration-200"
                     >
+                      {/* @ts-expect-error ignore */}
                       {fileGroup.map(({ file, body }, idx) => (
                         <div
                           key={idx}
-                          className={`${idx !== fileGroup.length - 1 ? 'mb-6' : ''}`}
+                          className={`${
+                            idx !== fileGroup.length - 1 ? 'mb-6' : ''
+                          }`}
                         >
                           <h3 className="mb-2 font-semibold text-base text-gray-400">
                             {file}

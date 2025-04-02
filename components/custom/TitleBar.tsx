@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import React, { useState } from 'react';
 import {
   PlayIcon,
@@ -22,21 +20,26 @@ import {
 import { Button } from '@/components/ui/button';
 
 const TitleBar = ({
+  // @ts-expect-error ignore type error
   projects,
+  // @ts-expect-error ignore type error
   activeProject,
+  // @ts-expect-error ignore type error
   onProjectSelect,
+  // @ts-expect-error ignore type error
   onCreateProject,
+  // @ts-expect-error ignore type error
   onSave,
+  // @ts-expect-error ignore type error
   onRun,
+  // @ts-expect-error ignore type error
   onRefresh,
-  isCreating = false,
-  setIsCreating,
   githubConnected = false,
 }) => {
   const [newProjectName, setNewProjectName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleProjectChange = (e) => {
+  const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     // const projectId = parseInt(e.target.value);
     const projectId = e.target.value;
     if (!Array.isArray(projects)) {
@@ -51,7 +54,7 @@ const TitleBar = ({
     }
   };
 
-  const handleCreateSubmit = async (e) => {
+  const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const newProject = newProjectName.trim();
     if (newProject) {
@@ -73,6 +76,7 @@ const TitleBar = ({
         >
           <option value="">Select Project</option>
           {projects.length > 0 &&
+            // @ts-expect-error ignore type error
             projects?.map((project) => (
               <option key={project.projectId} value={project.projectId}>
                 {project.name}
@@ -175,7 +179,10 @@ const TitleBar = ({
           <form onSubmit={handleCreateSubmit}>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <label htmlFor="projectName" className="text-sm font-medium leading-none">
+                <label
+                  htmlFor="projectName"
+                  className="text-sm font-medium leading-none"
+                >
                   Project Name
                 </label>
                 <input
@@ -190,7 +197,11 @@ const TitleBar = ({
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit">Create Project</Button>
