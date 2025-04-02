@@ -320,13 +320,13 @@ const Codeview = ({
     };
     const updateDependencies = async () => {
       if (
-        // @ts-expect-error ignore type error
         currentProject?.latestMessage?.integrationText?.content.codebase
+        // @ts-expect-error ignore type error
           .externalPackages
       ) {
         const validPackages = await validateDependencies(
-          // @ts-expect-error ignore type error
           currentProject?.latestMessage?.integrationText?.content?.codebase
+          // @ts-expect-error ignore type error
             .externalPackages
         );
         setValidatedDependencies(validPackages);

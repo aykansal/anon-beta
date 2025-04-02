@@ -1,4 +1,3 @@
-
 import React from 'react';
 const Footer = ({
   mounted,
@@ -7,6 +6,13 @@ const Footer = ({
   email,
   setEmail,
   handleSubscribe,
+}: {
+  mounted: boolean;
+  theme: string | undefined;
+  setTheme: (value: string) => void;
+  email: string;
+  setEmail: (value: string) => void;
+  handleSubscribe: () => void;
 }) => {
   return (
     <footer className="w-full py-5 relative z-10">

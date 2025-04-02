@@ -245,8 +245,8 @@ export default function Home() {
 
       {/* Enhanced Footer */}
       <Footer
-        mounted={mounted}
         theme={theme}
+        mounted={mounted}
         setTheme={setTheme}
         email={email}
         setEmail={setEmail}

@@ -6,7 +6,7 @@ import Head from 'next/head';
 const WaitlistNew = () => {
   const [email, setEmail] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Add your waitlist submission logic here
     console.log('Email submitted:', email);
@@ -136,7 +136,7 @@ const WaitlistNew = () => {
 };
 
 // Social icon component
-const SocialIcon = ({ platform }) => {
+const SocialIcon = ({ platform }: { platform: string }) => {
   const getIcon = () => {
     switch (platform) {
       case 'twitter':

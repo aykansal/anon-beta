@@ -5,7 +5,14 @@ import { MessageContext } from '@/context/MessagesContext';
 import { UserDetailsContext } from '@/context/UserDetailsContext';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
 
-const Provider = ({ children, ...props }) => {
+const Provider = ({
+  children,
+  ...props
+}: {
+  children: React.ReactNode;
+  // @ts-expect-error ignore
+  props;
+}) => {
   const [message, setmessage] = useState();
   const [userDets, setuserDets] = useState();
   const [action, setAction] = useState();

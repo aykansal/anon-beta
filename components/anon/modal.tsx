@@ -1,7 +1,16 @@
-import { useState, useEffect } from 'react';
+'use client';
+import { useEffect, useState } from 'react';
 import styles from './styles/Modal.module.css';
 
-const Modal = ({ isOpen, onClose, onWalletSelect }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  onWalletSelect,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onWalletSelect: (value: string) => void;
+}) => {
   const [hasArweaveWallet, setHasArweaveWallet] = useState(false);
 
   useEffect(() => {
@@ -29,7 +38,7 @@ const Modal = ({ isOpen, onClose, onWalletSelect }) => {
           {hasArweaveWallet && (
             <button
               className={styles.walletButton}
-              onClick={() => onWalletSelect('arweave')}
+              onClick={() => onWalletSelect('arweave' )}
             >
               Arweave Wallet
             </button>
