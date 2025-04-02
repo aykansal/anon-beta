@@ -35,7 +35,7 @@ const ProjectDetails = () => {
       return;
     }
     await window.arweaveWallet.connect(
-      ['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'ACCESS_TOKENS'],
+      ['ACCESS_ADDRESS', 'SIGN_TRANSACTION'],
       {
         name: 'Anon',
         logo: 'https://arweave.net/jAvd7Z1CBd8gVF2D6ESj7SMCCUYxDX_z3vpp5aHdaYk',
