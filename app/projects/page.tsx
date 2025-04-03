@@ -21,21 +21,23 @@ import {
 import { Button } from '@/components/ui/button';
 
 const ProjectsPage = () => {
-  const [setFiles] = useState<Record<string, File>>({});
+  // const [, setFiles] = useState<Record<string, File>>({});
   const [projects, setProjects] = useState<ProjectType[]>([]);
   const [splitPosition] = useState<number>(70);
-  const [isSavingCode] = useState<boolean>(false);
+  // const [isSavingCode] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [activeProject, setActiveProject] = useState<ProjectType | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>('connected');
   const [error, setError] = useState<Error | null>(null); // Global error state for UI feedback
-  const [setIsCreating] = useState<boolean>(false);
+  // const [setIsCreating] = useState<boolean>(false);
   const [status, setStatus] = useState<string>(''); // New state for handling status
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [githubToken, setGithubToken] = useState<string | null>(null);
   const [isChatVisible, setIsChatVisible] = useState<boolean>(true);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [newProjectName, setNewProjectName] = useState<string>('');
+
+  const isSavingCode: boolean = false;
 
   // Validate environment variable
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -113,8 +115,7 @@ const ProjectsPage = () => {
     try {
       if (!project) {
         setActiveProject(null);
-        // @ts-expect-error ignore
-        setFiles({});
+        // setFiles({});
         setError(null);
         localStorage.removeItem('activeProjectId');
         return;
@@ -151,15 +152,12 @@ const ProjectsPage = () => {
               // @ts-expect-error ignore
               normalizedCodebase[filePath] = file.code;
             });
-            // @ts-expect-error ignore
-            setFiles(normalizedCodebase);
+            // setFiles(normalizedCodebase);
           } else {
-            // @ts-expect-error ignore
-            setFiles(response.data.codebase);
+            // setFiles(response.data.codebase);
           }
         } else {
-          // @ts-expect-error ignore
-          setFiles({});
+          // setFiles({});
         }
       }
 
@@ -236,8 +234,7 @@ const ProjectsPage = () => {
       toast.error(errorMessage);
       setConnectionStatus('disconnected');
     } finally {
-      // @ts-expect-error ignore
-      setIsCreating(false); // Reset isCreating after completion
+      // setIsCreating(false); // Reset isCreating after completion
       setStatus(''); // Reset status after completion
     }
   };

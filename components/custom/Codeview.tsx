@@ -141,7 +141,7 @@ const Codeview = ({
   onCommit,
 }: {
   activeProject: ProjectType;
-  isSaving: boolean;
+  isSaving?: boolean;
   isGenerating: boolean;
   onCommit: () => void;
 }) => {
