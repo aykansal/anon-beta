@@ -161,12 +161,14 @@ const Codeview = ({
           createdAt: string;
           description: string | null;
           id: number;
-          latestMessage: {
-            integrationText: {
-              content: {
-                codebase: { filePath: string; code: string }[];
-              };
-            };
+          // latestMessage: {
+          // integrationText: {
+          content: {
+            codebase: { filePath: string; code: string }[];
+            externalPackages: { packageName: string; packageVersion: string }[];
+            processId: string;
+            // };
+            // };
           } | null;
           name: string;
           processId: string;
@@ -179,17 +181,13 @@ const Codeview = ({
             `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject.walletAddress}`
           )
           .then((res) => {
-            // console.log('response.data inside codeview\n\n', res.data);
+            console.log('response.data inside codeview\n\n', res.data);
             return res.data;
           });
 
-        if (response.latestMessage) {
-          if (
-            Array.isArray(
-              response.latestMessage.integrationText.content.codebase
-            )
-          ) {
-            response.latestMessage.integrationText.content.codebase.forEach(
+        if (response.content) {
+          if (Array.isArray(response.content.codebase)) {
+            response.content.codebase.forEach(
               (file: { filePath: string; code: string }) => {
                 const filePath = file.filePath.startsWith('/')
                   ? file.filePath
@@ -319,16 +317,10 @@ const Codeview = ({
       return validatedPackages;
     };
     const updateDependencies = async () => {
-      if (
-        currentProject?.latestMessage?.integrationText?.content.codebase
-        // @ts-expect-error ignore type error
-          .externalPackages
-      ) {
-        const validPackages = await validateDependencies(
-          currentProject?.latestMessage?.integrationText?.content?.codebase
-          // @ts-expect-error ignore type error
-            .externalPackages
-        );
+      // @ts-expect-error ignore type error
+      const externalPackages = currentProject?.content?.externalPackages;
+      if (externalPackages) {
+        const validPackages = await validateDependencies(externalPackages);
         setValidatedDependencies(validPackages);
       }
     };
