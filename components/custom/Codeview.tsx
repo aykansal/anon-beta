@@ -1,23 +1,14 @@
 'use client';
 
 interface ProjectType {
-  createdAt: string;
-  description: string | null;
-  id: number;
-  latestMessage: {
-    integrationText: {
-      content: {
-        codebase: { filePath: string; code: string }[];
-        externalPackages: string[];
-      };
-    };
+  content: {
+    processId: string;
+    codebase: { filePath: string; code: string }[];
+    externalPackages: { packageName: string; packageVersion: string }[];
+    description: string;
+    codeInstructions: string[];
   } | null;
-  name: string;
-  processId: string;
-  projectId: string;
-  sandboxId: string;
-  updatedAt: string;
-  walletAddress: string;
+  codebase: { filePath: string; code: string }[];
 }
 
 import {
@@ -132,7 +123,7 @@ const validateNpmPackage = async (packageName: string) => {
   }
 };
 
-let normalizedCodebase = {};
+let normalizedCodebase: { [key: string]: string } = {};
 
 const Codeview = ({
   activeProject,
@@ -158,26 +149,15 @@ const Codeview = ({
       try {
         setLoading(true);
         const response: {
-          createdAt: string;
-          description: string | null;
-          id: number;
-          // latestMessage: {
-          // integrationText: {
           content: {
             codebase: { filePath: string; code: string }[];
             externalPackages: { packageName: string; packageVersion: string }[];
             processId: string;
-            // };
-            // };
           } | null;
-          name: string;
-          processId: string;
-          projectId: string;
-          sandboxId: string;
-          updatedAt: string;
-          walletAddress: string;
+          codebase: { filePath: string; code: string }[];
         } = await axios
           .get(
+            // @ts-expect-error ignore type error
             `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject.walletAddress}`
           )
           .then((res) => {
@@ -185,30 +165,28 @@ const Codeview = ({
             return res.data;
           });
 
-        if (response.content) {
-          if (Array.isArray(response.content.codebase)) {
-            response.content.codebase.forEach(
+        if (response.codebase) {
+          if (Array.isArray(response.codebase)) {
+            response.codebase.forEach(
               (file: { filePath: string; code: string }) => {
                 const filePath = file.filePath.startsWith('/')
                   ? file.filePath
                   : `/${file.filePath}`;
-                // @ts-expect-error ignore type error
                 normalizedCodebase[filePath] = file.code;
               }
             );
-            // @ts-expect-error ignore type error
-          } else if (typeof response.codebase === 'object') {
-            // @ts-expect-error ignore type error
-            normalizedCodebase = Object.entries(response.codebase).reduce(
-              (acc: { [key: string]: string }, [key, value]) => {
-                const path = key.startsWith('/') ? key : `/src/${key}`;
-                // @ts-expect-error ignore type error
-                acc[path] = value;
-                return acc;
-              },
-              {} as { [key: string]: string }
-            );
-          } else {
+          }
+          //  else if (typeof response.codebase === 'object') {
+          //   normalizedCodebase = Object.entries(response.codebase).reduce(
+          //     (acc, [key, value]) => {
+          //       const path = key.startsWith('/') ? key : `/src/${key}`;
+          //       acc[path] = value;
+          //       return acc;
+          //     },
+          //     {} as { [key: string]: string }
+          //   );
+          // }
+          else {
             normalizedCodebase = defaultFiles_3;
           }
           // @ts-expect-error ignore type error
@@ -227,7 +205,9 @@ const Codeview = ({
       }
     };
 
+    // @ts-expect-error ignore type error
     if (activeProject?.projectId) {
+      // @ts-expect-error ignore type error
       fetchProjectCode(activeProject.projectId);
     }
   }, [activeProject]);
@@ -245,23 +225,20 @@ const Codeview = ({
       const currentFiles: {
         [key: string]: { code: string; filePath: string; isTemplate?: boolean };
       } = {};
-      if (
-        currentProject &&
-        currentProject.latestMessage?.integrationText?.content.codebase
-      ) {
-        Object.entries(
-          currentProject.latestMessage.integrationText.content.codebase
-        ).forEach(([path, fileContent]) => {
-          currentFiles[path] = {
-            code:
-              typeof fileContent === 'object' && fileContent.code
-                ? fileContent.code
-                : typeof fileContent === 'string'
-                ? fileContent
-                : JSON.stringify(fileContent),
-            filePath: path,
-          };
-        });
+      if (currentProject && currentProject.codebase) {
+        Object.entries(currentProject.codebase).forEach(
+          ([path, fileContent]) => {
+            currentFiles[path] = {
+              code:
+                typeof fileContent === 'object' && fileContent.code
+                  ? fileContent.code
+                  : typeof fileContent === 'string'
+                  ? fileContent
+                  : JSON.stringify(fileContent),
+              filePath: path,
+            };
+          }
+        );
       } else {
         Object.entries(defaultFiles_3).forEach(([path, code]) => {
           currentFiles[path] = {
@@ -317,7 +294,6 @@ const Codeview = ({
       return validatedPackages;
     };
     const updateDependencies = async () => {
-      // @ts-expect-error ignore type error
       const externalPackages = currentProject?.content?.externalPackages;
       if (externalPackages) {
         const validPackages = await validateDependencies(externalPackages);
@@ -346,18 +322,12 @@ const Codeview = ({
     if (actionType === 'runlua') {
       toast.info('Running Lua code...');
       const luaCodeToBeEval =
-        currentProject?.latestMessage?.integrationText?.content.codebase[
-          // @ts-expect-error ignore type error
-          '/index.lua'
-        ] ||
-        currentProject?.latestMessage?.integrationText?.content.codebase[
-          // @ts-expect-error ignore type error
-          '/src/lib/index.lua'
-        ] ||
-        currentProject?.latestMessage?.integrationText?.content.codebase[
-          // @ts-expect-error ignore type error
-          'index.lua'
-        ];
+        // @ts-expect-error ignore type error
+        currentProject.codebase['/index.lua'] ||
+        // @ts-expect-error ignore type error
+        currentProject.codebase['/src/lib/index.lua'] ||
+        // @ts-expect-error ignore type error
+        currentProject.codebase['index.lua'];
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -378,7 +348,7 @@ const Codeview = ({
         // @ts-expect-error ignore type error
         const ao = connect();
         const messageId = await ao.message({
-          process: currentProject?.processId,
+          process: currentProject?.content?.processId || '',
           data: `${luaCodeToBeEval}`,
           signer: createDataItemSigner(window.arweaveWallet),
           tags: [
@@ -389,14 +359,16 @@ const Codeview = ({
               value: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY',
             },
             { name: 'Action', value: 'Eval' },
-            // @ts-expect-error ignore type error
-            { name: 'Description', value: currentProject?.description },
+            {
+              name: 'Description',
+              value: `${currentProject?.content?.description}`,
+            },
           ],
         });
         console.log('Message ID:', messageId);
 
         const result = await ao.result({
-          process: currentProject?.processId,
+          process: currentProject?.content?.processId || '',
           message: messageId,
         });
         // console.log('Result:', result);
@@ -430,7 +402,6 @@ const Codeview = ({
 
   console.log('currentProject', currentProject);
 
-  // @ts-expect-error ignore type error
   const codebaseFiles = currentProject?.codebase || {};
   const visibleFiles =
     Object.keys(codebaseFiles).length > 0
