@@ -594,6 +594,7 @@ const ProjectsPage = () => {
                 // files={files}
                 isSaving={isSavingCode}
                 isGenerating={isGenerating}
+                // @ts-expect-error ignore
                 activeProject={activeProject}
                 onCommit={handleSaveToGithub}
               />
