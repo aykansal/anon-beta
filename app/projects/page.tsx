@@ -644,12 +644,12 @@ const ProjectsPage = () => {
             <h3 className="text-lg font-medium mb-2 text-foreground">
               No Project Selected
             </h3>
-            <button
+            {/* <button
               onClick={() => setIsDialogOpen(true)}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90"
             >
               Create a New Project
-            </button>
+            </button> */}
           </div>
         </div>
       )}

@@ -441,6 +441,18 @@ const Chatview = ({
       if (onGenerateEnd) {
         onGenerateEnd();
       }
+      window.addEventListener('updateCodeview', (event) => {
+        const customEvent = event as CustomEvent;
+        if (customEvent.detail?.codebase) {
+          const refreshEvent = new CustomEvent('refreshCodeview', {
+            detail: {
+              projectId: activeProject.projectId,
+              codebase: customEvent.detail.codebase,
+            },
+          });
+          window.dispatchEvent(refreshEvent);
+        }
+      });
     } catch (error) {
       console.error('Failed to send message:', error);
       // @ts-expect-error ignore
@@ -473,17 +485,32 @@ const Chatview = ({
   };
   // @ts-expect-error ignore
   const renderMessageContent = (msg) => {
+    if (!msg || !msg.content) {
+      return '';
+    }
+
     if (msg.role === 'user') {
       return msg.content;
     }
 
-    const content = JSON.parse(msg.content);
-    let markdownContent = '';
-    if (content.description) {
-      markdownContent += content.description + '\n\n';
-    }
+    try {
+      // Check if content is already an object (might have been parsed earlier)
+      if (typeof msg.content === 'object') {
+        return msg.content.description || '';
+      }
 
-    return markdownContent;
+      // Try to parse as JSON
+      const content = JSON.parse(msg.content);
+      let markdownContent = '';
+      if (content.description) {
+        markdownContent += content.description + '\n\n';
+      }
+      return markdownContent;
+    } catch (error) {
+      // If JSON parsing fails, return the content as is
+      console.log('Failed to parse message content as JSON:', error);
+      return msg.content || '';
+    }
   };
 
   // Add a new function to handle key press events

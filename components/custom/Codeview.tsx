@@ -1,12 +1,11 @@
 'use client';
 
 interface ProjectType {
+  projectId: string;
   content: {
-    processId: string;
+    description: string;
     codebase: { filePath: string; code: string }[];
     externalPackages: { packageName: string; packageVersion: string }[];
-    description: string;
-    codeInstructions: string[];
   } | null;
   codebase: { filePath: string; code: string }[];
 }
@@ -20,16 +19,17 @@ import {
   RunIcon,
   useSandpack,
 } from '@codesandbox/sandpack-react';
-import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
-import { useContext, useEffect, useState } from 'react';
-import SandPackPreviewClient from './SandPackPreviewClient';
+
+import JSZip from 'jszip';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ActionContext } from '@/context/ActionContext';
-import JSZip from 'jszip';
 import { cn } from '@/lib/utils';
-import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
+import { useContext, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ActionContext } from '@/context/ActionContext';
+import SandPackPreviewClient from './SandPackPreviewClient';
+import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
+import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
 
 const SandpackDownloader = ({
   onDownload,
@@ -140,7 +140,7 @@ const Codeview = ({
   const [loading, setLoading] = useState(false);
   const { action, setAction } = useContext(ActionContext);
   const [currentProject, setCurrentProject] = useState<ProjectType | null>(
-    null
+    activeProject
   );
   const [validatedDependencies, setValidatedDependencies] = useState({});
 
@@ -205,9 +205,7 @@ const Codeview = ({
       }
     };
 
-    // @ts-expect-error ignore type error
     if (activeProject?.projectId) {
-      // @ts-expect-error ignore type error
       fetchProjectCode(activeProject.projectId);
     }
   }, [activeProject]);
@@ -218,6 +216,29 @@ const Codeview = ({
     };
 
     handleCodebaseUpdate(activeProject);
+
+    // Add event listener for refreshCodeview
+    const handleRefreshCodeview = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      if (customEvent.detail?.projectId && customEvent.detail?.codebase) {
+        setCurrentProject((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            projectId: customEvent.detail.projectId,
+            codebase: customEvent.detail.codebase,
+            content: prev.content,
+          } as ProjectType;
+        });
+      }
+    };
+
+    window.addEventListener('refreshCodeview', handleRefreshCodeview);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('refreshCodeview', handleRefreshCodeview);
+    };
   }, [activeProject]);
 
   useEffect(() => {
@@ -230,11 +251,15 @@ const Codeview = ({
           ([path, fileContent]) => {
             currentFiles[path] = {
               code:
-                typeof fileContent === 'object' && fileContent && fileContent.code
+                typeof fileContent === 'object' &&
+                fileContent &&
+                fileContent.code
                   ? fileContent.code
                   : typeof fileContent === 'string'
                   ? fileContent
-                  : fileContent ? JSON.stringify(fileContent) : '',
+                  : fileContent
+                  ? JSON.stringify(fileContent)
+                  : '',
               filePath: path,
             };
           }
@@ -304,13 +329,8 @@ const Codeview = ({
   }, [currentProject]);
 
   const isEditorDisabled = () => {
-    return (
-      !activeProject ||
-      isSaving ||
-      isGenerating ||
-      loading ||
-      action === 'deploy'
-    );
+    // Only disable if we're in a loading/saving state or deploying
+    return isSaving || isGenerating || loading || action === 'deploy';
   };
 
   const onAction = async (actionType: string) => {
@@ -321,11 +341,11 @@ const Codeview = ({
 
     if (actionType === 'runlua') {
       toast.info('Running Lua code...');
-      const luaCodeToBeEval =
-        // @ts-expect-error ignore type error
-        currentProject?.codebase['/src/lib/index.lua'] ||
-        // @ts-expect-error ignore type error
-        currentProject?.codebase['/process.lua'];
+      console.log('currentProject', currentProject);
+
+      const code = currentProject?.codebase;
+      // @ts-expect-error ignore type error
+      const luaCodeToBeEval = code['/src/lib/index.lua'];
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -339,22 +359,21 @@ const Codeview = ({
         return;
       }
 
+      if (!activeProject?.projectId) {
+        toast.error('No valid process ID found for this project.');
+        return;
+      }
+
       try {
         const { connect, createDataItemSigner } = await import(
           '@permaweb/aoconnect'
         );
-        // @ts-expect-error ignore type error
-        const ao = connect();
+        const ao = connect({ MODE: 'legacy' });
         console.log('activeProject', activeProject);
-        // @ts-expect-error ignore type error
-        if (!activeProject?.projectId) {
-          toast.error('No process ID found in the project.');
-          return;
-        }
+
         const messageId = await ao.message({
-          // @ts-expect-error ignore type error
-          process: activeProject?.projectId,
-          data: `${luaCodeToBeEval}`,
+          process: activeProject.projectId,
+          data: luaCodeToBeEval,
           signer: createDataItemSigner(window.arweaveWallet),
           tags: [
             { name: 'Name', value: 'Anon' },
@@ -366,14 +385,16 @@ const Codeview = ({
             { name: 'Action', value: 'Eval' },
             {
               name: 'Description',
-              value: `${currentProject?.content?.description}`,
+              value: `${
+                currentProject?.content?.description || 'project description'
+              }`,
             },
           ],
         });
         console.log('Message ID:', messageId);
 
         const result = await ao.result({
-          process: currentProject?.content?.processId || '',
+          process: activeProject?.projectId || '',
           message: messageId,
         });
         // console.log('Result:', result);
@@ -421,9 +442,8 @@ const Codeview = ({
       } else if (content && typeof content === 'object') {
         // Check if content has a code property that's a string
         const codeContent = content as Record<string, unknown>;
-        acc[path] = typeof codeContent.code === 'string' 
-                    ? codeContent.code 
-                    : '';
+        acc[path] =
+          typeof codeContent.code === 'string' ? codeContent.code : '';
       } else {
         acc[path] = '';
       }
@@ -487,6 +507,8 @@ const Codeview = ({
           'sp-preview-container': 'h-full bg-background',
           'sp-preview-iframe': 'h-full bg-white',
         },
+        recompileMode: 'immediate',
+        recompileDelay: 300,
       }}
     >
       <div className="flex flex-col bg-background h-full min-h-0">
@@ -575,8 +597,10 @@ const Codeview = ({
                   showInlineErrors={true}
                   wrapContent={false}
                   closableTabs={true}
-                  readOnly={isEditorDisabled()}
+                  readOnly={false}
+                  showRunButton={true}
                   style={{ height: '100%', minHeight: '0', flex: '1' }}
+                  extensions={[]}
                 />
               </div>
             </SandpackLayout>
