@@ -172,7 +172,7 @@ const Codeview = ({
                 const filePath = file.filePath.startsWith('/')
                   ? file.filePath
                   : `/${file.filePath}`;
-                normalizedCodebase[filePath] = file.code;
+                normalizedCodebase[filePath] = file.code || '';
               }
             );
           }
@@ -230,11 +230,11 @@ const Codeview = ({
           ([path, fileContent]) => {
             currentFiles[path] = {
               code:
-                typeof fileContent === 'object' && fileContent.code
+                typeof fileContent === 'object' && fileContent && fileContent.code
                   ? fileContent.code
                   : typeof fileContent === 'string'
                   ? fileContent
-                  : JSON.stringify(fileContent),
+                  : fileContent ? JSON.stringify(fileContent) : '',
               filePath: path,
             };
           }
@@ -334,7 +334,7 @@ const Codeview = ({
 
       if (typeof window === 'undefined' || !window.arweaveWallet) {
         toast.error(
-          `Arweave wallet not available. Please ensure it’s installed and connected.`
+          `Arweave wallet not available. Please ensure it's installed and connected.`
         );
         return;
       }
@@ -415,7 +415,20 @@ const Codeview = ({
 
   const sandpackFiles = {
     ...defaultFiles_3,
-    ...codebaseFiles,
+    ...Object.entries(codebaseFiles).reduce((acc, [path, content]) => {
+      if (typeof content === 'string') {
+        acc[path] = content;
+      } else if (content && typeof content === 'object') {
+        // Check if content has a code property that's a string
+        const codeContent = content as Record<string, unknown>;
+        acc[path] = typeof codeContent.code === 'string' 
+                    ? codeContent.code 
+                    : '';
+      } else {
+        acc[path] = '';
+      }
+      return acc;
+    }, {} as Record<string, string>),
   };
 
   return (
