@@ -323,11 +323,9 @@ const Codeview = ({
       toast.info('Running Lua code...');
       const luaCodeToBeEval =
         // @ts-expect-error ignore type error
-        currentProject.codebase['/index.lua'] ||
+        currentProject?.codebase['/src/lib/index.lua'] ||
         // @ts-expect-error ignore type error
-        currentProject.codebase['/src/lib/index.lua'] ||
-        // @ts-expect-error ignore type error
-        currentProject.codebase['index.lua'];
+        currentProject?.codebase['/process.lua'];
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -347,8 +345,15 @@ const Codeview = ({
         );
         // @ts-expect-error ignore type error
         const ao = connect();
+        console.log('activeProject', activeProject);
+        // @ts-expect-error ignore type error
+        if (!activeProject?.projectId) {
+          toast.error('No process ID found in the project.');
+          return;
+        }
         const messageId = await ao.message({
-          process: currentProject?.content?.processId || '',
+          // @ts-expect-error ignore type error
+          process: activeProject?.projectId,
           data: `${luaCodeToBeEval}`,
           signer: createDataItemSigner(window.arweaveWallet),
           tags: [
@@ -404,7 +409,7 @@ const Codeview = ({
 
   const codebaseFiles = currentProject?.codebase || {};
   const visibleFiles =
-    Object.keys(codebaseFiles).length > 0
+    Object.keys(codebaseFiles)?.length > 0
       ? Object.keys(codebaseFiles)
       : ['/src/App.tsx', '/src/components/Sample.tsx'];
 

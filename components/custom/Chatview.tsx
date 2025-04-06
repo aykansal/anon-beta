@@ -545,7 +545,12 @@ const Chatview = ({
       <CustomStyles />
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="h-full p-4 space-y-4">
-          {message && Array.isArray(message) && message.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              <Loader2Icon className="animate-spin mr-2" size={20} />
+              <p>Loading messages...</p>
+            </div>
+          ) : message && Array.isArray(message) && message.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <p>No messages yet. Start a conversation!</p>
             </div>
