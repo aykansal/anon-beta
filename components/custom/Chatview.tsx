@@ -334,6 +334,7 @@ const Chatview = ({
   // };
 
   // @ts-expect-error ignore
+ 
   const handleSubmit = async (e) => {
     e?.preventDefault();
 

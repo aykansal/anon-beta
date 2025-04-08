@@ -1,29 +1,19 @@
 export const DEPENDENCIES = {
   dependencies: {
     "eslint-plugin-prettier": "5.2.3",
-    "react-toastify": "11.0.5",
     "axios": "1.8.1",
-    "eslint-plugin-react": "7.37.4",
-    "eslint-plugin-react-refresh": "0.4.19",
-    "react-swipeable": "7.0.2",
-    "arweave-wallet-kit": "1.1.0",
     "eslint": "9.21.0",
-    "eslint-plugin-import": "2.31.0",
-    "react-redux": "9.2.0",
-    "prettier": "3.5.3",
-    "arweave": "1.15.5",
-    "@vitejs/plugin-react": "4.3.4",
-    "styled-components": "6.1.15",
-    "@permaweb/aoconnect": "0.0.77",
-    "eslint-config-prettier": "10.0.2",
     "esbuild-wasm": "0.25.0",
+    "eslint-plugin-react": "7.37.4",
+    "@permaweb/aoconnect": "0.0.77",
+    "@vitejs/plugin-react": "4.3.4",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-config-prettier": "10.0.2",
+    "eslint-plugin-react-refresh": "0.4.19",
     "react-router-dom": "7.2.0",
     "framer-motion": "12.4.10",
-    "@react-spring/web": "9.7.5",
-    "warp-arbundles": "1.0.4",
     "esbuild": "0.25.0",
     "typescript": "5.8.2",
-    "@reduxjs/toolkit": "2.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -42,6 +32,50 @@ export const DEPENDENCIES = {
     "vite": "^6.2.0"
   }
 }
+// export const DEPENDENCIES = {
+//   dependencies: {
+//     "eslint-plugin-prettier": "5.2.3",
+//     "react-toastify": "11.0.5",
+//     "axios": "1.8.1",
+//     "eslint-plugin-react": "7.37.4",
+//     "eslint-plugin-react-refresh": "0.4.19",
+//     "react-swipeable": "7.0.2",
+//     "arweave-wallet-kit": "1.1.0",
+//     "eslint": "9.21.0",
+//     "eslint-plugin-import": "2.31.0",
+//     "react-redux": "9.2.0",
+//     "prettier": "3.5.3",
+//     "arweave": "1.15.5",
+//     "@vitejs/plugin-react": "4.3.4",
+//     "styled-components": "6.1.15",
+//     "@permaweb/aoconnect": "0.0.77",
+//     "eslint-config-prettier": "10.0.2",
+//     "esbuild-wasm": "0.25.0",
+//     "react-router-dom": "7.2.0",
+//     "framer-motion": "12.4.10",
+//     "@react-spring/web": "9.7.5",
+//     "warp-arbundles": "1.0.4",
+//     "esbuild": "0.25.0",
+//     "typescript": "5.8.2",
+//     "@reduxjs/toolkit": "2.6.0",
+//     "react": "^19.0.0",
+//     "react-dom": "^19.0.0"
+//   },
+//   devDependencies: {
+//     "typescript-eslint": "8.26.0",
+//     "@types/react-dom": "19.0.4",
+//     "@vitejs/plugin-react-swc": "3.8.0",
+//     "@eslint/js": "9.21.0",
+//     "@types/react": "19.0.10",
+//     "@types/node": "22.13.9",
+//     "@typescript-eslint/parser": "8.26.0",
+//     "@typescript-eslint/eslint-plugin": "8.26.0",
+//     "globals": "^15.15.0",
+//     "eslint-plugin-react-hooks": "^5.1.0",
+//     "eslint-plugin-react-refresh": "^0.4.19",
+//     "vite": "^6.2.0"
+//   }
+// }
 
 export const defaultFiles_3 = {
   '.gitignore': `
