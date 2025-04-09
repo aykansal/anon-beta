@@ -110,107 +110,7 @@ const CustomStyles = () => (
   `}</style>
 );
 
-// const getFolderStructure = (files) => {
-//   const structure = {};
 
-//   // Convert array to object with filePaths
-//   const fileMap = {};
-//   Object.entries(files).forEach(([, file]) => {
-//     //@ts-expect-error ignore
-//     if (file && file.filePath) {
-//       //@ts-expect-error ignore
-//       fileMap[file.filePath] = file.code;
-//     }
-//   });
-
-//   // Now process the file paths
-//   Object.keys(fileMap).forEach((filePath) => {
-//     const parts = filePath.split('/').filter(Boolean);
-//     let current = structure;
-
-//     parts.forEach((part, index) => {
-//       if (index === parts.length - 1) {
-//         // It's a file
-//         //@ts-expect-error ignore
-//         if (!current._files) current._files = [];
-//         //@ts-expect-error ignore
-//         current._files.push({
-//           name: part,
-//           fullPath: filePath,
-//           //@ts-expect-error ignore
-//           code: fileMap[filePath],
-//         });
-//       } else {
-//         // It's a directory
-//         //@ts-expect-error ignore
-
-//         if (!current[part]) current[part] = {};
-//         //@ts-expect-error ignore
-//         current = current[part];
-//       }
-//     });
-//   });
-
-//   return structure;
-// };
-
-// const flattenFileStructure = (structure, prefix = '') => {
-//   //@ts-expect-error ignore
-//   let suggestions = [];
-
-//   // Add folders first
-//   Object.keys(structure).forEach((key) => {
-//     if (key !== '_files') {
-//       suggestions.push({
-//         id: `${prefix}${key}/`,
-//         display: `${prefix}${key}/`,
-//         isFolder: true,
-//       });
-
-//       // Add nested items
-//       //@ts-expect-error ignore
-
-//       suggestions = suggestions.concat(
-//         flattenFileStructure(structure[key], `${prefix}${key}/`)
-//       );
-//     }
-//   });
-
-//   // Add files
-//   if (structure._files) {
-//     //@ts-expect-error ignore
-//     structure._files.forEach((file) => {
-//       suggestions.push({
-//         id: file.fullPath,
-//         display: file.fullPath,
-//         isFile: true,
-//       });
-//     });
-//   }
-
-//   //@ts-expect-error ignore
-//   return suggestions;
-// };
-
-// const mentionsInputStyle = {
-//   input: {
-//     width: '100%',
-//     backgroundColor: 'hsl(var(--background))',
-//     color: 'hsl(var(--foreground))',
-//     fontSize: '14px',
-//     '&::placeholder': {
-//       color: 'hsl(var(--muted-foreground))',
-//     },
-//   },
-//   suggestions: {
-//     item: {
-//       color: 'hsl(var(--muted-foreground))',
-//       '&:hover': {
-//         color: 'hsl(var(--foreground))',
-//       },
-//     },
-//   },
-// };
 
 const Chatview = ({
   //@ts-expect-error ignore
@@ -261,77 +161,7 @@ const Chatview = ({
     }
   };
 
-  // const getFileSuggestions = (search) => {
-  //   if (!files || !Array.isArray(files)) return [];
 
-  //   // Convert array to object with filePaths
-  //   const fileMap = {};
-  //   Object.entries(files).forEach(([_, file]) => {
-  //     if (file && file.filePath) {
-  //       fileMap[file.filePath] = file.code;
-  //     }
-  //   });
-
-  //   // If it's just @ without search, show folder structure
-  //   if (!search) {
-  //     const structure = getFolderStructure(files);
-  //     const suggestions = flattenFileStructure(structure);
-  //     // Only show files from expanded folders
-  //     return suggestions.filter((suggestion) => {
-  //       if (suggestion.isFile) {
-  //         // Check if parent folder is expanded
-  //         const folderPath =
-  //           suggestion.id.split('/').slice(0, -1).join('/') + '/';
-  //         return expandedFolders.has(folderPath);
-  //       }
-  //       return true; // Always show folders
-  //     });
-  //   }
-
-  //   // If there's a search term, search across all files
-  //   const searchLower = search.toLowerCase();
-  //   return Object.entries(files)
-  //     .filter(
-  //       ([_, file]) =>
-  //         file &&
-  //         file.filePath &&
-  //         file.filePath.toLowerCase().includes(searchLower)
-  //     )
-  //     .map(([_, file]) => ({
-  //       id: file.filePath,
-  //       display: file.filePath,
-  //       isFile: true,
-  //     }));
-  // };
-
-  // const handleFileMention = (id, display) => {
-  //   // Find the file in the array
-  //   const mentionedFile = Object.values(files).find(
-  //     (file) => file.filePath === id
-  //   );
-  //   if (mentionedFile) {
-  //     setMentionedFiles((prev) => [
-  //       ...prev,
-  //       {
-  //         id,
-  //         display,
-  //         code: mentionedFile.code,
-  //       },
-  //     ]);
-  //   }
-  // };
-
-  // const handleFolderClick = (folderId) => {
-  //   setExpandedFolders((prev) => {
-  //     const newSet = new Set(prev);
-  //     if (newSet.has(folderId)) {
-  //       newSet.delete(folderId);
-  //     } else {
-  //       newSet.add(folderId);
-  //     }
-  //     return newSet;
-  //   });
-  // };
 
   // @ts-expect-error ignore
  
@@ -703,48 +533,7 @@ const Chatview = ({
                 className="w-full"
               />
 
-              {/* <MentionsInput
-                value={userInput}
-                onChange={(e) => setuserInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                style={mentionsInputStyle}
-                placeholder="Use @ to mention files (Press Enter to send, Shift+Enter for new line)"
-                disabled={loading}
-                forceSuggestionsAboveCursor
-                singleLine={false}
-                allowSuggestionsAboveCursor
-                a11ySuggestionsListLabel="Suggested files"
-                className={`mentions-input ${isInputExpanded ? 'expanded' : ''}`}
-                // markup="@[__display__](__id__)"
-                autoComplete="off"
-              >
-                <Mention
-                  trigger="@"
-                  data={getFileSuggestions}
-                  onAdd={handleFileMention}
-                  appendSpaceOnAdd
-                  displayTransform={(id) => id}
-                  renderSuggestion={(suggestion) => (
-                    <div
-                      className={`suggestion-item ${suggestion.isFolder ? 'folder' : 'file'}`}
-                      onClick={() =>
-                        suggestion.isFolder && handleFolderClick(suggestion.id)
-                      }
-                    >
-                      {suggestion.isFolder ? (
-                        <div className="flex items-center gap-2">
-                          <FolderInput className="w-4 h-4" />{' '}
-                          {suggestion.display}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <FileInput className="w-4 h-4" /> {suggestion.display}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                />
-              </MentionsInput> */}
+            
             </div>
             <button
               type="submit"
