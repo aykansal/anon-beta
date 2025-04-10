@@ -218,38 +218,79 @@ const Codeview = ({
         if (response.codebase) {
           const normalizedCodebase: Record<string, CodeContent> = {};
 
-          if (Array.isArray(response.codebase)) {
+          // Add detailed logging of codebase structure
+          console.log(
+            'Codebase type:',
+            Array.isArray(response.codebase)
+              ? 'Array'
+              : typeof response.codebase
+          );
+          
+          // Check if we have a structure like {0: {code, filePath}, 1: {code, filePath}}
+          const hasNumericKeys = typeof response.codebase === 'object' && 
+            !Array.isArray(response.codebase) &&
+            Object.keys(response.codebase).some(key => !isNaN(Number(key)));
+          
+          if (hasNumericKeys) {
+            // Process numeric keys format from API
+            Object.values(response.codebase as Record<string, unknown>).forEach((fileObj) => {
+              if (fileObj && typeof fileObj === 'object') {
+                const typedObj = fileObj as FileData;
+                if ((typedObj.filePath || typedObj.filepath) && typedObj.code) {
+                  const filePath = typedObj.filePath || typedObj.filepath || '';
+                  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+                  normalizedCodebase[normalizedPath] = {
+                    code: typedObj.code,
+                    filePath: normalizedPath
+                  };
+                }
+              }
+            });
+          } else if (
+            // Continue with existing logic for other formats
+            typeof response.codebase === 'object' &&
+            !Array.isArray(response.codebase)
+          ) {
+            console.log('Processing object codebase format');
+
+            const codebaseObj = response.codebase as Record<string, unknown>;
+            Object.entries(codebaseObj).forEach(([path, content]) => {
+              // Skip empty or invalid paths
+              if (!path) return;
+
+              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+              // Simple format: {filepath: "code string"}
+              if (typeof content === 'string') {
+                normalizedCodebase[normalizedPath] = {
+                  code: content,
+                  filePath: normalizedPath,
+                };
+              }
+              // Object format: {filepath: {code: "content"}}
+              else if (content && typeof content === 'object') {
+                const contentObj = content as FileData;
+                if ('code' in contentObj) {
+                  normalizedCodebase[normalizedPath] = {
+                    code: contentObj.code || '',
+                    filePath: normalizedPath,
+                  };
+                }
+              }
+            });
+          }
+          // Case 2: Backend returned array format
+          else if (Array.isArray(response.codebase)) {
             console.log('Processing array codebase format');
 
-            // Handle nested array structure with numeric keys
-            // Format like: [{"0": {filepath: "/path", code: "content"}}, ...]
             for (const item of response.codebase) {
               if (item && typeof item === 'object') {
-                // Case 1: It's an object with numeric keys
-                const nestedObj = item as NestedFileObject;
-                const keys = Object.keys(nestedObj);
-                for (const key of keys) {
-                  const fileData = nestedObj[key];
-                  if (fileData && typeof fileData === 'object') {
-                    // Get filepath and code
-                    const filePath = fileData.filepath || fileData.filePath;
-                    const code = fileData.code || '';
-
-                    if (filePath) {
-                      const normalizedPath = filePath.startsWith('/')
-                        ? filePath
-                        : `/${filePath}`;
-                      normalizedCodebase[normalizedPath] = {
-                        code,
-                        filePath: normalizedPath,
-                      };
-                    }
-                  }
-                }
-              } else if (item && typeof item === 'object') {
-                // Case 2: It's a direct file object in the array
-                const fileItem = item as FileData;
-                if (fileItem.filePath || fileItem.filepath) {
+                // Direct file objects in array [{filePath: "path", code: "content"}]
+                if (
+                  ('filePath' in item || 'filepath' in item) &&
+                  'code' in item
+                ) {
+                  const fileItem = item as FileData;
                   const filePath = fileItem.filePath || fileItem.filepath;
                   const code = fileItem.code || '';
 
@@ -263,33 +304,35 @@ const Codeview = ({
                     };
                   }
                 }
-              }
-            }
-          } else if (typeof response.codebase === 'object') {
-            console.log('Processing object codebase format');
-            // Process object format (either {filepath: content} or direct object)
-            const codebaseObj = response.codebase as Record<string, unknown>;
-            Object.entries(codebaseObj).forEach(([path, content]) => {
-              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+                // Nested objects with numeric keys [{"0": {filepath: "/path", code: "content"}}]
+                else {
+                  const nestedObj = item as unknown as NestedFileObject;
+                  Object.values(nestedObj).forEach((fileData) => {
+                    if (fileData && typeof fileData === 'object') {
+                      const filePath = fileData.filepath || fileData.filePath;
+                      const code = fileData.code || '';
 
-              if (typeof content === 'string') {
-                normalizedCodebase[normalizedPath] = {
-                  code: content,
-                  filePath: normalizedPath,
-                };
-              } else if (content && typeof content === 'object') {
-                const contentObj = content as FileData;
-                if ('code' in contentObj) {
-                  normalizedCodebase[normalizedPath] = {
-                    code: contentObj.code || '',
-                    filePath: normalizedPath,
-                  };
+                      if (filePath) {
+                        const normalizedPath = filePath.startsWith('/')
+                          ? filePath
+                          : `/${filePath}`;
+                        normalizedCodebase[normalizedPath] = {
+                          code,
+                          filePath: normalizedPath,
+                        };
+                      }
+                    }
+                  });
                 }
               }
-            });
+            }
           }
 
-          console.log('Normalized Codebase:', normalizedCodebase);
+          console.log(
+            'Normalized Codebase:',
+            Object.keys(normalizedCodebase).length,
+            'files'
+          );
           setCurrentProject({
             ...response,
             projectId: activeProject.projectId,
@@ -316,7 +359,41 @@ const Codeview = ({
 
   useEffect(() => {
     const handleCodebaseUpdate = (activeProject: ProjectType) => {
-      setCurrentProject(activeProject);
+      // Handle the specific format where codebase is an object with numeric keys
+      if (activeProject?.codebase && typeof activeProject.codebase === 'object' && !Array.isArray(activeProject.codebase)) {
+        const normalizedCodebase: Record<string, CodeContent> = {};
+        
+        // Check if we have a structure like {0: {code, filePath}, 1: {code, filePath}}
+        const hasNumericKeys = Object.keys(activeProject.codebase).some(key => !isNaN(Number(key)));
+        
+        if (hasNumericKeys) {
+          // Process numeric keys format from API
+          Object.values(activeProject.codebase as Record<string, unknown>).forEach((fileObj) => {
+            if (fileObj && typeof fileObj === 'object') {
+              const typedObj = fileObj as FileData;
+              if ((typedObj.filePath || typedObj.filepath) && typedObj.code) {
+                const filePath = typedObj.filePath || typedObj.filepath || '';
+                const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+                normalizedCodebase[normalizedPath] = {
+                  code: typedObj.code,
+                  filePath: normalizedPath
+                };
+              }
+            }
+          });
+          
+          setCurrentProject({
+            ...activeProject,
+            codebase: normalizedCodebase
+          });
+        } else {
+          // Use the existing codebase as is
+          setCurrentProject(activeProject);
+        }
+      } else {
+        // Handle other cases (arrays, etc.)
+        setCurrentProject(activeProject);
+      }
     };
 
     handleCodebaseUpdate(activeProject);
@@ -351,24 +428,67 @@ const Codeview = ({
         [key: string]: { code: string; filePath: string; isTemplate?: boolean };
       } = {};
       if (currentProject && currentProject.codebase) {
-        // Handle both array and object formats
-        if (Array.isArray(currentProject.codebase)) {
+        // Check for the format {0: {code, filePath}, 1: {code, filePath}}
+        const hasNumericKeys = typeof currentProject.codebase === 'object' &&
+          !Array.isArray(currentProject.codebase) &&
+          Object.keys(currentProject.codebase).some(key => !isNaN(Number(key)));
+        
+        if (hasNumericKeys) {
+          // Process numeric keys format
+          Object.values(currentProject.codebase as Record<string, unknown>).forEach((fileObj) => {
+            if (fileObj && typeof fileObj === 'object') {
+              const typedObj = fileObj as FileData;
+              if ((typedObj.filePath || typedObj.filepath) && typedObj.code) {
+                const filePath = typedObj.filePath || typedObj.filepath || '';
+                const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+                currentFiles[normalizedPath] = {
+                  code: typedObj.code,
+                  filePath: normalizedPath
+                };
+              }
+            }
+          });
+        } else if (
+          // Continue with existing logic for other formats
+          !Array.isArray(currentProject.codebase) &&
+          typeof currentProject.codebase === 'object'
+        ) {
+          // Already normalized object format from our component
+          Object.entries(currentProject.codebase).forEach(
+            ([path, fileContent]) => {
+              const fileContentObj = fileContent as CodeFile;
+              currentFiles[path] = {
+                code: fileContentObj.code || '',
+                filePath: path,
+              };
+            }
+          );
+        }
+        // Handle direct array format from API (not yet normalized)
+        else if (Array.isArray(currentProject.codebase)) {
           console.log('Current project codebase is array format');
-          // Array format - need to check for nested objects
+
           for (const item of currentProject.codebase) {
             if (item && typeof item === 'object') {
-              // Check if it's a nested object with numeric keys
-              if ('filePath' in item || 'filepath' in item) {
-                // It's a direct file object
+              // Direct file object in array
+              if (
+                'code' in item &&
+                ('filePath' in item || 'filepath' in item)
+              ) {
                 const fileItem = item as FileData;
                 const path = fileItem.filePath || fileItem.filepath || '';
-                const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-                currentFiles[normalizedPath] = {
-                  code: fileItem.code || '',
-                  filePath: normalizedPath,
-                };
-              } else {
-                // It might be a nested object with numeric keys
+                if (path) {
+                  const normalizedPath = path.startsWith('/')
+                    ? path
+                    : `/${path}`;
+                  currentFiles[normalizedPath] = {
+                    code: fileItem.code || '',
+                    filePath: normalizedPath,
+                  };
+                }
+              }
+              // Nested object with numeric keys
+              else {
                 const nestedObj = item as unknown as NestedFileObject;
                 for (const key of Object.keys(nestedObj)) {
                   const fileData = nestedObj[key];
@@ -388,29 +508,37 @@ const Codeview = ({
               }
             }
           }
-        } else {
-          // Object format
-          Object.entries(currentProject.codebase).forEach(
-            ([path, fileContent]) => {
-              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-              const fileContentObj = fileContent as CodeFile;
+        }
+        // Handle direct object format from API {filepath: content}
+        else if (typeof currentProject.codebase === 'object') {
+          Object.entries(currentProject.codebase).forEach(([path, content]) => {
+            if (!path) return;
+            const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+            // Handle string content
+            if (typeof content === 'string') {
               currentFiles[normalizedPath] = {
-                code:
-                  typeof fileContent === 'object' &&
-                  fileContent &&
-                  'code' in fileContentObj
-                    ? fileContentObj.code || ''
-                    : typeof fileContent === 'string'
-                    ? fileContent
-                    : fileContent
-                    ? JSON.stringify(fileContent)
-                    : '',
+                code: content,
                 filePath: normalizedPath,
               };
             }
-          );
+            // Handle object content with code property
+            else if (content && typeof content === 'object') {
+              const fileContentObj = content as CodeFile;
+              currentFiles[normalizedPath] = {
+                code:
+                  typeof fileContentObj === 'object' && 'code' in fileContentObj
+                    ? fileContentObj.code || ''
+                    : typeof fileContentObj === 'string'
+                    ? fileContentObj
+                    : JSON.stringify(fileContentObj),
+                filePath: normalizedPath,
+              };
+            }
+          });
         }
       } else {
+        // Use default template files if no project codebase
         Object.entries(defaultFiles_3).forEach(([path, code]) => {
           currentFiles[path] = {
             code: typeof code === 'string' ? code : JSON.stringify(code),
@@ -419,6 +547,8 @@ const Codeview = ({
           };
         });
       }
+
+      console.log('Current files count:', Object.keys(currentFiles).length);
       window.dispatchEvent(
         new CustomEvent('getCurrentFiles', {
           detail: currentFiles,
@@ -645,7 +775,25 @@ const Codeview = ({
 
   // Generate visible files list based on the format of codebase
   let visibleFiles: string[] = [];
-  if (Array.isArray(codebaseFiles)) {
+
+  // Check for numeric keys format {0: {code, filePath}, 1: {code, filePath}}
+  const hasNumericKeys = typeof codebaseFiles === 'object' &&
+    !Array.isArray(codebaseFiles) &&
+    Object.keys(codebaseFiles).some(key => !isNaN(Number(key)));
+
+  if (hasNumericKeys) {
+    // Extract paths from the numeric keys format
+    Object.values(codebaseFiles as Record<string, unknown>).forEach((fileObj) => {
+      if (fileObj && typeof fileObj === 'object') {
+        const typedObj = fileObj as FileData;
+        if (typedObj.filePath || typedObj.filepath) {
+          const path = typedObj.filePath || typedObj.filepath || '';
+          const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+          visibleFiles.push(normalizedPath);
+        }
+      }
+    });
+  } else if (Array.isArray(codebaseFiles)) {
     // Extract paths from nested array structure
     for (const item of codebaseFiles as Array<Record<string, unknown>>) {
       if (item && typeof item === 'object') {
@@ -658,7 +806,7 @@ const Codeview = ({
         } else {
           // Nested object with numeric keys
           for (const key of Object.keys(item)) {
-            const fileData = item[key] as Record<string, unknown>;
+            const fileData = item[key] as Record<string, FileData>;
             if (fileData && typeof fileData === 'object') {
               const path =
                 (fileData as FileData).filepath ||
@@ -687,25 +835,43 @@ const Codeview = ({
     ...defaultFiles_3,
     ...Object.entries(currentProject?.codebase || {}).reduce(
       (acc, [path, content]) => {
-        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-        if (typeof content === 'string') {
-          // Direct string content
-          acc[normalizedPath] = content;
-        } else if (content && typeof content === 'object') {
-          // Check if content has a code property that's a string
-          const contentObj = content as CodeFile;
-          if ('code' in contentObj && typeof contentObj.code === 'string') {
-            acc[normalizedPath] = contentObj.code;
-          } else if ('filePath' in contentObj && 'code' in contentObj) {
-            // Handle format like {filePath: string, code: string}
-            acc[normalizedPath] = contentObj.code || '';
+        try {
+          // Check if this is the numeric keys format
+          if (!isNaN(Number(path)) && content && typeof content === 'object') {
+            const fileObj = content as unknown as FileData;
+            if (fileObj && (fileObj.filePath || fileObj.filepath) && fileObj.code) {
+              const filePath = fileObj.filePath || fileObj.filepath || '';
+              if (filePath) {
+                const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+                acc[normalizedPath] = fileObj.code || '';
+              }
+            }
           } else {
-            // Fallback to stringify unknown object structure
-            acc[normalizedPath] = JSON.stringify(content);
+            if (path) {
+              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+              
+              if (typeof content === 'string') {
+                // Direct string content
+                acc[normalizedPath] = content;
+              } else if (content && typeof content === 'object') {
+                // Check if content has a code property that's a string
+                const contentObj = content as CodeFile;
+                if ('code' in contentObj && typeof contentObj.code === 'string') {
+                  acc[normalizedPath] = contentObj.code;
+                } else if ('filePath' in contentObj && 'code' in contentObj) {
+                  // Handle format like {filePath: string, code: string}
+                  acc[normalizedPath] = contentObj.code || '';
+                } else {
+                  // Fallback to stringify unknown object structure
+                  acc[normalizedPath] = JSON.stringify(content);
+                }
+              } else {
+                acc[normalizedPath] = '';
+              }
+            }
           }
-        } else {
-          acc[normalizedPath] = '';
+        } catch (error) {
+          console.error('Error processing file entry:', error);
         }
         return acc;
       },
