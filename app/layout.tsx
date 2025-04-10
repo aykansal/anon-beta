@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'VybeAI',
-  description: 'AI-powered music streaming platform',
+  title: 'Anon',
+  description: 'Anon is a AI powered IDE to build dApps on Arweave',
 };
 
 export default function RootLayout({
