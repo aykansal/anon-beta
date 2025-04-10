@@ -42,10 +42,9 @@ export default function ConnectButton() {
       const address = await window.arweaveWallet.getActiveAddress();
       const trimmedAddress = address.slice(0, 5) + '...' + address.slice(-3);
 
-      // @ts-expect-error ignore
       const tokens = await window.arweaveWallet.userTokens();
-      const tokenId = tokens[0].processId;
       // @ts-expect-error ignore
+      const tokenId = tokens[0].processId;
       const balance = await window.arweaveWallet.tokenBalance(tokenId);
 
       setUserData({
