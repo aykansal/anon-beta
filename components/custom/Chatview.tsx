@@ -243,23 +243,24 @@ const Chatview = ({
     scrollToBottom();
   }, [message, loading]);
 
-  const fetchProjectFiles = async (projectId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`
-      );
-      if (response.data?.codebase) {
-        setFiles(response.data.codebase);
-      }
-    } catch (error) {
-      //@ts-expect-error ignore
-      if (error.response.data.error === 'No code found for project') {
-        toast.error('No code found for project');
-        return;
-      }
-      console.error('Error fetching project files:', error);
-    }
-  };
+  // const fetchProjectFiles = async (projectId: string) => {
+  //   try {
+  //     console.log("inside chatview");
+  //     const response = await axios.get(
+  //       `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`
+  //     );
+  //     if (response.data?.codebase) {
+  //       setFiles(response.data.codebase);
+  //     }
+  //   } catch (error) {
+  //     //@ts-expect-error ignore
+  //     if (error.response.data.error === 'No code found for project') {
+  //       toast.error('No code found for project');
+  //       return;
+  //     }
+  //     console.error('Error fetching project files:', error);
+  //   }
+  // };
 
   // const getFileSuggestions = (search) => {
   //   if (!files || !Array.isArray(files)) return [];
@@ -553,7 +554,7 @@ const Chatview = ({
 
     if (activeProject) {
       fetchMessages(activeProject?.projectId);
-      fetchProjectFiles(activeProject?.projectId);
+      // fetchProjectFiles(activeProject?.projectId);
     } else {
       setmessage([]);
       setFiles({});
