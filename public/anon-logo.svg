@@ -1,0 +1,35 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark circular background -->
+  <circle cx="100" cy="100" r="75" fill="black" />
+  
+  <!-- Circuit-inspired pattern - representing code structure -->
+  <path d="M60 80 h20 v40 h40" stroke="#00CC00" stroke-width="2" fill="none" />
+  <path d="M140 80 h-20 v40 h-40" stroke="#00CC00" stroke-width="2" fill="none" />
+  <path d="M80 60 v20 h40 v-20" stroke="#00CC00" stroke-width="2" fill="none" />
+  <path d="M80 140 v-20 h40 v20" stroke="#00CC00" stroke-width="2" fill="none" />
+  
+  <!-- Digital identity symbol - fragmented mask -->
+  <path d="M95 85 h10 v10 h-10 z" fill="none" stroke="white" stroke-width="1.5" />
+  <path d="M85 95 h30 v10 h-30 z" fill="none" stroke="white" stroke-width="1.5" />
+  <path d="M95 105 h10 v10 h-10 z" fill="none" stroke="white" stroke-width="1.5" />
+  <path d="M90 90 h5 v5 h-5 z" fill="white" />
+  
+  <!-- Circuit nodes at intersections -->
+  <circle cx="60" cy="80" r="3" fill="#00CC00" />
+  <circle cx="80" cy="60" r="3" fill="#00CC00" />
+  <circle cx="140" cy="80" r="3" fill="#00CC00" />
+  <circle cx="120" cy="60" r="3" fill="#00CC00" />
+  <circle cx="80" cy="140" r="3" fill="#00CC00" />
+  <circle cx="120" cy="140" r="3" fill="#00CC00" />
+  <circle cx="80" cy="120" r="3" fill="#00CC00" />
+  <circle cx="120" cy="120" r="3" fill="#00CC00" />
+  <circle cx="100" cy="100" r="5" fill="#00CC00">
+    <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
+  </circle>
+  
+  <!-- Data flow pulse - energy through the circuit -->
+  <circle cx="100" cy="100" r="25" fill="none" stroke="#00CC00" stroke-width="1" opacity="0.3">
+    <animate attributeName="r" values="25;35;25" dur="3s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.3;0.1;0.3" dur="3s" repeatCount="indefinite" />
+  </circle>
+</svg> 

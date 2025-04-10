@@ -1,13 +1,38 @@
 'use client';
 
+interface CodeContent {
+  code: string;
+  filePath?: string;
+  [key: string]: unknown;
+}
+
+// Add new interfaces to handle the nested structure
+interface FileData {
+  code?: string;
+  filePath?: string;
+  filepath?: string;
+  [key: string]: unknown;
+}
+
+interface NestedFileObject {
+  [key: string]: FileData;
+}
+
 interface ProjectType {
   projectId: string;
   content: {
     description: string;
-    codebase: { filePath: string; code: string }[];
+    codebase: CodeContent[] | Record<string, string | CodeContent>;
     externalPackages: { packageName: string; packageVersion: string }[];
   } | null;
-  codebase: { filePath: string; code: string }[];
+  codebase: CodeContent[] | Record<string, string | CodeContent>;
+}
+
+// Define a CodeFile type to make type checking more robust
+interface CodeFile {
+  filePath?: string;
+  code?: string;
+  [key: string]: unknown;
 }
 
 import {
@@ -30,6 +55,13 @@ import { ActionContext } from '@/context/ActionContext';
 import SandPackPreviewClient from './SandPackPreviewClient';
 import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
 import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
+
+// Add the type definition for window.arweaveWallet at the top of the file
+declare global {
+  interface Window {
+    arweaveWallet: Record<string, unknown>;
+  }
+}
 
 const SandpackDownloader = ({
   onDownload,
@@ -123,8 +155,6 @@ const validateNpmPackage = async (packageName: string) => {
   }
 };
 
-let normalizedCodebase: { [key: string]: string } = {};
-
 const Codeview = ({
   activeProject,
   isSaving,
@@ -150,47 +180,90 @@ const Codeview = ({
         setLoading(true);
         const response: {
           content: {
-            codebase: { filePath: string; code: string }[];
-            externalPackages: { packageName: string; packageVersion: string }[];
-            processId: string;
+            codebase: unknown;
+            externalPackages?: { packageName: string; packageVersion: string }[];
+            processId?: string;
           } | null;
-          codebase: { filePath: string; code: string }[];
+          codebase: unknown;
         } = await axios
           .get(
             // @ts-expect-error ignore type error
             `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject.walletAddress}`
           )
           .then((res) => {
-            console.log('response.data inside codeview\n\n', res.data);
-            return res.data;
+            // console.log('response.data inside codeview\n\n', res.data);
+            return res?.data;
           });
+        console.log('API Response:', response);
 
+        // Process the codebase based on its format
         if (response.codebase) {
+          const normalizedCodebase: Record<string, CodeContent> = {};
+          
           if (Array.isArray(response.codebase)) {
-            response.codebase.forEach(
-              (file: { filePath: string; code: string }) => {
-                const filePath = file.filePath.startsWith('/')
-                  ? file.filePath
-                  : `/${file.filePath}`;
-                normalizedCodebase[filePath] = file.code || '';
+            console.log('Processing array codebase format');
+            
+            // Handle nested array structure with numeric keys
+            // Format like: [{"0": {filepath: "/path", code: "content"}}, ...]
+            for (const item of response.codebase) {
+              if (item && typeof item === 'object') {
+                // Case 1: It's an object with numeric keys
+                const nestedObj = item as NestedFileObject;
+                const keys = Object.keys(nestedObj);
+                for (const key of keys) {
+                  const fileData = nestedObj[key];
+                  if (fileData && typeof fileData === 'object') {
+                    // Get filepath and code
+                    const filePath = fileData.filepath || fileData.filePath;
+                    const code = fileData.code || '';
+                    
+                    if (filePath) {
+                      const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+                      normalizedCodebase[normalizedPath] = { code, filePath: normalizedPath };
+                    }
+                  }
+                }
+              } else if (item && typeof item === 'object') {
+                // Case 2: It's a direct file object in the array
+                const fileItem = item as FileData;
+                if (fileItem.filePath || fileItem.filepath) {
+                  const filePath = fileItem.filePath || fileItem.filepath;
+                  const code = fileItem.code || '';
+                  
+                  if (filePath) {
+                    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+                    normalizedCodebase[normalizedPath] = { code, filePath: normalizedPath };
+                  }
+                }
               }
-            );
+            }
+          } else if (typeof response.codebase === 'object') {
+            console.log('Processing object codebase format');
+            // Process object format (either {filepath: content} or direct object)
+            const codebaseObj = response.codebase as Record<string, unknown>;
+            Object.entries(codebaseObj).forEach(([path, content]) => {
+              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+              
+              if (typeof content === 'string') {
+                normalizedCodebase[normalizedPath] = { code: content, filePath: normalizedPath };
+              } else if (content && typeof content === 'object') {
+                const contentObj = content as FileData;
+                if ('code' in contentObj) {
+                  normalizedCodebase[normalizedPath] = { 
+                    code: contentObj.code || '', 
+                    filePath: normalizedPath 
+                  };
+                }
+              }
+            });
           }
-          //  else if (typeof response.codebase === 'object') {
-          //   normalizedCodebase = Object.entries(response.codebase).reduce(
-          //     (acc, [key, value]) => {
-          //       const path = key.startsWith('/') ? key : `/src/${key}`;
-          //       acc[path] = value;
-          //       return acc;
-          //     },
-          //     {} as { [key: string]: string }
-          //   );
-          // }
-          else {
-            normalizedCodebase = defaultFiles_3;
-          }
-          // @ts-expect-error ignore type error
-          setCurrentProject({ ...response, codebase: normalizedCodebase });
+          
+          console.log('Normalized Codebase:', normalizedCodebase);
+          setCurrentProject({
+            ...response,
+            projectId: activeProject.projectId,
+            codebase: normalizedCodebase,
+          } as ProjectType);
         }
       } catch (error) {
         // @ts-expect-error ignore type error
@@ -247,23 +320,63 @@ const Codeview = ({
         [key: string]: { code: string; filePath: string; isTemplate?: boolean };
       } = {};
       if (currentProject && currentProject.codebase) {
-        Object.entries(currentProject.codebase).forEach(
-          ([path, fileContent]) => {
-            currentFiles[path] = {
-              code:
-                typeof fileContent === 'object' &&
-                fileContent &&
-                fileContent.code
-                  ? fileContent.code
-                  : typeof fileContent === 'string'
-                  ? fileContent
-                  : fileContent
-                  ? JSON.stringify(fileContent)
-                  : '',
-              filePath: path,
-            };
+        // Handle both array and object formats
+        if (Array.isArray(currentProject.codebase)) {
+          console.log('Current project codebase is array format');
+          // Array format - need to check for nested objects
+          for (const item of currentProject.codebase) {
+            if (item && typeof item === 'object') {
+              // Check if it's a nested object with numeric keys
+              if ('filePath' in item || 'filepath' in item) {
+                // It's a direct file object
+                const fileItem = item as FileData;
+                const path = (fileItem.filePath || fileItem.filepath || '');
+                const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+                currentFiles[normalizedPath] = {
+                  code: fileItem.code || '',
+                  filePath: normalizedPath
+                };
+              } else {
+                // It might be a nested object with numeric keys
+                const nestedObj = item as unknown as NestedFileObject;
+                for (const key of Object.keys(nestedObj)) {
+                  const fileData = nestedObj[key];
+                  if (fileData && typeof fileData === 'object') {
+                    const path = fileData.filepath || fileData.filePath || '';
+                    if (path) {
+                      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+                      currentFiles[normalizedPath] = {
+                        code: fileData.code || '',
+                        filePath: normalizedPath
+                      };
+                    }
+                  }
+                }
+              }
+            }
           }
-        );
+        } else {
+          // Object format
+          Object.entries(currentProject.codebase).forEach(
+            ([path, fileContent]) => {
+              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+              const fileContentObj = fileContent as CodeFile;
+              currentFiles[normalizedPath] = {
+                code:
+                  typeof fileContent === 'object' &&
+                  fileContent &&
+                  'code' in fileContentObj
+                    ? fileContentObj.code || ''
+                    : typeof fileContent === 'string'
+                    ? fileContent
+                    : fileContent
+                    ? JSON.stringify(fileContent)
+                    : '',
+                filePath: normalizedPath,
+              };
+            }
+          );
+        }
       } else {
         Object.entries(defaultFiles_3).forEach(([path, code]) => {
           currentFiles[path] = {
@@ -343,9 +456,67 @@ const Codeview = ({
       toast.info('Running Lua code...');
       console.log('currentProject', currentProject);
 
-      const code = currentProject?.codebase;
-      // @ts-expect-error ignore type error
-      const luaCodeToBeEval = code['/src/lib/index.lua'];
+      // Get Lua code from the codebase, handling different possible structures
+      let luaCodeToBeEval = '';
+      
+      if (currentProject?.codebase) {
+        const codebase = currentProject.codebase;
+        
+        // Find the Lua file in the codebase
+        const luaPath = '/src/lib/index.lua';
+        
+        if (Array.isArray(codebase)) {
+          // Handle array format - could be direct objects or nested
+          for (const item of codebase) {
+            if (item && typeof item === 'object') {
+              // Check if this is a direct file object with filepath/filePath
+              if (('filePath' in item || 'filepath' in item) && 'code' in item) {
+                const filePath = (item as FileData).filePath || (item as FileData).filepath;
+                if (filePath === luaPath) {
+                  luaCodeToBeEval = (item as FileData).code || '';
+                  break;
+                }
+              } else {
+                // Check if it's a nested object with numeric keys
+                for (const key of Object.keys(item)) {
+                  const fileData = (item as Record<string, FileData>)[key];
+                  if (fileData && typeof fileData === 'object') {
+                    const filePath = fileData.filepath || fileData.filePath;
+                    if (filePath === luaPath) {
+                      luaCodeToBeEval = fileData.code || '';
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          // Handle object format
+          // First try direct path access
+          const luaFile = codebase[luaPath];
+          if (luaFile) {
+            if (typeof luaFile === 'string') {
+              luaCodeToBeEval = luaFile;
+            } else if (typeof luaFile === 'object' && 'code' in (luaFile as CodeContent)) {
+              luaCodeToBeEval = (luaFile as CodeContent).code || '';
+            }
+          } else {
+            // Try to find any path ending with .lua
+            for (const [path, content] of Object.entries(codebase)) {
+              if (path.endsWith('.lua')) {
+                if (typeof content === 'string') {
+                  luaCodeToBeEval = content;
+                  break;
+                } else if (typeof content === 'object' && content && 'code' in (content as CodeContent)) {
+                  luaCodeToBeEval = (content as CodeContent).code || '';
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -426,29 +597,72 @@ const Codeview = ({
     }
   };
 
-  console.log('currentProject', currentProject);
-
   const codebaseFiles = currentProject?.codebase || {};
-  const visibleFiles =
-    Object.keys(codebaseFiles)?.length > 0
-      ? Object.keys(codebaseFiles)
-      : ['/src/App.tsx', '/src/components/Sample.tsx'];
+  
+  // Generate visible files list based on the format of codebase
+  let visibleFiles: string[] = [];
+  if (Array.isArray(codebaseFiles)) {
+    // Extract paths from nested array structure
+    for (const item of codebaseFiles as Array<Record<string, unknown>>) {
+      if (item && typeof item === 'object') {
+        if ('filePath' in item || 'filepath' in item) {
+          // Direct file object
+          const path = ((item as FileData).filePath || (item as FileData).filepath || '');
+          const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+          visibleFiles.push(normalizedPath);
+        } else {
+          // Nested object with numeric keys
+          for (const key of Object.keys(item)) {
+            const fileData = item[key] as Record<string, unknown>;
+            if (fileData && typeof fileData === 'object') {
+              const path = (fileData as FileData).filepath || (fileData as FileData).filePath || '';
+              if (path) {
+                const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+                visibleFiles.push(normalizedPath);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else {
+    // Object format - keys are the file paths
+    visibleFiles = Object.keys(codebaseFiles);
+  }
+  
+  // Fall back to default if no files were found
+  if (visibleFiles.length === 0) {
+    visibleFiles = ['/src/App.tsx'];
+  }
 
   const sandpackFiles = {
     ...defaultFiles_3,
-    ...Object.entries(codebaseFiles).reduce((acc, [path, content]) => {
-      if (typeof content === 'string') {
-        acc[path] = content;
-      } else if (content && typeof content === 'object') {
-        // Check if content has a code property that's a string
-        const codeContent = content as Record<string, unknown>;
-        acc[path] =
-          typeof codeContent.code === 'string' ? codeContent.code : '';
-      } else {
-        acc[path] = '';
-      }
-      return acc;
-    }, {} as Record<string, string>),
+    ...Object.entries(currentProject?.codebase || {}).reduce(
+      (acc, [path, content]) => {
+        const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+        if (typeof content === 'string') {
+          // Direct string content
+          acc[normalizedPath] = content;
+        } else if (content && typeof content === 'object') {
+          // Check if content has a code property that's a string
+          const contentObj = content as CodeFile;
+          if ('code' in contentObj && typeof contentObj.code === 'string') {
+            acc[normalizedPath] = contentObj.code;
+          } else if ('filePath' in contentObj && 'code' in contentObj) {
+            // Handle format like {filePath: string, code: string}
+            acc[normalizedPath] = contentObj.code || '';
+          } else {
+            // Fallback to stringify unknown object structure
+            acc[normalizedPath] = JSON.stringify(content);
+          }
+        } else {
+          acc[normalizedPath] = '';
+        }
+        return acc;
+      },
+      {} as Record<string, string>
+    ),
   };
 
   return (
@@ -495,7 +709,7 @@ const Codeview = ({
         ),
         externalResources: [
           'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
-          'https://cdn.tailwindcss.com',
+          // 'https://cdn.tailwindcss.com',
         ],
         classes: {
           'sp-wrapper': 'h-full min-h-0',
@@ -505,10 +719,10 @@ const Codeview = ({
           'sp-code-editor': 'h-full flex-1',
           'sp-tabs': 'bg-background border-b border-border',
           'sp-preview-container': 'h-full bg-background',
-          'sp-preview-iframe': 'h-full bg-white',
+          'sp-preview-iframe': 'h-full bg-black',
         },
-        recompileMode: 'immediate',
-        recompileDelay: 300,
+        // recompileMode: 'immediate',
+        // recompileDelay: 300,
       }}
     >
       <div className="flex flex-col bg-background h-full min-h-0">

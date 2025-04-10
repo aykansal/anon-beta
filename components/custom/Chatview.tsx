@@ -334,7 +334,7 @@ const Chatview = ({
   // };
 
   // @ts-expect-error ignore
- 
+
   const handleSubmit = async (e) => {
     e?.preventDefault();
 
@@ -454,6 +454,7 @@ const Chatview = ({
           window.dispatchEvent(refreshEvent);
         }
       });
+      alert("Please Refresh the WebPage. Thanks !!");
     } catch (error) {
       console.error('Failed to send message:', error);
       // @ts-expect-error ignore
@@ -557,7 +558,7 @@ const Chatview = ({
       setmessage([]);
       setFiles({});
     }
-    console.log('Active project changed in Chatview:', activeProject);
+    // console.log('Active project changed in Chatview:', activeProject);
   }, [activeProject]);
 
   if (!activeProject.projectId) {

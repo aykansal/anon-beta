@@ -236,19 +236,6 @@ const ProjectsPage = () => {
     }
   };
 
-  const handleRunProject = () => {
-    if (!activeProject) {
-      toast.error('No project selected to run');
-      return;
-    }
-    setStatus('Running Project...'); // Set status to running
-    toast.info('Running project...');
-  };
-
-  useEffect(() => {
-    console.log('Active project changed:', activeProject);
-  }, [activeProject]);
-
   // useEffect(() => {
   //   const handleCodebaseUpdate = (event: CustomEvent) => {
   //     if (!event.detail || typeof event.detail !== 'object') {
@@ -550,8 +537,7 @@ const ProjectsPage = () => {
           onRefresh={handleRefreshProject}
           githubConnected={!!githubToken}
           activeProject={activeProject}
-          onSave={handleSaveToGithub}
-          onRun={handleRunProject}
+          onConnectGithub={handleSaveToGithub}
           projects={projects}
         />
       </div>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  PlayIcon,
   PlusIcon,
   SettingsIcon,
   FolderIcon,
@@ -29,15 +28,21 @@ const TitleBar = ({
   // @ts-expect-error ignore type error
   onCreateProject,
   // @ts-expect-error ignore type error
-  onSave,
-  // @ts-expect-error ignore type error
-  onRun,
+  onConnectGithub,
   // @ts-expect-error ignore type error
   onRefresh,
   githubConnected = false,
 }) => {
   const [newProjectName, setNewProjectName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // console.log('\n\nprojects', projects);
+  // console.log('\n\nactiveProject', activeProject);
+  // console.log('\n\nonProjectSelect', onProjectSelect);
+  // console.log('\n\nonCreateProject', onCreateProject);
+  // console.log('\n\nonConnectGithub', onConnectGithub);
+  // console.log('\n\nonRefresh', onRefresh);
+  // console.log('\n\ngithubConnected', githubConnected);
 
   const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     // const projectId = parseInt(e.target.value);
@@ -98,23 +103,13 @@ const TitleBar = ({
         </button>
 
         <button
-          onClick={onSave}
+          onClick={onConnectGithub}
           disabled={!activeProject}
           className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-secondary/50 rounded-md text-sm font-medium disabled:opacity-40"
           title={githubConnected ? 'Push to GitHub' : 'Connect GitHub'}
         >
           <GitBranch size={16} />
           <span>{githubConnected ? 'Push to GitHub' : 'Connect GitHub'}</span>
-        </button>
-
-        <button
-          onClick={onRun}
-          disabled={!activeProject}
-          className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-secondary/50 rounded-md text-sm font-medium disabled:opacity-40"
-          title="Run Project"
-        >
-          <PlayIcon size={16} />
-          <span>Run Lua</span>
         </button>
 
         <button
