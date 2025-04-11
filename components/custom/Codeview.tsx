@@ -1,13 +1,13 @@
 'use client';
 
 import {
-  SandpackProvider,
+  RunIcon,
+  ExportIcon,
+  useSandpack,
   SandpackLayout,
+  SandpackProvider,
   SandpackCodeEditor,
   SandpackFileExplorer,
-  ExportIcon,
-  RunIcon,
-  useSandpack,
 } from '@codesandbox/sandpack-react';
 
 import JSZip from 'jszip';
@@ -23,7 +23,6 @@ import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
 import {
   FileData,
   CodeContent,
-  CodeFile,
   CurrentProjectType,
   ActiveProjectType,
 } from '@/lib/types';
@@ -32,8 +31,8 @@ interface ArweaveWallet {
   connect: (
     permissions: string[],
     appInfo?: {
-      name?: string; // optional application name
-      logo?: string; // optional application logo url
+      name?: string;
+      logo?: string;
     },
     gateway?: {
       host: string;
@@ -47,7 +46,6 @@ interface ArweaveWallet {
   tokenBalance: (tokenId: string) => Promise<number>;
 }
 
-// Extend Window interface
 declare global {
   interface Window {
     arweaveWallet: ArweaveWallet;
@@ -207,139 +205,6 @@ const Codeview = ({
       fetchProjectCode(activeProject.projectId);
     }
   }, [activeProject]);
-
-  /*
-  useEffect(() => {
-    const handleCurrentFilesRequest = () => {
-      const currentFiles: {
-        [key: string]: { code: string; filePath: string; isTemplate?: boolean };
-      } = {};
-      if (currentProject && currentProject.codebase) {
-        console.log('Current project codebase:', currentProject.codebase);
-        if (
-          // Continue with existing logic for other formats
-          !Array.isArray(currentProject.codebase) &&
-          typeof currentProject.codebase === 'object'
-        ) {
-          // Already normalized object format from our component
-          Object.entries(currentProject.codebase).forEach(
-            ([path, fileContent]) => {
-              const fileContentObj = fileContent as CodeFile;
-              currentFiles[path] = {
-                code: fileContentObj.code || '',
-                filePath: path,
-              };
-            }
-          );
-        }
-        // Handle direct array format from API (not yet normalized)
-        else if (Array.isArray(currentProject.codebase)) {
-          console.log('Current project codebase is array format');
-
-          for (const item of currentProject.codebase) {
-            if (item && typeof item === 'object') {
-              // Direct file object in array
-              if (
-                'code' in item &&
-                ('filePath' in item || 'filepath' in item)
-              ) {
-                const fileItem = item as FileData;
-                const path = fileItem.filePath || fileItem.filepath || '';
-                if (path) {
-                  const normalizedPath = path.startsWith('/')
-                    ? path
-                    : `/${path}`;
-                  currentFiles[normalizedPath] = {
-                    code: fileItem.code || '',
-                    filePath: normalizedPath,
-                  };
-                }
-              }
-              // Nested object with numeric keys
-              else {
-                const nestedObj = item as unknown as NestedFileObject;
-                for (const key of Object.keys(nestedObj)) {
-                  const fileData = nestedObj[key];
-                  if (fileData && typeof fileData === 'object') {
-                    const path = fileData.filepath || fileData.filePath || '';
-                    if (path) {
-                      const normalizedPath = path.startsWith('/')
-                        ? path
-                        : `/${path}`;
-                      currentFiles[normalizedPath] = {
-                        code: fileData.code || '',
-                        filePath: normalizedPath,
-                      };
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        // Handle direct object format from API {filepath: content}
-        else if (typeof currentProject.codebase === 'object') {
-          Object.entries(currentProject.codebase).forEach(([path, content]) => {
-            if (!path) return;
-            const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-            // Handle string content
-            if (typeof content === 'string') {
-              currentFiles[normalizedPath] = {
-                code: content,
-                filePath: normalizedPath,
-              };
-            }
-            // Handle object content with code property
-            else if (content && typeof content === 'object') {
-              const fileContentObj = content as CodeFile;
-              currentFiles[normalizedPath] = {
-                code:
-                  typeof fileContentObj === 'object' && 'code' in fileContentObj
-                    ? fileContentObj.code || ''
-                    : typeof fileContentObj === 'string'
-                    ? fileContentObj
-                    : JSON.stringify(fileContentObj),
-                filePath: normalizedPath,
-              };
-            }
-          });
-        }
-      } else {
-        // Use default template files if no project codebase
-        Object.entries(defaultFiles_3).forEach(([path, code]) => {
-          currentFiles[path] = {
-            code: typeof code === 'string' ? code : JSON.stringify(code),
-            filePath: path,
-            isTemplate: true,
-          };
-        });
-      }
-
-      console.log('Current files count:', Object.keys(currentFiles).length);
-      window.dispatchEvent(
-        new CustomEvent('getCurrentFiles', {
-          detail: currentFiles,
-        })
-      );
-    };
-    window.addEventListener('requestCurrentFiles', handleCurrentFilesRequest);
-    const handleTemplateFilesRequest = () => {
-      handleCurrentFilesRequest();
-    };
-    window.addEventListener('requestTemplateFiles', handleTemplateFilesRequest);
-    return () => {
-      window.removeEventListener(
-        'requestCurrentFiles',
-        handleCurrentFilesRequest
-      );
-      window.removeEventListener(
-        'requestTemplateFiles',
-        handleTemplateFilesRequest
-      );
-    };
-  }, [currentProject]);
-*/
 
   useEffect(() => {
     const validateDependencies = async (
@@ -603,59 +468,7 @@ const Codeview = ({
 
   const sandpackFiles = {
     ...defaultFiles_3,
-    ...Object.entries(currentProject?.codebase || {}).reduce(
-      (acc, [path, content]) => {
-        try {
-          // Check if this is the numeric keys format
-          if (!isNaN(Number(path)) && content && typeof content === 'object') {
-            const fileObj = content as unknown as FileData;
-            if (
-              fileObj &&
-              (fileObj.filePath || fileObj.filepath) &&
-              fileObj.code
-            ) {
-              const filePath = fileObj.filePath || fileObj.filepath || '';
-              if (filePath) {
-                const normalizedPath = filePath.startsWith('/')
-                  ? filePath
-                  : `/${filePath}`;
-                acc[normalizedPath] = fileObj.code || '';
-              }
-            }
-          } else {
-            if (path) {
-              const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-
-              if (typeof content === 'string') {
-                // Direct string content
-                acc[normalizedPath] = content;
-              } else if (content && typeof content === 'object') {
-                // Check if content has a code property that's a string
-                const contentObj = content as CodeFile;
-                if (
-                  'code' in contentObj &&
-                  typeof contentObj.code === 'string'
-                ) {
-                  acc[normalizedPath] = contentObj.code;
-                } else if ('filePath' in contentObj && 'code' in contentObj) {
-                  // Handle format like {filePath: string, code: string}
-                  acc[normalizedPath] = contentObj.code || '';
-                } else {
-                  // Fallback to stringify unknown object structure
-                  acc[normalizedPath] = JSON.stringify(content);
-                }
-              } else {
-                acc[normalizedPath] = '';
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error processing file entry:', error);
-        }
-        return acc;
-      },
-      {} as Record<string, string>
-    ),
+    ...currentProject?.codebase,
   };
 
   return (
@@ -694,6 +507,7 @@ const Codeview = ({
         //   },
         // },
       }}
+      // @ts-expect-error ignore type error
       files={sandpackFiles}
       options={{
         visibleFiles,
