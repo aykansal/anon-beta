@@ -10,7 +10,7 @@ import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
-import { ProjectType } from '@/lib/types';
+import { ActiveProjectType, CodeContent } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +20,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
+
 const ProjectsPage = () => {
-  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [projects, setProjects] = useState<ActiveProjectType[]>([]);
   const [splitPosition] = useState<number>(70);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [activeProject, setActiveProject] = useState<ProjectType | null>(null);
+  const [activeProject, setActiveProject] = useState<ActiveProjectType | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>('connected');
   const [error, setError] = useState<Error | null>(null); // Global error state for UI feedback
   const [status, setStatus] = useState<string>(''); // New state for handling status
@@ -108,7 +109,7 @@ const ProjectsPage = () => {
     }
   }, [backendUrl]);
 
-  const handleProjectSelect = async (project: ProjectType) => {
+  const handleProjectSelect = async (project: ActiveProjectType) => {
     try {
       if (!project) {
         setActiveProject(null);
@@ -389,10 +390,9 @@ const ProjectsPage = () => {
       }
 
       const filesToCommit = {};
-      // @ts-expect-error ignore
-      codebase.forEach((file) => {
-        const cleanPath = file.filePath.startsWith('/')
-          ? file.filePath.substring(1)
+      codebase.forEach((file: CodeContent) => {
+        const cleanPath = file.filePath?.startsWith('/')
+          ? file.filePath?.substring(1)
           : file.filePath;
         // @ts-expect-error ignore
         filesToCommit[cleanPath] = file.code;
@@ -528,6 +528,8 @@ const ProjectsPage = () => {
     }
   };
 
+  console.log('activeProject', activeProject);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <div className="shrink-0 border-b border-border">
@@ -574,7 +576,6 @@ const ProjectsPage = () => {
                 // files={files}
                 isSaving={isSavingCode}
                 isGenerating={isGenerating}
-                // @ts-expect-error ignore
                 activeProject={activeProject}
                 onCommit={handleSaveToGithub}
               />
@@ -677,10 +678,7 @@ const ProjectsPage = () => {
       {/* Status Bar - Updated colors */}
       <div className="shrink-0 border-t border-border">
         <StatusBar
-          // isCreating={isCreating}
           activeProject={activeProject}
-          // isSaving={isSavingCode}
-          // isGenerating={isGenerating}
           connectionStatus={connectionStatus}
           status={status}
           // className="bg-background"

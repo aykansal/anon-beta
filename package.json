@@ -25,6 +25,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.6.2",
+    "hooverd": "^1.0.1",
     "jszip": "^3.10.1",
     "lucide-react": "^0.485.0",
     "next": "15.2.4",
