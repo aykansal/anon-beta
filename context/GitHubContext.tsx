@@ -175,6 +175,7 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setGitHubStatus('checking_repo');
     setError(null);
+    console.log(`Checking if repository exists: ${username}/${projectName}`);
 
     try {
       const repoResponse = await octokit.request('GET /repos/{owner}/{repo}', {
@@ -184,20 +185,35 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({
       });
 
       if (repoResponse.status === 200) {
+        console.log(`Repository found: ${username}/${projectName}`);
         setGitHubStatus('repo_exists');
         toast.success('Connected to existing GitHub repository');
         return true;
       }
 
+      // If we get here without a 200 status, set appropriate state
+      console.log(`Repository check returned non-200 status: ${repoResponse.status}`);
+      setGitHubStatus('authenticated');
       return false;
     } catch (err) {
       const error = err as GitHubError;
+      console.log('error', error);
       if (error.status === 404) {
-        // Repository doesn't exist - this is not an error
+        // Repository doesn't exist - this is expected in many cases
+        console.log(`Repository does not exist: ${username}/${projectName} (404 Not Found)`);
+        setGitHubStatus('authenticated'); // Reset to authenticated state
         return false;
       }
 
-      // Other errors
+      // Log other types of errors for debugging
+      console.error(`Error checking repository ${username}/${projectName}:`, error);
+      console.error(`Error details: ${JSON.stringify({
+        status: error.status,
+        message: error.message,
+        response: error.response?.data
+      }, null, 2)}`);
+      
+      // Only set error state for non-404 errors
       setError(error.message || 'Failed to check repository');
       setGitHubStatus('error');
       return false;
@@ -301,17 +317,16 @@ export const GitHubProvider: React.FC<{ children: React.ReactNode }> = ({
     owner: string,
     repo: string
   ): Promise<{ commitSha: string; treeSha: string }> => {
-    console.log(
-      `Initializing empty repository using Contents API: ${owner}/${repo}`
-    );
+    console.log(`Initializing empty repository using Contents API: ${owner}/${repo}`);
 
     // Create README content
     const readmeContent = `# ${repo}
 
-Project created with ANON AI
+Project created with VybeAI
 `;
 
     try {
+      console.log('Attempting to create README.md for initial commit');
       // Use the Contents API to create the first file (README.md)
       // This should automatically create the initial commit and the main branch
       const response = await octokit!.request(
@@ -327,20 +342,21 @@ Project created with ANON AI
         }
       );
 
-      console.log(
-        `Successfully initialized repository with README.md via Contents API`
-      );
+      console.log(`Successfully initialized repository with README.md via Contents API`);
 
       // Extract commit and tree SHA from the response
       if (!response.data.commit?.sha) {
+        console.error('Contents API did not return commit SHA');
         throw new Error('Contents API did not return commit SHA');
       }
       if (!response.data.commit?.tree?.sha) {
+        console.error('Contents API did not return tree SHA');
         throw new Error('Contents API did not return tree SHA');
       }
 
       const commitSha = response.data.commit.sha;
       const treeSha = response.data.commit.tree.sha;
+      console.log(`Created initial commit with SHA: ${commitSha}`);
 
       return {
         commitSha,
@@ -348,12 +364,18 @@ Project created with ANON AI
       };
     } catch (err) {
       const error = err as GitHubError;
-      console.error('Error initializing repository:', error);
+      console.error(`Error initializing repository ${owner}/${repo}:`, error);
+      console.error(`Error details: ${JSON.stringify({
+        status: error.status,
+        message: error.message,
+        response: error.response?.data
+      }, null, 2)}`);
 
       // Handle "reference already exists" error - someone else may have initialized the repo
       if (error.message?.includes('reference already exists')) {
         // Try to get the existing reference
         try {
+          console.log('Reference already exists, attempting to use existing reference');
           const refResponse = await octokit!.request(
             'GET /repos/{owner}/{repo}/git/ref/{ref}',
             {
@@ -375,7 +397,7 @@ Project created with ANON AI
             }
           );
 
-          console.log('Found existing reference to use instead');
+          console.log(`Found existing reference to use instead: ${commitData.data.sha}`);
 
           return {
             commitSha: commitData.data.sha,
@@ -385,6 +407,19 @@ Project created with ANON AI
           console.error('Error getting existing reference:', refError);
           throw error; 
         }
+      }
+
+      // Special handling for rate limiting
+      if (error.status === 403 && error.message?.includes('API rate limit exceeded')) {
+        console.error('GitHub API rate limit exceeded');
+        throw new Error('GitHub API rate limit exceeded. Please try again later.');
+      }
+
+      // Provide a clearer error message based on the specific error
+      if (error.status === 404) {
+        throw new Error(`Repository ${owner}/${repo} not found. It may have been deleted.`);
+      } else if (error.status === 409) {
+        throw new Error('Conflict while creating initial commit. Repository might already have content.');
       }
 
       throw error;
@@ -413,32 +448,50 @@ Project created with ANON AI
 
     try {
       // Verify or create repository
+      console.log(`Verifying repository: ${username}/${activeProject.name}`);
       let repoExists = await checkRepository(activeProject.name);
 
       if (!repoExists) {
-        console.log(`Repository ${activeProject.name} not found. Attempting to create.`);
-        toast.info(`Repository not found. Creating...`);
-        const repoCreated = await createRepository(activeProject.name);
-
-        if (!repoCreated) {
-          // createRepository should have already set the error state and shown a toast
-          // Throwing an error here ensures the commit process stops definitively.
-          // Use a more specific error or rely on the state set by createRepository.
-          const creationError = error || 'Failed to create repository after checking.';
-          setError(creationError)
-          setGitHubStatus('error'); // Ensure status reflects error
-          throw new Error(creationError);
+        console.log(`Repository ${username}/${activeProject.name} not found. Attempting to create.`);
+        toast.info(`Repository not found. Creating ${activeProject.name}...`);
+        
+        try {
+          const repoCreated = await createRepository(activeProject.name);
+          
+          if (!repoCreated) {
+            const creationError = error || 'Failed to create repository after checking.';
+            console.error(`Failed to create repository: ${creationError}`);
+            setError(creationError);
+            setGitHubStatus('error');
+            throw new Error(creationError);
+          }
+          
+          console.log(`Repository ${username}/${activeProject.name} created successfully.`);
+          toast.success(`Repository ${activeProject.name} created successfully`);
+          repoExists = true; // Update status, repo now exists
+          
+          // Add a short delay to ensure GitHub has processed the repository creation
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (createError) {
+          // Handle specific create repository errors
+          const err = createError as GitHubError;
+          console.error(`Error creating repository: `, err);
+          throw err; // Re-throw for outer catch block to handle
         }
-        console.log(`Repository ${activeProject.name} created successfully.`);
-        repoExists = true; // Update status, repo now exists
       }
 
       // Check if repository is empty (will be true if just created)
-      // Use repoExists flag to avoid checking if creation failed earlier
+      // Only check if the repository exists
+      console.log(`Checking if repository is empty: ${username}/${activeProject.name}`);
       const isEmptyRepo = repoExists ? await checkIsEmptyRepository(
         username,
         activeProject.name
-      ) : true;
+      ).catch(error => {
+        // If we can't determine if repo is empty, log and assume it's empty
+        console.error(`Error checking if repository is empty:`, error);
+        return true;
+      }) : true; // If repo doesn't exist, consider it empty
+      
       console.log(`Repository empty status: ${isEmptyRepo}`);
 
       // Initialize repository if empty
@@ -685,15 +738,31 @@ Project created with ANON AI
       // Improved error message for common GitHub issues
       if (errorMessage.includes('Git Repository is empty')) {
         errorMessage = 'Repository is empty. Initializing failed.';
-      } else if (errorMessage.includes('Not Found')) {
-        errorMessage = 'Repository not found. Check if it exists.';
+      } else if (errorMessage.includes('Not Found') || error.status === 404) {
+        errorMessage = `Repository "${activeProject.name}" not found. It may have been deleted or renamed on GitHub.`;
+        // Reset to authenticated state so user can create the repo
+        setGitHubStatus('authenticated');
+        toast.error('Repository Not Found', {
+          description: `The repository "${activeProject.name}" was not found on GitHub. You can create it using the GitHub menu.`,
+        });
+        throw new Error(errorMessage); // Exit early to avoid showing duplicate toasts
       } else if (errorMessage.includes('reference already exists')) {
         errorMessage = 'Branch already exists. Try force pushing.';
       } else if (errorMessage.includes('Branch not found')) {
         errorMessage = 'Branch not found. Creating initial branch failed.';
+      } else if (error.status === 403 && errorMessage.includes('rate limit exceeded')) {
+        errorMessage = 'GitHub API rate limit exceeded. Please try again later.';
+      } else if (error.status === 409) {
+        errorMessage = 'Conflict with existing data. Repository might be modified by another process.';
       }
 
       console.error('GitHub error details:', error);
+      console.error(`Error response: ${JSON.stringify({
+        status: error.status,
+        message: errorMessage,
+        response: error.response?.data
+      }, null, 2)}`);
+      
       setError(errorMessage);
       setGitHubStatus('error');
 

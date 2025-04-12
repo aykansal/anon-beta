@@ -53,6 +53,7 @@ const TitleBar = ({
   const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [nameError, setNameError] = useState('');
+  const [lastCheckedProject, setLastCheckedProject] = useState<string | null>(null);
   
   // Use GitHub context - only use what we need
   const { 
@@ -60,8 +61,26 @@ const TitleBar = ({
     githubToken, 
     connectGitHub, 
     createRepository,
-    disconnectGitHub
+    disconnectGitHub,
+    checkRepository,
+    resetGitHubState 
   } = useGitHub();
+  
+  // Remove the useEffect that's causing the loop
+  // and replace with a simple manual check function
+  const checkProjectRepository = async (projectName: string) => {
+    if (!githubToken || !projectName) return;
+    
+    console.log('Manually checking if repository exists for:', projectName);
+    try {
+      const exists = await checkRepository(projectName);
+      setLastCheckedProject(projectName);
+      return exists;
+    } catch (err) {
+      console.error('Error checking repository:', err);
+      return false;
+    }
+  };
   
   // Get the appropriate GitHub button text (simplified)
   const getGitHubButtonText = () => {
@@ -72,15 +91,18 @@ const TitleBar = ({
   // Get status dot color class
   const getStatusDotClass = () => {
     switch (gitHubStatus) {
-      case 'authenticated':
       case 'repo_exists':
         return 'bg-green-500';
+      case 'authenticated':
+        return 'bg-yellow-500';
       case 'error':
         return 'bg-destructive';
       case 'checking_repo':
+        return 'bg-blue-500 animate-pulse';
       case 'creating_repo':
-      case 'committing':
         return 'bg-yellow-500 animate-pulse';
+      case 'committing':
+        return 'bg-green-500 animate-pulse';
       default:
         return 'bg-muted-foreground';
     }
@@ -108,13 +130,48 @@ const TitleBar = ({
     }
   };
   
-  // Modified GitHub button click handler
+  // Update handleProjectChange to manually check repo after reset
+  const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const projectId = e.target.value;
+    if (!Array.isArray(projects)) {
+      console.error('Projects is not an array');
+      return;
+    }
+    const selectedProject = projects.find((p) => p.projectId === projectId);
+    if (selectedProject) {
+      // Reset the lastCheckedProject when changing projects
+      setLastCheckedProject(null);
+      
+      // If we're coming from a project with an existing repo or error,
+      // reset the GitHub state to force a fresh check
+      if (gitHubStatus === 'repo_exists' || gitHubStatus === 'error') {
+        console.log('Resetting GitHub state for new project check');
+        resetGitHubState(); // Reset to the authenticated state
+        
+        // We'll check repository status manually when needed instead of automatically
+      }
+      
+      onProjectSelect(selectedProject);
+      // No automatic check - we'll check manually when needed
+    } else {
+      console.error('Project not found with ID:', projectId);
+    }
+  };
+
+  // Update GitHub button click handler to use manual check
   const handleGitHubClick = async () => {
     if (!githubToken) {
       connectGitHub();
     } else if (!activeProject) {
       toast.error('Please select a project first');
     } else {
+      // Only check if we haven't already checked this project
+      if (activeProject.name !== lastCheckedProject) {
+        console.log('Checking repository status before opening drawer');
+        await checkProjectRepository(activeProject.name);
+      }
+      
+      // Open the drawer with the current status
       setIsStatusDrawerOpen(true);
     }
   };
@@ -210,8 +267,7 @@ const TitleBar = ({
       updateStepStatus('init-repo', 'success');
       
       toast.success(`Repository '${activeProject.name}' created successfully`);
-      
-      // Don't auto-close drawer, let user see the success state
+      // Keep drawer open to show success state
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       const currentStep = statusSteps.find(step => step.status === 'loading');
@@ -259,20 +315,6 @@ const TitleBar = ({
       }
       console.error('Error pushing to GitHub:', error);
       toast.error('Failed to push changes');
-    }
-  };
-
-  const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const projectId = e.target.value;
-    if (!Array.isArray(projects)) {
-      console.error('Projects is not an array');
-      return;
-    }
-    const selectedProject = projects.find((p) => p.projectId === projectId);
-    if (selectedProject) {
-      onProjectSelect(selectedProject);
-    } else {
-      console.error('Project not found with ID:', projectId);
     }
   };
 
@@ -487,7 +529,21 @@ const TitleBar = ({
                 <div className="flex-1 overflow-y-auto">
                   {/* GitHub Actions Section */}
                   <div className="p-4 border-b border-border">
-                    {gitHubStatus === 'repo_exists' ? (
+                    {gitHubStatus === 'checking_repo' ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-yellow-500">
+                          <Loader2 size={16} className="animate-spin" />
+                          <p className="text-sm font-medium">Checking repository status...</p>
+                        </div>
+                      </div>
+                    ) : gitHubStatus === 'creating_repo' ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-yellow-500">
+                          <Loader2 size={16} className="animate-spin" />
+                          <p className="text-sm font-medium">Creating repository...</p>
+                        </div>
+                      </div>
+                    ) : gitHubStatus === 'repo_exists' ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-green-500">
                           <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -519,6 +575,22 @@ const TitleBar = ({
                           </div>
                         </Button>
                       </div>
+                    ) : gitHubStatus === 'error' ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-destructive">
+                          <AlertCircle size={16} />
+                          <p className="text-sm font-medium">Error connecting to repository</p>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Try creating a new repository
+                        </div>
+                        <Button onClick={handleCreateRepo} className="w-full">
+                          <div className="flex items-center gap-2">
+                            <PlusIcon size={16} />
+                            Create Repository
+                          </div>
+                        </Button>
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -538,7 +610,19 @@ const TitleBar = ({
                   {/* Status Steps Section */}
                   {statusSteps.length > 0 && (
                     <div className="p-4 space-y-4">
-                      <h4 className="text-sm font-medium text-muted-foreground">Recent Activity</h4>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-muted-foreground">Recent Activity</h4>
+                        {statusSteps.some(step => step.status === 'success' || step.status === 'error') && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setStatusSteps([])}
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
                       {statusSteps.map((step, index) => (
                         <motion.div
                           key={step.id}
@@ -609,6 +693,7 @@ const TitleBar = ({
                       className="flex-1"
                       onClick={() => {
                         disconnectGitHub();
+                        setLastCheckedProject(null);
                         setIsStatusDrawerOpen(false);
                       }}
                     >

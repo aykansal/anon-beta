@@ -29,8 +29,8 @@ const ProjectsPageContent = () => {
     null
   );
   const [connectionStatus, setConnectionStatus] = useState<string>('connected');
-  const [error, setError] = useState<Error | null>(null); // Global error state for UI feedback
-  const [status, setStatus] = useState<string>(''); // New state for handling status
+  const [error, setError] = useState<Error | null>(null);
+  const [status, setStatus] = useState<string>('');
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [isChatVisible, setIsChatVisible] = useState<boolean>(true);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
@@ -40,7 +40,6 @@ const ProjectsPageContent = () => {
 
   const isSavingCode: boolean = false;
 
-  // Validate environment variable
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   if (!backendUrl) {
@@ -62,14 +61,21 @@ const ProjectsPageContent = () => {
       if (res.data.projects.length > 0) {
         setProjects(res.data.projects);
 
-        // Get the stored project ID from localStorage
         const storedProjectId = localStorage.getItem('activeProjectId');
 
         if (storedProjectId) {
-          // Find the stored project in the fetched projects
           const storedProject = res.data.projects.find(
-            // @ts-expect-error ignore
-            (p) => p.projectId === storedProjectId
+            (p: {
+              createdAt: string;
+              description: string;
+              id: number;
+              name: string;
+              processId: string;
+              projectId: string;
+              sandboxId: string;
+              updatedAt: string;
+              walletAddress: string;
+            }) => p.projectId === storedProjectId
           );
           if (storedProject) {
             setActiveProject(storedProject);
