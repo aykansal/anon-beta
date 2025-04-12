@@ -412,20 +412,33 @@ Project created with ANON AI
     console.log(`Starting GitHub commit for project: ${activeProject.name}`);
 
     try {
-      // Verify repository exists
-      const repoExists = await checkRepository(activeProject.name);
+      // Verify or create repository
+      let repoExists = await checkRepository(activeProject.name);
 
       if (!repoExists) {
-        setError('Repository does not exist. Create it first.');
-        setGitHubStatus('authenticated');
-        throw new Error('Repository does not exist');
+        console.log(`Repository ${activeProject.name} not found. Attempting to create.`);
+        toast.info(`Repository not found. Creating...`);
+        const repoCreated = await createRepository(activeProject.name);
+
+        if (!repoCreated) {
+          // createRepository should have already set the error state and shown a toast
+          // Throwing an error here ensures the commit process stops definitively.
+          // Use a more specific error or rely on the state set by createRepository.
+          const creationError = error || 'Failed to create repository after checking.';
+          setError(creationError)
+          setGitHubStatus('error'); // Ensure status reflects error
+          throw new Error(creationError);
+        }
+        console.log(`Repository ${activeProject.name} created successfully.`);
+        repoExists = true; // Update status, repo now exists
       }
 
-      // Check if repository is empty
-      const isEmptyRepo = await checkIsEmptyRepository(
+      // Check if repository is empty (will be true if just created)
+      // Use repoExists flag to avoid checking if creation failed earlier
+      const isEmptyRepo = repoExists ? await checkIsEmptyRepository(
         username,
         activeProject.name
-      );
+      ) : true;
       console.log(`Repository empty status: ${isEmptyRepo}`);
 
       // Initialize repository if empty
