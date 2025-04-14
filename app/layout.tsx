@@ -4,6 +4,8 @@ import '@/styles/globals.css';
 import { ThemeProvider } from 'next-themes';
 import { ActionProvider } from '@/context/ActionContext';
 import { Toaster } from 'sonner';
+import { MessageContext } from '@/context/MessagesContext';
+import { useState } from 'react';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,18 +27,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
-    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
+    <html lang="en" className="light" style={{ colorScheme: 'light' }}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem={true}
         >
+
           <ActionProvider>
-            {children}
+          {children}
+
             <Toaster position="bottom-center" />
           </ActionProvider>
         </ThemeProvider>
