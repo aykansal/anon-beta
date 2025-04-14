@@ -5,9 +5,14 @@ import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 import axios from 'axios';
-import FullLanding from "./Landing/Components/FullLanding"
+import dynamic from 'next/dynamic'; // ✅ Import dynamic
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+// ✅ Dynamically import FullLanding with SSR disabled
+const FullLanding = dynamic(() => import('./Landing/Components/FullLanding'), {
+  ssr: false,
+});
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
@@ -16,7 +21,6 @@ export default function Home() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
-
 
   const handleSubscribe = async () => {
     if (email.trim()) {
@@ -40,7 +44,8 @@ export default function Home() {
       toast.error('Please enter an email address.');
     }
   };
-  //@ts-expect-error iugnore
+
+  // @ts-expect-error ignore
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (prompt.trim()) {
@@ -51,7 +56,7 @@ export default function Home() {
     }
   };
 
-  //@ts-expect-error iugnore
+  // @ts-expect-error ignore
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
@@ -63,7 +68,5 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  return (
-   <FullLanding/>
-  );
+  return <FullLanding />;
 }
