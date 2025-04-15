@@ -1,23 +1,13 @@
 'use client';
 
-interface ProjectType {
-  projectId: string;
-  content: {
-    description: string;
-    codebase: { filePath: string; code: string }[];
-    externalPackages: { packageName: string; packageVersion: string }[];
-  } | null;
-  codebase: { filePath: string; code: string }[];
-}
-
 import {
-  SandpackProvider,
+  RunIcon,
+  ExportIcon,
+  useSandpack,
   SandpackLayout,
+  SandpackProvider,
   SandpackCodeEditor,
   SandpackFileExplorer,
-  ExportIcon,
-  RunIcon,
-  useSandpack,
   SandpackPreview,
 } from '@codesandbox/sandpack-react';
 
@@ -31,6 +21,37 @@ import { ActionContext } from '@/context/ActionContext';
 import SandPackPreviewClient from './SandPackPreviewClient';
 import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
 import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
+import {
+  FileData,
+  CodeContent,
+  CurrentProjectType,
+  ActiveProjectType,
+} from '@/lib/types';
+
+interface ArweaveWallet {
+  connect: (
+    permissions: string[],
+    appInfo?: {
+      name?: string;
+      logo?: string;
+    },
+    gateway?: {
+      host: string;
+      port: number;
+      protocol: 'http' | 'https';
+    }
+  ) => Promise<void>;
+  disconnect: () => Promise<void>;
+  getActiveAddress: () => Promise<string>;
+  userTokens: () => Promise<[]>;
+  tokenBalance: (tokenId: string) => Promise<number>;
+}
+
+declare global {
+  interface Window {
+    arweaveWallet: ArweaveWallet;
+  }
+}
 
 const SandpackDownloader = ({
   onDownload,
@@ -124,15 +145,13 @@ const validateNpmPackage = async (packageName: string) => {
   }
 };
 
-let normalizedCodebase: { [key: string]: string } = {};
-
 const Codeview = ({
   activeProject,
   isSaving,
   isGenerating,
   onCommit,
 }: {
-  activeProject: ProjectType;
+  activeProject: ActiveProjectType;
   isSaving?: boolean;
   isGenerating: boolean;
   onCommit: () => void;
@@ -140,9 +159,8 @@ const Codeview = ({
   const [activeView, setActiveView] = useState('code');
   const [loading, setloading] = useState(false);
   const { action, setAction } = useContext(ActionContext);
-  const [currentProject, setCurrentProject] = useState<ProjectType | null>(
-    activeProject
-  );
+  const [currentProject, setCurrentProject] =
+    useState<CurrentProjectType | null>(null);
   const [validatedDependencies, setValidatedDependencies] = useState({});
 
   useEffect(() => {
@@ -150,48 +168,26 @@ const Codeview = ({
       try {
         setLoading(true);
         const response: {
-          content: {
-            codebase: { filePath: string; code: string }[];
-            externalPackages: { packageName: string; packageVersion: string }[];
-            processId: string;
-          } | null;
-          codebase: { filePath: string; code: string }[];
+          codebase: unknown;
+          description: string;
+          externalPackages?: {
+            packageName: string;
+            packageVersion: string;
+          }[];
+          projectId: string;
         } = await axios
           .get(
-            // @ts-expect-error ignore type error
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject.walletAddress}`
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject?.walletAddress}`
           )
           .then((res) => {
-            console.log('response.data inside codeview\n\n', res.data);
-            return res.data;
+            return res?.data;
           });
+        console.log('API Response:', response);
 
         if (response.codebase) {
-          if (Array.isArray(response.codebase)) {
-            response.codebase.forEach(
-              (file: { filePath: string; code: string }) => {
-                const filePath = file.filePath.startsWith('/')
-                  ? file.filePath
-                  : `/${file.filePath}`;
-                normalizedCodebase[filePath] = file.code || '';
-              }
-            );
-          }
-          //  else if (typeof response.codebase === 'object') {
-          //   normalizedCodebase = Object.entries(response.codebase).reduce(
-          //     (acc, [key, value]) => {
-          //       const path = key.startsWith('/') ? key : `/src/${key}`;
-          //       acc[path] = value;
-          //       return acc;
-          //     },
-          //     {} as { [key: string]: string }
-          //   );
-          // }
-          else {
-            normalizedCodebase = defaultFiles_3;
-          }
-          // @ts-expect-error ignore type error
-          setCurrentProject({ ...response, codebase: normalizedCodebase });
+          setCurrentProject({
+            ...response,
+          } as CurrentProjectType);
         }
       } catch (error) {
         // @ts-expect-error ignore type error
@@ -210,92 +206,6 @@ const Codeview = ({
       fetchProjectCode(activeProject.projectId);
     }
   }, [activeProject]);
-
-  useEffect(() => {
-    const handleCodebaseUpdate = (activeProject: ProjectType) => {
-      setCurrentProject(activeProject);
-    };
-
-    handleCodebaseUpdate(activeProject);
-
-    // Add event listener for refreshCodeview
-    const handleRefreshCodeview = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail?.projectId && customEvent.detail?.codebase) {
-        setCurrentProject((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            projectId: customEvent.detail.projectId,
-            codebase: customEvent.detail.codebase,
-            content: prev.content,
-          } as ProjectType;
-        });
-      }
-    };
-
-    window.addEventListener('refreshCodeview', handleRefreshCodeview);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('refreshCodeview', handleRefreshCodeview);
-    };
-  }, [activeProject]);
-
-  useEffect(() => {
-    const handleCurrentFilesRequest = () => {
-      const currentFiles: {
-        [key: string]: { code: string; filePath: string; isTemplate?: boolean };
-      } = {};
-      if (currentProject && currentProject.codebase) {
-        Object.entries(currentProject.codebase).forEach(
-          ([path, fileContent]) => {
-            currentFiles[path] = {
-              code:
-                typeof fileContent === 'object' &&
-                fileContent &&
-                fileContent.code
-                  ? fileContent.code
-                  : typeof fileContent === 'string'
-                  ? fileContent
-                  : fileContent
-                  ? JSON.stringify(fileContent)
-                  : '',
-              filePath: path,
-            };
-          }
-        );
-      } else {
-        Object.entries(defaultFiles_3).forEach(([path, code]) => {
-          currentFiles[path] = {
-            code: typeof code === 'string' ? code : JSON.stringify(code),
-            filePath: path,
-            isTemplate: true,
-          };
-        });
-      }
-      window.dispatchEvent(
-        new CustomEvent('getCurrentFiles', {
-          detail: currentFiles,
-        })
-      );
-    };
-    window.addEventListener('requestCurrentFiles', handleCurrentFilesRequest);
-    const handleTemplateFilesRequest = () => {
-      handleCurrentFilesRequest();
-    };
-    window.addEventListener('requestTemplateFiles', handleTemplateFilesRequest);
-    return () => {
-      window.removeEventListener(
-        'requestCurrentFiles',
-        handleCurrentFilesRequest
-      );
-      window.removeEventListener(
-        'requestTemplateFiles',
-        handleTemplateFilesRequest
-      );
-    };
-  }, [currentProject]);
 
   useEffect(() => {
     const validateDependencies = async (
@@ -320,7 +230,7 @@ const Codeview = ({
       return validatedPackages;
     };
     const updateDependencies = async () => {
-      const externalPackages = currentProject?.content?.externalPackages;
+      const externalPackages = currentProject?.externalPackages;
       if (externalPackages) {
         const validPackages = await validateDependencies(externalPackages);
         setValidatedDependencies(validPackages);
@@ -344,9 +254,78 @@ const Codeview = ({
       toast.info('Running Lua code...');
       console.log('currentProject', currentProject);
 
-      const code = currentProject?.codebase;
-      // @ts-expect-error ignore type error
-      const luaCodeToBeEval = code['/src/lib/index.lua'];
+      // Get Lua code from the codebase, handling different possible structures
+      let luaCodeToBeEval = '';
+
+      if (currentProject?.codebase) {
+        const codebase = currentProject.codebase;
+
+        // Find the Lua file in the codebase
+        const luaPath = '/src/lib/index.lua';
+
+        if (Array.isArray(codebase)) {
+          // Handle array format - could be direct objects or nested
+          for (const item of codebase) {
+            if (item && typeof item === 'object') {
+              // Check if this is a direct file object with filepath/filePath
+              if (
+                ('filePath' in item || 'filepath' in item) &&
+                'code' in item
+              ) {
+                const filePath =
+                  (item as FileData).filePath || (item as FileData).filepath;
+                if (filePath === luaPath) {
+                  luaCodeToBeEval = (item as FileData).code || '';
+                  break;
+                }
+              } else {
+                // Check if it's a nested object with numeric keys
+                for (const key of Object.keys(item)) {
+                  const fileData = (item as Record<string, FileData>)[key];
+                  if (fileData && typeof fileData === 'object') {
+                    const filePath = fileData.filepath || fileData.filePath;
+                    if (filePath === luaPath) {
+                      luaCodeToBeEval = fileData.code || '';
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else {
+          // Handle object format
+          // First try direct path access
+          const luaFile = codebase[luaPath];
+          if (luaFile) {
+            if (typeof luaFile === 'string') {
+              luaCodeToBeEval = luaFile;
+            } else if (
+              typeof luaFile === 'object' &&
+              'code' in (luaFile as CodeContent)
+            ) {
+              luaCodeToBeEval = (luaFile as CodeContent).code || '';
+            }
+          } else {
+            // Try to find any path ending with .lua
+            for (const [path, content] of Object.entries(codebase)) {
+              if (path.endsWith('.lua')) {
+                if (typeof content === 'string') {
+                  luaCodeToBeEval = content;
+                  break;
+                } else if (
+                  typeof content === 'object' &&
+                  content &&
+                  'code' in (content as CodeContent)
+                ) {
+                  luaCodeToBeEval = (content as CodeContent).code || '';
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
 
       if (!luaCodeToBeEval) {
         toast.error('No Lua code found in the project.');
@@ -386,9 +365,7 @@ const Codeview = ({
             { name: 'Action', value: 'Eval' },
             {
               name: 'Description',
-              value: `${
-                currentProject?.content?.description || 'project description'
-              }`,
+              value: `${currentProject?.description || 'project description'}`,
             },
           ],
         });
@@ -427,29 +404,72 @@ const Codeview = ({
     }
   };
 
-  console.log('currentProject', currentProject);
-
   const codebaseFiles = currentProject?.codebase || {};
-  const visibleFiles =
-    Object.keys(codebaseFiles)?.length > 0
-      ? Object.keys(codebaseFiles)
-      : ['/src/App.tsx', '/src/components/Sample.tsx'];
+
+  // Generate visible files list based on the format of codebase
+  let visibleFiles: string[] = [];
+
+  // Check for numeric keys format {0: {code, filePath}, 1: {code, filePath}}
+  const hasNumericKeys =
+    typeof codebaseFiles === 'object' &&
+    !Array.isArray(codebaseFiles) &&
+    Object.keys(codebaseFiles).some((key) => !isNaN(Number(key)));
+
+  if (hasNumericKeys) {
+    // Extract paths from the numeric keys format
+    Object.values(codebaseFiles as Record<string, unknown>).forEach(
+      (fileObj) => {
+        if (fileObj && typeof fileObj === 'object') {
+          const typedObj = fileObj as FileData;
+          if (typedObj.filePath || typedObj.filepath) {
+            const path = typedObj.filePath || typedObj.filepath || '';
+            const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+            visibleFiles.push(normalizedPath);
+          }
+        }
+      }
+    );
+  } else if (Array.isArray(codebaseFiles)) {
+    // Extract paths from nested array structure
+    for (const item of codebaseFiles as Array<Record<string, unknown>>) {
+      if (item && typeof item === 'object') {
+        if ('filePath' in item || 'filepath' in item) {
+          // Direct file object
+          const path =
+            (item as FileData).filePath || (item as FileData).filepath || '';
+          const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+          visibleFiles.push(normalizedPath);
+        } else {
+          // Nested object with numeric keys
+          for (const key of Object.keys(item)) {
+            const fileData = item[key] as Record<string, FileData>;
+            if (fileData && typeof fileData === 'object') {
+              const path =
+                (fileData as FileData).filepath ||
+                (fileData as FileData).filePath ||
+                '';
+              if (path) {
+                const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+                visibleFiles.push(normalizedPath);
+              }
+            }
+          }
+        }
+      }
+    }
+  } else {
+    // Object format - keys are the file paths
+    visibleFiles = Object.keys(codebaseFiles);
+  }
+
+  // Fall back to default if no files were found
+  if (visibleFiles.length === 0) {
+    visibleFiles = ['/src/App.tsx'];
+  }
 
   const sandpackFiles = {
     ...defaultFiles_3,
-    ...Object.entries(codebaseFiles).reduce((acc, [path, content]) => {
-      if (typeof content === 'string') {
-        acc[path] = content;
-      } else if (content && typeof content === 'object') {
-        // Check if content has a code property that's a string
-        const codeContent = content as Record<string, unknown>;
-        acc[path] =
-          typeof codeContent.code === 'string' ? codeContent.code : '';
-      } else {
-        acc[path] = '';
-      }
-      return acc;
-    }, {} as Record<string, string>),
+    ...currentProject?.codebase,
   };
 
   const previewRef = useRef(null);

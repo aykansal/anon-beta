@@ -10,6 +10,7 @@ import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+// @ts-expect-error - expected type mismatch due to third-party types
 import { ProjectType } from '@/lib/types';
 import logo from "../../public/bgRemoveLogoAnon.png"
 import {
@@ -714,7 +715,6 @@ const ProjectsPage = () => {
                 // files={files}
                 isSaving={isSavingCode}
                 isGenerating={isGenerating}
-                // @ts-expect-error ignore
                 activeProject={activeProject}
                 onCommit={handleSaveToGithub}
               />
