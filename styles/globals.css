@@ -177,25 +177,24 @@
   }
 }
 
-/* Refined scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 3px;
+  background-color: #c1c1c1;
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background-color: #a8a8a8;
 }
-
 /* Custom styling for react-mentions */
 .mentions-input {
   width: 100%;

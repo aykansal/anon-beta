@@ -10,6 +10,7 @@ import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+
  //@ts-expect-error - expected type mismatch due to third-party types
 import { ProjectType } from '@/lib/types';
 import logo from "../../public/bgRemoveLogoAnon.png"
@@ -727,7 +728,7 @@ const ProjectsPage = () => {
 
       {/* last part chat section  */}
 
-      <div className="w-[33.7%]  h-full text-black flex flex-col">
+      <div className="w-[27.7%]  h-full text-black flex flex-col">
   <div className="relative items-center w-full h-[9%] border-b border-[#37454E]/20 flex px-4">
 
       <div>

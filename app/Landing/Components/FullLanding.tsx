@@ -7,6 +7,11 @@ import LandingNavbar from "./LandingNavbar";
 import HoriCards from "./HoriCards";
 import ExpandedComp from "./ExpandedComp";
 import VerticalExpand from "./VerticalExpand";
+import img1 from "../../../public/hero1.webp"
+import img2 from "../../../public/hero2.webp"
+import img3 from "../../../public/hero3.webp"
+import img4 from "../../../public/hero4.webp"
+import Image from "next/image";
 
 export default function Home() {
   const locomotiveScroll = new LocomotiveScroll();
@@ -80,27 +85,27 @@ export default function Home() {
           </div>
           {/* absolute images */}
           <div className="absolute top-[19%] -left-[1%] w-[290px] ">
-            <img
-              src="https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fhero-schedule.webp&w=640&q=75"
+            <Image
+              src={img1}
               alt="not showing"
             />
           </div>
           <div className="absolute top-[27%] right-[1%] w-[260px] ">
-            <img
-              src="https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fhero-add-images.webp&w=640&q=75"
+            <Image
+              src={img2}
               alt="not showing"
             />
           </div>
           <div className="absolute top-[58%] left-[1%] w-[300px] ">
-            <img
-              src="https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fhero-analyze.webp&w=640&q=75"
+            <Image
+              src={img3}
               alt="not showing"
             />
           </div>
 
           <div className="absolute bottom-[0%] right-[6%] w-[210px] ">
-            <img
-              src="https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fhero-tag.webp&w=640&q=75"
+            <Image
+              src={img4}
               alt="not showing"
             />
           </div>

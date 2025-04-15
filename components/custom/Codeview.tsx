@@ -453,20 +453,21 @@ const Codeview = ({
 
   return (
     <SandpackProvider
-      theme={{
-        colors: {
-          surface1: 'hsl(var(--background))',
-          surface2: 'hsl(var(--card))',
-          surface3: 'hsl(var(--muted))',
-          clickable: 'hsl(var(--muted-foreground))',
-          base: 'hsl(var(--foreground))',
-          disabled: 'hsl(var(--muted-foreground))',
-          hover: 'hsl(var(--accent))',
-          accent: 'hsl(var(--primary))',
-          error: 'hsl(var(--destructive))',
-          errorSurface: 'hsl(var(--destructive)/0.1)',
-        },
-      }}
+    theme={{
+      colors: {
+        surface1: '#ffffff',         
+        surface2: '#f8f9fa',         
+        surface3: '#f1f3f5',         
+        clickable: '#6c757d',         
+        base: '#212529',              
+        disabled: '#adb5bd',          
+        hover: '#e9ecef',             
+        accent: '#0d6efd',           
+        error: '#dc3545',            
+        errorSurface: 'rgba(220, 53, 69, 0.1)', 
+      },
+    }}
+    
       customSetup={{
         entry: '/src/main.tsx',
         // environment: 'vite',
@@ -512,7 +513,7 @@ const Codeview = ({
       }}
     >
       <div className="flex flex-col bg-background h-full min-h-0">
-        <div className="h-10 px-2 flex items-center justify-between border-b border-border shrink-0">
+        {/* <div className="h-10 px-2 flex items-center justify-between border-b border-border shrink-0">
           <div className="inline-flex h-7 gap-1 bg-muted rounded-md p-1">
             {views.map((view) => (
               <motion.button
@@ -561,7 +562,7 @@ const Codeview = ({
               disabled={isEditorDisabled()}
             />
           </div>
-        </div>
+        </div> */}
 
         <div className="flex-1 relative min-h-0 overflow-hidden">
           {(isSaving || isGenerating || loading || action === 'deploy') && (
