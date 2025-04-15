@@ -4,7 +4,8 @@ import '@/styles/globals.css';
 import { ThemeProvider } from 'next-themes';
 import { ActionProvider } from '@/context/ActionContext';
 import { Toaster } from 'sonner';
-// import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/react';
+import ClientInitializer from '@/components/custom/ClientInitializer';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -39,7 +40,8 @@ export default function RootLayout({
           <ActionProvider>
             {children}
             <Toaster position="bottom-center" />
-            {/* <Analytics /> */}
+            <ClientInitializer />
+            <Analytics />
           </ActionProvider>
         </ThemeProvider>
       </body>

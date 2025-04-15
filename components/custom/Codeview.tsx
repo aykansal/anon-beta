@@ -510,13 +510,13 @@ const Codeview = ({
       // @ts-expect-error ignore type error
       files={sandpackFiles}
       options={{
+        // bundlerURL: 'https://sandpack-bundler',
         visibleFiles,
         activeFile: visibleFiles.find(
           (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
         ),
         externalResources: [
           'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
-          // 'https://cdn.tailwindcss.com',
         ],
         classes: {
           'sp-wrapper': 'h-full min-h-0',
