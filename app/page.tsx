@@ -1,3 +1,4 @@
+
 'use client';
 
 import Head from 'next/head';
@@ -5,11 +6,11 @@ import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 import axios from 'axios';
-import dynamic from 'next/dynamic'; // ✅ Import dynamic
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-// ✅ Dynamically import FullLanding with SSR disabled
+// Dynamically import FullLanding to avoid SSR issues
 const FullLanding = dynamic(() => import('./Landing/Components/FullLanding'), {
   ssr: false,
 });
@@ -19,7 +20,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
 
   const handleSubscribe = async () => {
@@ -45,28 +45,24 @@ export default function Home() {
     }
   };
 
-  // @ts-expect-error ignore
+  // @ts-expect-error - event type not defined strictly here for simplicity
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (prompt.trim()) {
       setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate processing
+      await new Promise((resolve) => setTimeout(resolve, 500));
       router.push(`/projects?prompt=${encodeURIComponent(prompt)}`);
       setIsLoading(false);
     }
   };
 
-  // @ts-expect-error ignore
+  // @ts-expect-error - using generic event to catch keyboard shortcut
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   return <FullLanding />;
 }
