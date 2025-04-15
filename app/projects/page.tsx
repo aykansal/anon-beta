@@ -1,8 +1,8 @@
-
 'use client';
+
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
@@ -10,10 +10,7 @@ import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
 import { Octokit } from '@octokit/core';
 import { PanelRightClose, PanelRightOpen } from 'lucide-react';
-
- //@ts-expect-error - expected type mismatch due to third-party types
 import { ProjectType } from '@/lib/types';
-import logo from "../../public/bgRemoveLogoAnon.png"
 import {
   Dialog,
   DialogContent,
@@ -22,10 +19,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import { PreviewContext } from '@/context/PreviewContext';
-import { MessageContext } from '@/context/MessagesContext';
-import Markdown from 'react-markdown';
 
 const ProjectsPage = () => {
   const [projects, setProjects] = useState<ProjectType[]>([]);
@@ -40,16 +33,6 @@ const ProjectsPage = () => {
   const [isChatVisible, setIsChatVisible] = useState<boolean>(true);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [newProjectName, setNewProjectName] = useState<string>('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [clicked, setClicked] = useState(false);
-  const [activeTab, setActiveTab] = useState("Chat");
-  const [loading, setloading] = useState(true)
-  const [userInput, setuserInput] = useState("");
-
-
-
-
-
 
   const isSavingCode: boolean = false;
 
@@ -59,26 +42,6 @@ const ProjectsPage = () => {
   if (!backendUrl) {
     throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
   }
-
-  const Previewcontext = useContext(PreviewContext);
-  if (!Previewcontext) {
-    throw new Error("context not defined");
-  }
-  //@ts-ignore
-  const {setPreview } = Previewcontext;
-
-  // const Msgcontext = useContext(MessageContext);
-  // if (!Msgcontext) {
-  //   throw new Error("context not present");
-  // }
-
-  // const { messages, setMessage } = Msgcontext;
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter" && !event.shiftKey && userInput.length > 1) {
-      event.preventDefault();
-    }
-  };
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -579,286 +542,167 @@ const ProjectsPage = () => {
   };
 
   return (
-    <div className="w-full h-screen overflow-hidden bg-[#fff]  flex ">
-      {/* this is the left most  nav bar  */}
-  {/*  */}
-
-
-{/* have to add the loader in the initial screen */}
-
-
-
-
-
-      {/* middle part */}
-
-      <div className="w-[73.2%]  border-r-[0.5px] border-[#37454E]/20  h-full flex flex-col">
-        {/* top nav bar  */}
-
-        <div className="w-full  text-black    h-[8.5%] flex items-center justify-between px-5  ">
-          {/* first part */}
-          <div className="flex w-[30%]   h-full items-center ">
-
-          <div className="w-[30%]  h-full opacity-80">
-            <Image className="w-full h-full object-cover" src={logo} alt="not showing" />
-          </div>  
-
-          <div className="relative inline-block text-left">
-      <div
-        className="w-9 mr-3 -ml-1 bg-transparent flex items-center justify-center transition-all duration-150 h-9 rounded-full hover:bg-[#F2F2F2] cursor-pointer"
-        onClick={() => setIsOpen((prev) => !prev)}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="lucide opacity-60 lucide-chevron-down"
-        >
-          <path d="m6 9 6 6 6-6"></path>
-        </svg>
+    <div className="flex flex-col h-screen overflow-hidden light bg-background">
+      <div className="shrink-0 border-b border-border light ">
+        <TitleBar
+          onProjectSelect={handleProjectSelect}
+          onCreateProject={handleCreateProject}
+          onRefresh={handleRefreshProject}
+          githubConnected={!!githubToken}
+          activeProject={activeProject}
+          onSave={handleSaveToGithub}
+          onRun={handleRunProject}
+          projects={projects}
+        />
       </div>
 
-      {isOpen && (
-        <div className="absolute left-[10%] mt-2 w-48 bg-white rounded-md border border-black/50 z-50">
-          <div className="py-1 f19">
-            <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Git Push</button>
-            <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">New Project</button>
-            <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Download</button>
-          </div>
+      {/* Error Display - Updated colors */}
+      {error && (
+        <div className="bg-destructive/5 px-4 py-2 text-destructive flex justify-between items-center border-b border-destructive/10">
+          <p>{error.message}</p>
+          <button
+            onClick={fetchProjects}
+            className="text-sm text-destructive hover:text-destructive/80"
+          >
+            Retry
+          </button>
         </div>
       )}
-    </div>
 
-          <div
-                  onClick={() => (setClicked(!clicked) ,  setPreview(prev=>!prev))}
-      className={`w-[20%] px-1 flex items-center h-[57%] border border-black/20 rounded-lg overflow-hidden transition-colors duration-200
-        ${clicked ? 'bg-[#37454E]' : 'bg-[#F2F2F2]'}`}
-    >
-      <div
-        onClick={() => setClicked(!clicked)}
-        className={`w-[65%] h-[75%] flex items-center justify-center rounded-lg transition-all duration-500 cursor-pointer
-          ${clicked ? 'translate-x-[60%] bg-white' : 'translate-x-0 bg-white'}`}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="lucide lucide-code"
+      {/* Main Content */}
+      {activeProject ? (
+        <div
+          id="main-container"
+          className="flex flex-1 min-h-0 overflow-hidden"
         >
-          <polyline points="16 18 22 12 16 6"></polyline>
-          <polyline points="8 6 2 12 8 18"></polyline>
-        </svg>
-      </div>
-    </div>
-    <div className="mx-5 opacity-70"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-panel-bottom"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M3 15h18"></path></svg></div>
-    <div className="opacity-70"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-package-check"><path d="m16 16 2 2 4-4"></path><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"></path><path d="m7.5 4.27 9 5.15"></path><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" x2="12" y1="22" y2="12"></line></svg></div>
-          </div>
-          {/* search bar section */}
-          <div className="w-[36%] h-full flex items-center justify-center ">
-            <div className="w-full h-[50%] rounded-md bg-[#F2F2F2] flex items-center justify-between px-2">
-              {/*  the left section*/}
-              <div className="flex items-center  gap-1">
-                <div className="p-1 hover:bg-[#E7E8E9] rounded-lg transition-all duration-200">
-                <svg  xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="opacity-50"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
-                </div>
-
-                <div className="p-1 mr-2 hover:bg-[#E7E8E9] rounded-lg transition-all duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-house opacity-70"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"></path><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-                </div>
-
-                <div className="f17 opacity-80">
-                  <p>BetaVersion/</p>
-                </div>
-
-              </div>
-            {/* right side */}
-              <div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-refresh-cw opacity-70"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-[20%] h-full flex items-center justify-end gap-2  ">
-            <div className="p-1 hover:bg-[#E7E8E9] transition-all  rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-ellipsis"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-            </div>
-            <div className="p-1 hover:bg-[#E7E8E9] transition-all  rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </div>
-
-            <div className="px-3 py-1 flex items-center gap-2 bg-[#37454E] text-white rounded-[4px]">
-              <div><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 448 512" className="opacity-90" height=".9em" width=".9em" xmlns="http://www.w3.org/2000/svg"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z"></path></svg></div>
-              <p className="f17">Run Lua</p>
-            </div>
-
-          </div>
-
-          
-        </div>
-
-        {/* code & preview part */}
-
-        <div className="w-full flex items-end justify-center h-[91%] text-white ">
-
-          <div className="w-[97.5%] h-[99%] rounded-lg overflow-hidden border-[1px] border-black/10">
-          <Codeview
+          <div
+            style={{
+              width: isChatVisible ? `${splitPosition}%` : '100%',
+              transition: 'width 0.3s ease-in-out',
+            }}
+            className="h-full min-h-0 relative flex"
+          >
+            {/* Code Editor Container */}
+            <div className="flex-1 relative">
+              <Codeview
                 // files={files}
                 isSaving={isSavingCode}
                 isGenerating={isGenerating}
+                // @ts-expect-error ignore
                 activeProject={activeProject}
                 onCommit={handleSaveToGithub}
               />
+            </div>
 
+            {/* Toggle Chat Button - Repositioned */}
+            <div className="relative w-0">
+              <button
+                onClick={() => setIsChatVisible(!isChatVisible)}
+                className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors border border-border"
+                title={isChatVisible ? 'Hide Chat' : 'Show Chat'}
+              >
+                {isChatVisible ? (
+                  <PanelRightClose size={16} />
+                ) : (
+                  <PanelRightOpen size={16} />
+                )}
+              </button>
+            </div>
           </div>
 
+          {/* Animated Chat Panel */}
+          <motion.div
+            style={{ width: `${100 - splitPosition}%` }}
+            animate={{
+              width: isChatVisible ? `${100 - splitPosition}%` : '0%',
+              opacity: isChatVisible ? 1 : 0,
+            }}
+            transition={{
+              duration: 0.3,
+              ease: [0.32, 0.72, 0, 1],
+            }}
+            className="h-full min-h-0 border-l border-border relative"
+          >
+            {isChatVisible && (
+              <Chatview
+                activeProject={activeProject}
+                onGenerateStart={() => setIsGenerating(true)}
+                onGenerateEnd={() => setIsGenerating(false)}
+              />
+            )}
+          </motion.div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center bg-white">
+        <div className="text-center">
+          <h3 className="text-lg font-medium mb-2 text-gray-800">
+            No Project Selected
+          </h3>
+          {/* <button
+            onClick={() => setIsDialogOpen(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-500"
+          >
+            Create a New Project
+          </button> */}
         </div>
       </div>
+      
+      )}
 
-      {/* last part chat section  */}
-
-      <div className="w-[27.7%]  h-full text-black flex flex-col">
-  <div className="relative items-center w-full h-[9%] border-b border-[#37454E]/20 flex px-4">
-
-      <div>
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="lucide lucide-panel-right"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M15 3v18"></path></svg>        
-      </div>
-
-  </div>
-
-  {/* Conditional Content */}
-  {activeTab === "Chat" ? (
-    <div className="w-full h-[77%] text-[#000]  gap-5 justify-end px-4 flex flex-col">
-      {/* Chat Section */}
-      <div className="flex flex-col overflow-y-auto py-5 gap-5 justify-end items-end">
-        {/* {messages.map((msg:any, index:any) => (
-          <div key={index} className="w-full flex flex-col gap-3 justify-end items-end">
-            {msg.role === "user" && (
-              <div className="min-w-[70%] max-w-[80%] py-2 px-2 text-sm rounded-lg bg-[#F2F2F2]">
-                {msg.msg}
+      {/* Create Project Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="projectName"
+                  className="text-sm font-medium leading-none"
+                >
+                  Project Name
+                </label>
+                <input
+                  id="projectName"
+                  type="text"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-full p-2 rounded-md border border-border bg-background text-foreground"
+                  placeholder="Enter project name"
+                  required
+                />
               </div>
-            )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Create Project</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            {loading ? (
-              <div className="w-full flex items-start gap-2">
-                <div className="w-[12%] flex justify-center h-full">
-                  <div className="w-8 h-8 rounded-full bg-[#313D45] flex items-center justify-center">
-                    <svg
-                      className="w-[20px] text-[#8F989E]"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 25 25"
-                      fill="#fff"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M12.5192 1.91235L17.0537 4.53232L18.1874 5.18731M21.5883 7.15228V12.2914V13.5762M21.5883 17.4306L17.0537 20.0506L15.9201 20.7056M12.5192 22.6705L7.98463 20.0506L6.85099 19.3956M3.45007 17.4306V12.2914V11.0067M3.45007 7.15228L7.98463 4.53232L9.11826 3.87733"
-                        stroke="#fff"
-                        strokeWidth="1.25"
-                        strokeLinejoin="round"
-                      ></path>
-                    </svg>
-                  </div>
-                </div>
-              
-                <div className="w-[85%] flex gap-1">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse delay-200"></span>
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse delay-400"></span>
-                </div>
-              </div>
-            ) : (
-              msg.role === "ai" && (
-                <div className="w-full gap-2 flex items-start">
-                  <div className="w-[12%] flex justify-center h-full">
-                    <div className="w-8 h-8 rounded-full bg-[#313D45] flex items-center justify-center">
-                      <svg
-                        className="w-[20px] text-[#8F989E]"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 25 25"
-                        fill="#fff"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M12.5192 1.91235L17.0537 4.53232L18.1874 5.18731M21.5883 7.15228V12.2914V13.5762M21.5883 17.4306L17.0537 20.0506L15.9201 20.7056M12.5192 22.6705L7.98463 20.0506L6.85099 19.3956M3.45007 17.4306V12.2914V11.0067M3.45007 7.15228L7.98463 4.53232L9.11826 3.87733"
-                          stroke="#fff"
-                          strokeWidth="1.25"
-                          strokeLinejoin="round"
-                        ></path>
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="w-[85%] f4 text-sm">
-
-                  <Markdown>{msg.msg}</Markdown>
-                  </div>
-                </div>
-              )
-            )}
-          </div>
-        ))} */}
-      </div>
-    </div>
-  ) : (
-    <div className="w-full h-[77%] border-b border-[#37454E] flex flex-col justify-center px-4">
-      <div className="text-white text-sm font-semibold">Deployed URL</div>
-      <div className="text-[#8F989E] text-sm mt-2">
-        <a href="https://example.com" target="_blank" className="underline">
-          https://example.com
-        </a>
-      </div>
-    </div>
-  )}
-
-  {/* Input Section (Visible in Both Tabs) */}
-  <div className="w-full h-[20%]  text-black flex items-center justify-start px-1">
-    <div className="w-[95%] ml-1 h-[76%] justify-between flex flex-col border-[#37454E]/40 border rounded-lg">
-      <div className="w-full py-2">
-        <input
-          value={userInput}
-          onChange={(e) => setuserInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="w-full text-black outline-none f4 bg-transparent placeholder:text-[#45544D] text-sm px-3"
-          type="text"
-          placeholder="What do you want to change..."
+      {/* Status Bar - Updated colors */}
+      <div className="shrink-0 border-t border-border">
+        <StatusBar
+          // isCreating={isCreating}
+          activeProject={activeProject}
+          // isSaving={isSavingCode}
+          // isGenerating={isGenerating}
+          connectionStatus={connectionStatus}
+          status={status}
+          // className="bg-background"
         />
       </div>
-      <div className="w-full flex justify-end items-center px-4">
-        <div className="p-2 text-sm rounded-full mb-2 flex items-center justify-center text-white bg-gray-500">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m5 12 7-7 7 7"></path>
-            <path d="M12 19V5"></path>
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
     </div>
   );
 };
+
 export default ProjectsPage;

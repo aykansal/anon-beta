@@ -455,17 +455,18 @@ const Codeview = ({
     <SandpackProvider
     theme={{
       colors: {
-        surface1: 'hsl(var(--background))',
-        surface2: 'hsl(var(--card))',
-        surface3: 'hsl(var(--muted))',
-        clickable: 'hsl(var(--muted-foreground))',
-        base: 'hsl(var(--foreground))',
-        disabled: 'hsl(var(--muted-foreground))',
-        hover: 'hsl(var(--accent))',
-        accent: 'hsl(var(--primary))',
-        error: 'hsl(var(--destructive))',
-        errorSurface: 'hsl(var(--destructive)/0.1)',
+        surface1: 'hsl(0, 0%, 100%)',            // pure white background
+        surface2: 'hsl(0, 0%, 98%)',             // very light grey for cards
+        surface3: 'hsl(0, 0%, 95%)',             // light grey for muted sections
+        clickable: 'hsl(220, 9%, 46%)',          // medium grey for text/buttons
+        base: 'hsl(240, 10%, 10%)',              // almost black for base text
+        disabled: 'hsl(220, 9%, 70%)',           // light grey for disabled states
+        hover: 'hsl(220, 100%, 96%)',            // soft blue hover
+        accent: 'hsl(220, 90%, 56%)',            // blue primary accent
+        error: 'hsl(0, 80%, 60%)',               // red for errors
+        errorSurface: 'hsla(0, 80%, 60%, 0.1)',  // transparent red background
       },
+      
     }}
     customSetup={{
       entry: '/src/main.tsx',
@@ -513,56 +514,54 @@ const Codeview = ({
     }}
   >
     <div className="flex flex-col bg-background h-full min-h-0">
-      <div className="h-10 px-2 flex items-center justify-between border-b border-border shrink-0">
-        <div className="inline-flex h-7 gap-1 bg-muted rounded-md p-1">
-          {views.map((view) => (
-            <motion.button
-              key={view.id}
-              onClick={() => setActiveView(view.id)}
-              disabled={isEditorDisabled()}
-              className={cn(
-                'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
-                view.className,
-                activeView === view.id
-                  ? 'bg-background text-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
-                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-              )}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <view.icon size={12} />
-              {view.label}
-            </motion.button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => onAction('commit')}
-            disabled={isEditorDisabled()}
-            className={cn(
-              'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-              isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            <GitBranch size={12} /> Commit
-          </button>
-          <button
-            onClick={() => onAction('runlua')}
-            disabled={isEditorDisabled()}
-            className={cn(
-              'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-              isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            <RunIcon /> Run Lua
-          </button>
-          <SandpackDownloader
-            onDownload={onAction}
-            disabled={isEditorDisabled()}
-          />
-        </div>
-      </div>
+    <div className="h-10 px-2 flex items-center justify-between border-b border-gray-300 shrink-0 bg-white">
+  <div className="inline-flex h-7 gap-1 bg-white rounded-md p-1 border border-gray-200">
+    {views.map((view) => (
+      <motion.button
+        key={view.id}
+        onClick={() => setActiveView(view.id)}
+        disabled={isEditorDisabled()}
+        className={cn(
+          'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
+          view.className,
+          activeView === view.id
+            ? 'bg-white text-black border border-gray-300'
+            : 'text-gray-500 hover:text-black',
+          isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+        )}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <view.icon size={12} />
+        {view.label}
+      </motion.button>
+    ))}
+  </div>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => onAction('commit')}
+      disabled={isEditorDisabled()}
+      className={cn(
+        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-black',
+        isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      <GitBranch size={12} /> Commit
+    </button>
+    <button
+      onClick={() => onAction('runlua')}
+      disabled={isEditorDisabled()}
+      className={cn(
+        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-black',
+        isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      <RunIcon /> Run Lua
+    </button>
+    <SandpackDownloader onDownload={onAction} disabled={isEditorDisabled()} />
+  </div>
+</div>
+
 
       <div className="flex-1 relative min-h-0 overflow-hidden">
         {(isSaving || isGenerating || loading || action === 'deploy') && (
