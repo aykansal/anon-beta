@@ -488,7 +488,7 @@ const Codeview = ({
       //   },
       // },
     }}
-    // @ts-expect-error ignore type error
+    
     files={sandpackFiles}
     options={{
       visibleFiles,
