@@ -386,6 +386,7 @@ const Chatview = ({
     } else {
       setmessage([]);
       setFiles({});
+
     }
     console.log('Active project changed in Chatview:', activeProject);
   }, [activeProject]);
@@ -397,6 +398,7 @@ const Chatview = ({
       </div>
     );
   }
+  
 
   return (
     <div className="h-full flex flex-col bg-[#fffefc] text-black">
