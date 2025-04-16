@@ -461,7 +461,7 @@ const Codeview = ({
         clickable: 'hsl(220, 9%, 46%)',          // medium grey for text/buttons
         base: 'hsl(240, 10%, 10%)',              // almost black for base text
         disabled: 'hsl(220, 9%, 70%)',           // light grey for disabled states
-        hover: 'hsl(220, 100%, 96%)',            // soft blue hover
+        hover: 'hsl(220, 100%, 26%)', 
         accent: 'hsl(220, 90%, 56%)',            // blue primary accent
         error: 'hsl(0, 80%, 60%)',               // red for errors
         errorSurface: 'hsla(0, 80%, 60%, 0.1)',  // transparent red background
@@ -513,9 +513,9 @@ const Codeview = ({
       recompileDelay: 300,
     }}
   >
-    <div className="flex flex-col bg-background h-full min-h-0">
+    <div className="flex flex-col  h-full min-h-0">
     <div className="h-10 px-2 flex items-center justify-between border-b border-gray-300 shrink-0 bg-white">
-  <div className="inline-flex h-7 gap-1 bg-white rounded-md p-1 border border-gray-200">
+  <div className="inline-flex h-7 gap-1 bg-white p-1  border-gray-200">
     {views.map((view) => (
       <motion.button
         key={view.id}
@@ -525,7 +525,7 @@ const Codeview = ({
           'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
           view.className,
           activeView === view.id
-            ? 'bg-white text-black border border-gray-300'
+            ? 'bg-white text-black  border-gray-300'
             : 'text-gray-500 hover:text-black',
           isEditorDisabled() && 'opacity-50 cursor-not-allowed'
         )}

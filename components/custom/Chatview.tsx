@@ -399,7 +399,7 @@ const Chatview = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white text-black">
+    <div className="h-full flex flex-col bg-[#fffefc] text-black">
     <CustomStyles />
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="h-full p-4 space-y-4">
@@ -480,7 +480,7 @@ const Chatview = ({
                 onChange={() => setLuaEnabled(!luaEnabled)}
                 className="sr-only"
               />
-              <div className="w-7 h-3 bg-gray-300 rounded-full shadow-inner transition-colors duration-200 ease-in-out" />
+              <div className="w-7 h-3 bg-gray-300 rounded-full  transition-colors duration-200 ease-in-out" />
               <div
                 className={`absolute top-[1px] left-[1px] w-2.5 h-2.5 rounded-full transition-all duration-200 ease-in-out ${
                   luaEnabled
@@ -497,7 +497,7 @@ const Chatview = ({
           <select
             value={selectedFramework}
             onChange={(e) => setSelectedFramework(e.target.value)}
-            className="bg-white border border-gray-300 rounded-md px-2 py-1 text-black h-[44px] shrink-0"
+            className="bg-white  rounded-md px-2 py-1 text-black h-[44px] shrink-0"
           >
             <option value="React">React</option>
             <option value="Nextjs">Nextjs</option>

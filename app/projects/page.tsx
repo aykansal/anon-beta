@@ -543,7 +543,7 @@ const ProjectsPage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden light bg-background">
-      <div className="shrink-0 border-b border-border light ">
+      <div className="shrink-0 border-b border-zinc-300 light ">
         <TitleBar
           onProjectSelect={handleProjectSelect}
           onCreateProject={handleCreateProject}
@@ -598,7 +598,7 @@ const ProjectsPage = () => {
             <div className="relative w-0">
               <button
                 onClick={() => setIsChatVisible(!isChatVisible)}
-                className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors border border-border"
+                className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors  border border-zinc-300"
                 title={isChatVisible ? 'Hide Chat' : 'Show Chat'}
               >
                 {isChatVisible ? (
@@ -621,7 +621,7 @@ const ProjectsPage = () => {
               duration: 0.3,
               ease: [0.32, 0.72, 0, 1],
             }}
-            className="h-full min-h-0 border-l border-border relative"
+            className="h-full min-h-0 border-l border-zinc-300 relative"
           >
             {isChatVisible && (
               <Chatview
@@ -690,7 +690,7 @@ const ProjectsPage = () => {
       </Dialog>
 
       {/* Status Bar - Updated colors */}
-      <div className="shrink-0 border-t border-border">
+      <div className="shrink-0 border-t border-zinc-300">
         <StatusBar
           // isCreating={isCreating}
           activeProject={activeProject}

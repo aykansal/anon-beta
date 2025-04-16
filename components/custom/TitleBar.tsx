@@ -65,14 +65,14 @@ const TitleBar = ({
   };
 
   return (
-<div className="border-b border-gray-300 bg-white backdrop-blur-sm supports-backdrop-filter:bg-white">
+<div className="  bg-[#fffefc] backdrop-blur-sm supports-backdrop-filter:bg-[#fffefc]">
   {/* Main Toolbar */}
   <div className="h-12 px-4 flex items-center gap-3">
     {/* Project Selection */}
     <select
       value={activeProject?.projectId || ''}
       onChange={handleProjectChange}
-      className="h-8 px-3 bg-gray-100 border border-gray-300 rounded-md text-sm font-medium text-black focus:outline-none focus:ring-0 focus:border-gray-400"
+      className="h-8 px-3 bg-[#f9f8f6] border border-gray-300 rounded-md text-sm font-medium text-black focus:outline-none focus:ring-0 focus:border-gray-400"
     >
       <option value="">Select Project</option>
       {projects.length > 0 &&
@@ -90,7 +90,7 @@ const TitleBar = ({
     {/* Action Buttons */}
     <button
       onClick={() => setIsDialogOpen(true)}
-      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-gray-100 rounded-md text-sm font-medium text-black"
+      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-[#f2f0ec] rounded-md text-sm font-medium text-black"
       title="New Project"
     >
       <PlusIcon size={16} />
@@ -100,7 +100,7 @@ const TitleBar = ({
     <button
       onClick={onSave}
       disabled={!activeProject}
-      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-gray-100 rounded-md text-sm font-medium text-black disabled:opacity-40"
+      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-[#f2f0ec] rounded-md text-sm font-medium text-black disabled:opacity-40"
       title={githubConnected ? 'Push to GitHub' : 'Connect GitHub'}
     >
       <GitBranch size={16} />
@@ -110,7 +110,7 @@ const TitleBar = ({
     <button
       onClick={onRun}
       disabled={!activeProject}
-      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-gray-100 rounded-md text-sm font-medium text-black disabled:opacity-40"
+      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-[#f2f0ec] rounded-md text-sm font-medium text-black disabled:opacity-40"
       title="Run Project"
     >
       <PlayIcon size={16} />
@@ -120,7 +120,7 @@ const TitleBar = ({
     <button
       onClick={onRefresh}
       disabled={!activeProject}
-      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-gray-100 rounded-md text-sm font-medium text-black disabled:opacity-40"
+      className="h-8 px-3 flex items-center gap-2 bg-transparent hover:bg-[#f2f0ec] rounded-md text-sm font-medium text-black disabled:opacity-40"
       title="Refresh Project"
     >
       <RefreshCwIcon size={16} />
@@ -132,14 +132,14 @@ const TitleBar = ({
 
     {/* Additional Tools */}
     <button
-      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-gray-100 rounded-md text-black"
+      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-[#f2f0ec] rounded-md text-black"
       title="Search"
     >
       <SearchIcon size={16} />
     </button>
 
     <button
-      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-gray-100 rounded-md text-black"
+      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-[#f2f0ec] rounded-md text-black"
       title="File Explorer"
     >
       <FolderIcon size={16} />
@@ -149,21 +149,21 @@ const TitleBar = ({
 
     {/* Right-side buttons */}
     <button
-      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-gray-100 rounded-md text-black"
+      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-[#f2f0ec] rounded-md text-black"
       title="Documentation"
     >
       <BookOpenIcon size={16} />
     </button>
 
     <button
-      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-gray-100 rounded-md text-black"
+      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-[#f2f0ec] rounded-md text-black"
       title="Help"
     >
       <HelpCircleIcon size={16} />
     </button>
 
     <button
-      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-gray-100 rounded-md text-black"
+      className="h-8 w-8 flex items-center justify-center bg-transparent hover:bg-[#f2f0ec] rounded-md text-black"
       title="Settings"
     >
       <SettingsIcon size={16} />
@@ -172,7 +172,7 @@ const TitleBar = ({
 
   {/* Create Project Dialog */}
   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-    <DialogContent>
+    <DialogContent className="bg-[#fffefc]">
       <DialogHeader>
         <DialogTitle>Create New Project</DialogTitle>
       </DialogHeader>
@@ -210,6 +210,7 @@ const TitleBar = ({
     </DialogContent>
   </Dialog>
 </div>
+
 
   );
 };

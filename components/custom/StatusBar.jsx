@@ -7,7 +7,7 @@ const StatusBar = ({
   connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting',
 }) => {
   return (
-    <div className="h-8 shrink-0 bg-white border-t border-gray-200 px-4 flex items-center text-xs font-medium text-gray-600">
+    <div className="h-8 shrink-0 bg-[#fffefc] border-t border-gray-200 px-4 flex items-center text-xs font-medium text-gray-600">
     <div className="flex-1 flex items-center gap-6">
       {/* Project Status */}
       <div className="flex items-center gap-2">
