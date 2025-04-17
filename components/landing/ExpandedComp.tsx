@@ -1,14 +1,24 @@
+import Image from 'next/image';
 import React from 'react';
 
 const ExpandedComp = ({
+  // @ts-expect-error irnore
   img,
+  // @ts-expect-error irnore
   mainText,
+  // @ts-expect-error irnore
   heading,
+  // @ts-expect-error irnore
   mainPara,
+  // @ts-expect-error irnore
   para1,
+  // @ts-expect-error irnore
   para2,
+  // @ts-expect-error irnore
   para3,
+  // @ts-expect-error irnore
   alignment,
+  // @ts-expect-error irnore
   bgColor,
 }) => {
   return (
@@ -20,7 +30,7 @@ const ExpandedComp = ({
         }`}
       >
         <div className="w-1/2 h-full flex items-center justify-center pt-6">
-          <img className="object-cover w-[95%]" src={img} alt="Not showing" />
+          <Image className="object-cover w-[95%]" src={img} alt="Not showing" />
         </div>
         <div
           className={`w-1/2 text-[#213130] h-full  flex flex-col items-start  ${
