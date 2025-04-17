@@ -4,7 +4,6 @@ import { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // output: 'export',
   reactStrictMode: false,
-  swcMinify: true,
   experimental: {
     // Enable more SWC optimizations
     forceSwcTransforms: true,
