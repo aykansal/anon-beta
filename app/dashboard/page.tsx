@@ -409,6 +409,113 @@ const ProjectsPageContent = () => {
 
   console.log('activeProject', activeProject);
 
+  // Add useEffect for Wander wallet events
+  useEffect(() => {
+    // Handler for arweaveWalletLoaded event
+    const handleWalletLoaded = async () => {
+      console.log("Wander wallet loaded - API now available");
+      
+      try {
+        // Log wallet info
+        // @ts-expect-error - Wander wallet types not fully defined
+        console.log(`Using ${window.arweaveWallet.walletName} v${window.arweaveWallet.walletVersion}`);
+        
+        // Check if we have required permissions
+        // @ts-expect-error - Wander wallet API types not fully defined
+        const permissions = await window.arweaveWallet.getPermissions();
+        
+        if (permissions.length <= 0) {
+          // Request minimal permissions with app info
+          await window.arweaveWallet.connect(
+            ["ACCESS_ADDRESS", "ACCESS_ARWEAVE_CONFIG", "SIGN_TRANSACTION", "DISPATCH"], 
+            {
+              name: "Anon - Coding Workspace",
+              logo: "https://arweave.net/jAvd7Z1CBd8gVF2D6ESj7SMCCUYxDX_z3vpp5aHdaYk"
+            },
+            {
+              host: "g8way.io",
+              port: 443,
+              protocol: "https"
+            }
+          );
+          toast.success("Wallet connected successfully");
+        }
+        
+        // Fetch wallet address
+        if (permissions.includes("ACCESS_ADDRESS")) {
+          const address = await window.arweaveWallet.getActiveAddress();
+          setWalletAddress(address);
+          console.log("Wallet address set:", address);
+          
+          // Fetch user projects after wallet is connected
+          await fetchProjects();
+        }
+        
+        // Get gateway config if permission available
+        if (permissions.includes("ACCESS_ARWEAVE_CONFIG")) {
+          try {
+            // @ts-expect-error - Wander wallet API types not fully defined
+            const config = await window.arweaveWallet.getArweaveConfig();
+            console.log("Using Arweave gateway:", config.host);
+          } catch (err) {
+            console.error("Error getting Arweave config:", err);
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing wallet:", error);
+        toast.error("Failed to connect wallet");
+      }
+    };
+    
+    // Handler for walletSwitch event
+    const handleWalletSwitch = (e: Event) => {
+      try {
+        // Cast to access the detail property
+        const customEvent = e as CustomEvent<{ address: string }>;
+        const newAddress = customEvent.detail.address;
+        console.log("Wallet switched to:", newAddress);
+        
+        // Update wallet address in state
+        setWalletAddress(newAddress);
+        
+        // Refresh projects for the new wallet
+        setConnectionStatus('connecting');
+        void fetchProjects(); // Use void to handle the Promise
+        
+        toast.info("Wallet switched - refreshing projects");
+      } catch (error) {
+        console.error("Error handling wallet switch:", error);
+        toast.error("Error updating after wallet switch");
+      }
+    };
+    
+    // Add event listeners
+    window.addEventListener("arweaveWalletLoaded", handleWalletLoaded);
+    window.addEventListener("walletSwitch", handleWalletSwitch);
+    
+    // Event emitter for more advanced events if needed
+    const setupAdvancedEvents = async () => {
+      if (window.arweaveWallet) {
+        // @ts-expect-error - Wander wallet events API not in type definitions
+        if (window.arweaveWallet.events) {
+          // Add any advanced event handlers here using window.arweaveWallet.events
+          console.log("Setting up advanced wallet event handlers");
+        }
+      }
+    };
+    
+    // Call this after a small delay to ensure wallet is loaded
+    const timer = setTimeout(setupAdvancedEvents, 1000);
+    
+    // Cleanup function to remove event listeners
+    return () => {
+      window.removeEventListener("arweaveWalletLoaded", handleWalletLoaded);
+      window.removeEventListener("walletSwitch", handleWalletSwitch);
+      clearTimeout(timer);
+      console.log("Cleaned up Wander wallet event listeners");
+    };
+  }, [fetchProjects]); // Add fetchProjects as dependency
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       <div className="shrink-0 border-b border-border">
