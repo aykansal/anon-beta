@@ -401,7 +401,7 @@ const Chatview = ({
   
 
   return (
-    <div className="h-full flex flex-col bg-[#fffefc] text-black">
+    <div className="h-full flex flex-col bg-[#FFFFFF] text-black">
     <CustomStyles />
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="h-full p-4 space-y-4">
@@ -474,7 +474,7 @@ const Chatview = ({
       <div className="flex items-center gap-2 mb-2">
         {showLuaToggle && (
           <label className="flex items-center gap-1.5 cursor-pointer">
-            <span className="text-xs font-medium text-gray-100">Lua</span>
+            <span className="text-xs font-medium text-black">Lua</span>
             <div className="relative">
               <input
                 type="checkbox"
@@ -524,7 +524,7 @@ const Chatview = ({
               onChange={(e) => setuserInput(e.target.value)}
               onKeyDown={handleKeyPress}
               disabled={loading}
-              className="w-full text-black"
+              className="w-full text-black bg-white"
             />
           </div>
           <button

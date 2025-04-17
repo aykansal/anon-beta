@@ -65,7 +65,7 @@ const TitleBar = ({
   };
 
   return (
-<div className="  bg-[#fffefc] backdrop-blur-sm supports-backdrop-filter:bg-[#fffefc]">
+<div className="  bg-[#fffefc] backdrop-blur-sm supports-backdrop-filter:bg-[#F0F0F0]">
   {/* Main Toolbar */}
   <div className="h-12 px-4 flex items-center gap-3">
     {/* Project Selection */}

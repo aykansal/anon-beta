@@ -558,7 +558,7 @@ const ProjectsPage = () => {
 
       {/* Error Display - Updated colors */}
       {error && (
-        <div className="bg-destructive/5 px-4 py-2 text-destructive flex justify-between items-center border-b border-destructive/10">
+        <div className="bg-white px-4 py-2 text-destructive flex justify-between items-center border-b border-destructive/10">
           <p>{error.message}</p>
           <button
             onClick={fetchProjects}
@@ -625,11 +625,13 @@ const ProjectsPage = () => {
           >
             {isChatVisible && (
               <Chatview
+              
                 activeProject={activeProject}
                 onGenerateStart={() => setIsGenerating(true)}
                 onGenerateEnd={() => setIsGenerating(false)}
               />
             )}
+            
           </motion.div>
         </div>
       ) : (
@@ -660,7 +662,7 @@ const ProjectsPage = () => {
               <div className="space-y-2">
                 <label
                   htmlFor="projectName"
-                  className="text-sm font-medium leading-none"
+                  className="text-sm font-medium mb-2 leading-none"
                 >
                   Project Name
                 </label>
@@ -669,7 +671,7 @@ const ProjectsPage = () => {
                   type="text"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
-                  className="w-full p-2 rounded-md border border-border bg-background text-foreground"
+                  className="w-full p-2 mt-2 rounded-md border border-border bg-background text-foreground"
                   placeholder="Enter project name"
                   required
                 />
@@ -683,7 +685,7 @@ const ProjectsPage = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit">Create Project</Button>
+              <Button variant="default" type="submit">Create Project</Button>
             </DialogFooter>
           </form>
         </DialogContent>
