@@ -8,7 +8,7 @@ import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
 import { motion } from 'framer-motion';
-import { PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { PanelRightClose, PanelRightOpen, ArrowUp, PlusCircle } from 'lucide-react';
 import { ActiveProjectType } from '@/lib/types';
 import {
   Dialog,
@@ -35,6 +35,7 @@ const ProjectsPageContent = () => {
   const [isChatVisible, setIsChatVisible] = useState<boolean>(true);
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [newProjectName, setNewProjectName] = useState<string>('');
+  const [isFirstVisit, setIsFirstVisit] = useState<boolean>(true);
 
   const { commitToRepository, resetGitHubState } = useGitHub();
 
@@ -60,6 +61,7 @@ const ProjectsPageContent = () => {
 
       if (res.data.projects.length > 0) {
         setProjects(res.data.projects);
+        setIsFirstVisit(false);
 
         const storedProjectId = localStorage.getItem('activeProjectId');
 
@@ -101,7 +103,10 @@ const ProjectsPageContent = () => {
         setProjects([]);
         setActiveProject(null);
         localStorage.removeItem('activeProjectId');
-        toast.info('No projects found! Create a new project');
+        // Don't show toast for first-time users with no projects
+        if (!isFirstVisit) {
+          toast.info('No projects found! Create a new project');
+        }
       }
       setConnectionStatus('connected');
     } catch (error) {
@@ -116,7 +121,7 @@ const ProjectsPageContent = () => {
       toast.error(errorMessage);
       setConnectionStatus('disconnected');
     }
-  }, [backendUrl]);
+  }, [backendUrl, isFirstVisit]);
 
   const handleProjectSelect = async (project: ActiveProjectType) => {
     try {
@@ -261,6 +266,7 @@ const ProjectsPageContent = () => {
 
       setProjects((prevProjects) => [...prevProjects, newProject]);
       await handleProjectSelect(newProject);
+      setIsFirstVisit(false);
       setConnectionStatus('connected');
       toast.success('Project created successfully');
     } catch (error) {
@@ -495,27 +501,21 @@ const ProjectsPageContent = () => {
       ) : (
         <div className="flex-1 flex items-center justify-center bg-background">
           <div className="text-center">
-            <h3 className="text-lg font-medium mb-2 text-foreground">
-              No Project Selected
-            </h3>
-            {/* <button
-              onClick={() => setIsDialogOpen(true)}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90"
-            >
-              Create a New Project
-            </button> */}
+            <ArrowUp className="mx-auto text-primary mb-4 animate-bounce" size={28} />
+            <p className="text-lg font-medium mb-1">Click the &ldquo;New&rdquo; button above to create a project</p>
+            <p className="text-sm text-muted-foreground">Start coding with AI assistance</p>
           </div>
         </div>
       )}
 
       {/* Create Project Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle className="text-xl">Create New Project</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateSubmit}>
-            <div className="grid gap-4 py-4">
+          <form onSubmit={handleCreateSubmit} className="space-y-4">
+            <div className="grid gap-4 py-2">
               <div className="space-y-2">
                 <label
                   htmlFor="projectName"
@@ -528,13 +528,17 @@ const ProjectsPageContent = () => {
                   type="text"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
-                  className="w-full p-2 rounded-md border border-border bg-background text-foreground"
-                  placeholder="Enter project name"
+                  className="w-full p-3 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  placeholder="Enter a descriptive name for your project"
                   required
+                  autoFocus
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose a clear, descriptive name for your project. This will help you identify it later.
+                </p>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -542,7 +546,14 @@ const ProjectsPageContent = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit">Create Project</Button>
+              <Button 
+                type="submit"
+                className="flex items-center gap-1"
+                disabled={!newProjectName.trim()}
+              >
+                <PlusCircle size={16} />
+                Create Project
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

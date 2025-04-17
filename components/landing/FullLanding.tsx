@@ -1,28 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { redirect } from "next/navigation";
-import LandingNavbar from "./LandingNavbar";
-// import HoriCards from "./HoriCards";
-// import ExpandedComp from "./ExpandedComp";
-// import VerticalExpand from "./VerticalExpand";
+import React from 'react';
+import { redirect } from 'next/navigation';
+import LandingNavbar from './LandingNavbar';
 
 export default function Home() {
   const startChat = () => {
-    redirect("/projects");
-  };
-  
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log("first entered");
-    if (event.key === "Enter" && !event.shiftKey && prompt.length > 1) {
-      console.log("entered");
-      event.preventDefault();
-      startChat();
-    }
+    redirect('/dashboard');
   };
 
+  // const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  //   console.log('first entered');
+  //   if (event.key === 'Enter' && !event.shiftKey && prompt.length > 1) {
+  //     console.log('entered');
+  //     event.preventDefault();
+  //     startChat();
+  //   }
+  // };
 
-  const [prompt, setprompt] = useState("");
+  // const [prompt, setprompt] = useState('');
 
   return (
     <div className="bg-[#FFFFFA] h-fit relative w-full">
@@ -33,7 +29,7 @@ export default function Home() {
         <div className="w-[94%] pt-6 h-[87%] bg-[#F2F2E8] rounded-[20px] flex flex-col items-center justify-center">
           {/* main heading */}
           <div className="w-full f19 text-[6.2rem] text-[#213130]  leading-[6.8rem] text-center">
-            <h1>Your content,</h1>
+            <h1>Vibe code,</h1>
             <h1>everywhere</h1>
           </div>
           {/* input div */}
@@ -42,10 +38,8 @@ export default function Home() {
               Plan, create, and build products with the most flexible Arweave
               toolkit.
             </p>
-            {/* input area */}
             <div className="flex mt-10 mb-8 items-center justify-center w-full  gap-2">
-              {/* input field */}
-              <div className="w-[32%] shadow-xl shadow-black/10 px-5 bg-[#FFFFFA]  duration-200   f18 py-[16px] rounded-full border-[1px] text-lg border-black">
+              {/* <div className="w-[32%] shadow-xl shadow-black/10 px-5 bg-[#FFFFFA]  duration-200   f18 py-[16px] rounded-full border-[1px] text-lg border-black">
                 <input
                   onKeyDown={handleKeyDown}
                   onChange={(e) => setprompt(e.target.value)}
@@ -53,9 +47,12 @@ export default function Home() {
                   type="text"
                   placeholder="what you wanna vibe code..."
                 />
-              </div>
+              </div> */}
 
-              <div className="px-5 w-[15%] bg-[#B0EC9C] flex items-center gap-2 justify-center f18 py-[16px] rounded-full border-[1px]   text-lg border-black ">
+              <div
+                className="px-5 w-[15%] bg-[#B0EC9C] flex items-center gap-2 justify-center f18 py-[16px] rounded-full border-[1px] text-lg border-black cursor-pointer"
+                onClick={startChat}
+              >
                 Get started now
                 <svg
                   className="ButtonBrand_icon__mayHb"
@@ -72,9 +69,9 @@ export default function Home() {
               </div>
             </div>
 
-            <p className="opacity-70">
+            {/* <p className="opacity-70">
               By entering your adderss, you agree to terms and services of ANON.
-            </p>
+            </p> */}
           </div>
           {/* absolute images */}
           {/* <div className="absolute top-[19%] -left-[1%] w-[290px] ">
@@ -104,83 +101,6 @@ export default function Home() {
           </div> */}
         </div>
       </div>
-
-{/* 
-      <div className="w-full h-[30vh] flex items-center gap-10 justify-center ">
-        <HoriCards mainText={"182738"} subtext={"Token Limit"} />
-        <HoriCards
-          mainText={"7,858,881"}
-          subtext={"products created last month"}
-        />
-        <HoriCards mainText={"11"} subtext={"Social platforms supported"} />
-      </div>
-
-
-      <div className="w-full h-fit flex flex-col gap-4 pt-1 items-center justify-center">
-        <ExpandedComp
-          img={
-            "https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fpublish-large.webp&w=1920&q=75"
-          }
-          heading={"Deploy"}
-          mainText={"The most complete tool for Arweave integrations, ever"}
-          mainPara={
-            "Deploy innovative full stack Arweave code using anon an AI generator—on , Pinterest, Google Business, Mastodon and X."
-          }
-          para1={
-            "  Auto Deploy your product or get a notification when it's ready to deploy"
-          }
-          para2={
-            "Magically customize and create your project for each use case"
-          }
-          para3={
-            "See everything you have created in a permanet stored files on Arweave"
-          }
-          alignment={false}
-          bgColor={"#CFC2FF"}
-        />
-        <ExpandedComp
-          img={
-            "https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fcreate-large.webp&w=1920&q=75"
-          }
-          heading={"Create Products"}
-          mainText={"Turn any idea into the working Product "}
-          mainPara={
-            "Schedule Anon’s Arweave deployment pipeline to synchronized endpoints: Facebook, Instagram, TikTok, LinkedIn, Threads, Bluesky, YouTube Shorts, Pinterest, Google Business, Mastodon and X."
-          }
-          para1={"Auto-Deploy your Project or get a"}
-          para2={"Visually Check your ideas before de"}
-          para3={"Add a beautiful link in bio page to your profiles"}
-          alignment={true}
-          bgColor={"#FFC4BD"}
-        />
-      </div>
-
-      <div className="w-full h-fit flex gap-8 items-center justify-center mt-4">
-        <div className="w-[45%] h-[100vh] rounded-3xl flex flex-col   bg-[#FFE2A8]">
-          <VerticalExpand
-            heading={"Ai Generate Code"}
-            mainHeading={"Great Products, created together"}
-            para={"   with saved drafts and notes."}
-            img={
-              "https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fcollaborate-large.webp&w=1920&q=75"
-            }
-          />
-        </div>
-        <div className="w-[47%] h-[100vh] rounded-3xl flex flex-col  bg-[#B0EC9C]">
-          <VerticalExpand
-            heading={"Engage"}
-            mainHeading={"build  a working prototype in minutes"}
-            para={
-              "Engage with your potential clients 10x faster by showcasing a working MVP. With Anon, you can generate interest from one simple workspace."
-            }
-            img={
-              "https://buffer.com/_next/image?url=%2Fstatic%2Fimages%2Fhomepage%2Fengage-large.webp&w=1920&q=75"
-            }
-          />
-        </div>
-      </div>
-
-      */}
 
       <div className="w-full flex h-[38vh] text-black items-center justify-center">
         <div className="w-[94%] h-[75%] gap-20 flex items-center px-20 border border-black rounded-3xl">
@@ -335,7 +255,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div> 
+      </div>
     </div>
   );
 }
