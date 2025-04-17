@@ -156,6 +156,10 @@
     --sidebar-ring: 140 100% 54%;
   }
 }
+sp-cm {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
 
 @layer base {
   * {
