@@ -417,7 +417,7 @@ const Chatview = ({
       ) : (
         <div className="space-y-4">
           {Array.isArray(message) &&
-            message.map((msg, index) => (
+            message.map((msg:{id:number , role:string , isLoading:string}, index) => (
               <div
                 key={msg.id || index}
                 className={`flex ${

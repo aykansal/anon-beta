@@ -48,11 +48,9 @@ interface ArweaveWallet {
 
 declare global {
   interface Window {
-    //@ts-ignore
-    arweaveWallet: ArweaveWallet;
+  arweaveWallet: ArweaveWallet;
   }
 }
-
 const SandpackDownloader = ({
   onDownload,
   disabled,
@@ -62,10 +60,8 @@ const SandpackDownloader = ({
 }) => {
   const { sandpack } = useSandpack();
   const { files: sandpackFiles } = sandpack;
-
   const downloadFiles = async () => {
     if (disabled) return;
-
     try {
       const zip = new JSZip();
       Object.entries(sandpackFiles).forEach(([filePath, fileObj]) => {
@@ -75,7 +71,6 @@ const SandpackDownloader = ({
           : filePath;
         zip.file(relativePath, fileContent);
       });
-
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(zipBlob);
 
@@ -473,161 +468,191 @@ const Codeview = ({
   };
 
   return (
-<SandpackProvider
-
-  customSetup={{
-    entry: '/src/main.tsx',
-    dependencies: {
-      ...DEPENDENCIES.dependencies,
-      ...validatedDependencies,
-    },
-    devDependencies: {
-      ...DEPENDENCIES.devDependencies,
-    },
-  }}
-  //@ts-ignore
-  files={sandpackFiles}
-  options={{
-    visibleFiles,
-    activeFile: visibleFiles.find(
-      (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
-    ),
-    externalResources: [
-      'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
-    ],
-  
-    recompileMode: 'immediate',
-    recompileDelay: 300,
-  }}
->
-  <div className="flex flex-col bg-white h-full min-h-0 text-gray-800">
-    <div className="h-10 px-2 flex items-center justify-between border-b border-gray-200 shrink-0 bg-white">
-      <div className="inline-flex h-7 gap-1 bg-gray-100 rounded-md p-1">
-        {views.map((view) => (
-          <motion.button
-            key={view.id}
-            onClick={() => setActiveView(view.id)}
-            disabled={isEditorDisabled()}
-            className={cn(
-              'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
-              view.className,
-              activeView === view.id
-                ? 'bg-white text-gray-900'
-                : 'text-gray-500 hover:text-gray-700',
-              isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-            )}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <view.icon size={12} />
-            {view.label}
-          </motion.button>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => onAction('commit')}
-          disabled={isEditorDisabled()}
-          className={cn(
-            'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-gray-700',
-            isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          <GitBranch size={12} /> Commit
-        </button>
-        <button
-          onClick={() => onAction('runlua')}
-          disabled={isEditorDisabled()}
-          className={cn(
-            'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-gray-700',
-            isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-          )}
-        >
-          <RunIcon /> Run Lua
-        </button>
-        <SandpackDownloader
-          onDownload={onAction}
-          disabled={isEditorDisabled()}
-        />
-      </div>
-    </div>
-
-    <div className="flex-1 relative min-h-0 overflow-hidden">
-      {(isSaving || isGenerating || loading || action === 'deploy') && (
-        <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-gray-100 px-6 py-3 rounded-lg text-gray-800 flex items-center gap-3 shadow-md">
-            <Loader2Icon className="animate-spin text-blue-500" />
-            <p>
-              {loading
-                ? 'Loading code...'
-                : isSaving
-                ? 'Saving changes...'
-                : isGenerating
-                ? 'Generating code...'
-                : action === 'deploy'
-                ? 'Deploying...'
-                : 'Processing...'}
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div
-        className={`h-full absolute inset-0 ${
-          activeView === 'preview' ? 'invisible' : 'visible'
-        }`}
-      >
-        <SandpackLayout className="h-full text-black select-text:bg-gray-200 min-h-0">
-          <SandpackFileExplorer />
-          <div className="flex-1 min-w-0 h-full flex flex-col">
-            <SandpackCodeEditor
-              showTabs={true}
-              showLineNumbers={true}
-              showInlineErrors={true}
-              wrapContent={false}
-              closableTabs={true}
-              readOnly={false}
-              showRunButton={true}
-              style={{ height: '100%', minHeight: '0', flex: '1' }}
-              extensions={[]}
-            />
-          </div>
-        </SandpackLayout>
-      </div>
-
-      <AnimatePresence mode="wait">
-        {activeView === 'preview' && (
-          <motion.div
-            key="preview-view"
-            initial={{ transform: 'translateX(100%)' }}
-            animate={{ transform: 'translateX(0%)' }}
-            exit={{ transform: 'translateX(100%)' }}
-            transition={{
-              duration: 0.3,
-              ease: [0.32, 0.72, 0, 1],
-            }}
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              bottom: 0,
-              left: 0,
-              willChange: 'transform',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-            }}
-            className="h-full bg-white"
-          >
-            <SandpackLayout className="h-full min-h-0">
-              <SandPackPreviewClient />
-            </SandpackLayout>
-          </motion.div>
+    <SandpackProvider
+    theme={{
+      colors: {
+        surface1: 'hsl(0, 0%, 100%)',
+        surface2: 'hsl(0, 0%, 98%)',
+        surface3: 'hsl(0, 0%, 95%)',
+        clickable: 'hsl(220, 9%, 46%)',
+        base: 'hsl(240, 10%, 10%)',
+        disabled: 'hsl(220, 9%, 70%)',
+        hover: 'hsl(220, 100%, 26%)',
+        accent: 'hsl(220, 90%, 56%)',
+        error: 'hsl(0, 80%, 60%)',
+        errorSurface: 'hsl(0, 80%, 60%, 0.1)'
+      }
+    }}
+    customSetup={{
+      entry: '/src/main.tsx',
+      // environment: 'vite',
+      dependencies: {
+        ...DEPENDENCIES.dependencies,
+        ...validatedDependencies,
+      },
+      devDependencies: {
+        ...DEPENDENCIES.devDependencies,
+      },
+      // vite: {
+      //   resolve: {
+      //     alias: {
+      //       '@': '/src',
+      //       '@/assets': '/src/assets',
+      //       '@/components': '/src/components',
+      //     },
+      //   },
+      // },
+    }}
+        // @ts-expect-error ignore type error
+    files={sandpackFiles}
+    options={{
+      visibleFiles,
+      activeFile: visibleFiles.find(
+        (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
+      ),
+      externalResources: [
+        'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
+        // 'https://cdn.tailwindcss.com',
+      ],
+      classes: {
+        'sp-wrapper': 'h-full min-h-0',
+        'sp-layout': 'h-full min-h-0 border-none',
+        'sp-file-explorer':
+          'min-w-[200px] max-w-[300px] w-1/4 h-full overflow-auto border-r border-border',
+        'sp-code-editor': 'h-full flex-1',
+        'sp-tabs': 'bg-background border-b border-border',
+        'sp-preview-container': 'h-full bg-background',
+        'sp-preview-iframe': 'h-full bg-black',
+      },
+      recompileMode: 'immediate',
+      recompileDelay: 300,
+    }}
+  >
+    <div className="flex flex-col  h-full min-h-0">
+    <div className="h-10 px-2 flex items-center justify-between border-b border-gray-300 shrink-0 bg-white">
+  <div className="inline-flex h-7 gap-1 bg-white p-1  border-gray-200">
+    {views.map((view) => (
+      <motion.button
+        key={view.id}
+        onClick={() => setActiveView(view.id)}
+        disabled={isEditorDisabled()}
+        className={cn(
+          'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
+          view.className,
+          activeView === view.id
+            ? 'bg-white text-black  border-gray-300'
+            : 'text-gray-500 hover:text-black',
+          isEditorDisabled() && 'opacity-50 cursor-not-allowed'
         )}
-      </AnimatePresence>
-    </div>
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        <view.icon size={12} />
+        {view.label}
+      </motion.button>
+    ))}
   </div>
-</SandpackProvider>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => onAction('commit')}
+      disabled={isEditorDisabled()}
+      className={cn(
+        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-black',
+        isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      <GitBranch size={12} /> Commit
+    </button>
+    <button
+      onClick={() => onAction('runlua')}
+      disabled={isEditorDisabled()}
+      className={cn(
+        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-black',
+        isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      <RunIcon /> Run Lua
+    </button>
+    <SandpackDownloader onDownload={onAction} disabled={isEditorDisabled()} />
+  </div>
+</div>
+
+
+      <div className="flex-1 relative min-h-0 overflow-hidden">
+        {(isSaving || isGenerating || loading || action === 'deploy') && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-xs z-50 flex items-center justify-center">
+            <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">
+              <Loader2Icon className="animate-spin text-primary" />
+              <p>
+                {loading
+                  ? 'Loading code...'
+                  : isSaving
+                  ? 'Saving changes...'
+                  : isGenerating
+                  ? 'Generating code...'
+                  : action === 'deploy'
+                  ? 'Deploying...'
+                  : 'Processing...'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div
+          className={`h-full absolute inset-0 ${
+            activeView === 'preview' ? 'invisible' : 'visible'
+          }`}
+        >
+          <SandpackLayout className="h-full min-h-0">
+            <SandpackFileExplorer />
+            <div className="flex-1 min-w-0 h-full flex flex-col">
+              <SandpackCodeEditor
+                showTabs={true}
+                showLineNumbers={true}
+                showInlineErrors={true}
+                wrapContent={false}
+                closableTabs={true}
+                readOnly={false}
+                showRunButton={true}
+                style={{ height: '100%', minHeight: '0', flex: '1' }}
+                extensions={[]}
+              />
+            </div>
+          </SandpackLayout>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {activeView === 'preview' && (
+            <motion.div
+              key="preview-view"
+              initial={{ transform: 'translateX(100%)' }}
+              animate={{ transform: 'translateX(0%)' }}
+              exit={{ transform: 'translateX(100%)' }}
+              transition={{
+                duration: 0.3,
+                ease: [0.32, 0.72, 0, 1],
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                willChange: 'transform',
+                backfaceVisibility: 'hidden',
+                WebkitBackfaceVisibility: 'hidden',
+              }}
+              className="h-full bg-background"
+            >
+              <SandpackLayout className="h-full min-h-0">
+                <SandPackPreviewClient />
+              </SandpackLayout>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  </SandpackProvider>
 
 
   );
