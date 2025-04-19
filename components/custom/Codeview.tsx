@@ -27,31 +27,6 @@ import {
   ActiveProjectType,
 } from '@/lib/types';
 
-interface ArweaveWallet {
-  connect: (
-    permissions: string[],
-    appInfo?: {
-      name?: string;
-      logo?: string;
-    },
-    gateway?: {
-      host: string;
-      port: number;
-      protocol: 'http' | 'https';
-    }
-  ) => Promise<void>;
-  disconnect: () => Promise<void>;
-  getActiveAddress: () => Promise<string>;
-  userTokens: () => Promise<[]>;
-  tokenBalance: (tokenId: string) => Promise<number>;
-}
-
-declare global {
-  interface Window {
-    arweaveWallet: ArweaveWallet;
-  }
-}
-
 const SandpackDownloader = ({
   onDownload,
   disabled,

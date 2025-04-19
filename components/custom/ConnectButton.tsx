@@ -22,6 +22,9 @@ export default function ConnectButton() {
   const handleConnectWallet = async () => {
     try {
       setConnecting(true);
+      if (!window.arweaveWallet) {
+        throw new Error('Arweave wallet not found');
+      }
       await window.arweaveWallet.connect(
         ['ACCESS_ADDRESS', 'SIGN_TRANSACTION'],
         {
@@ -34,17 +37,12 @@ export default function ConnectButton() {
           protocol: 'https',
         }
       );
-      // {
-      //   protocol: "http",
-      //   host: "localhost",
-      //   port: 1984,
-      // }
       const address = await window.arweaveWallet.getActiveAddress();
       const trimmedAddress = address.slice(0, 5) + '...' + address.slice(-3);
 
       const tokens = await window.arweaveWallet.userTokens();
-      // @ts-expect-error ignore
-      const tokenId = tokens[0].processId;
+      // @ts-expect-error ignore type error
+      const tokenId = tokens[0]?.processId;
       const balance = await window.arweaveWallet.tokenBalance(tokenId);
 
       setUserData({
@@ -63,6 +61,9 @@ export default function ConnectButton() {
   const handleDisconnectWallet = async () => {
     try {
       setDisconnecting(true);
+      if (!window.arweaveWallet) {
+        throw new Error('Arweave wallet not found');
+      }
       await window.arweaveWallet.disconnect();
       setUserData(null);
     } catch (error) {
