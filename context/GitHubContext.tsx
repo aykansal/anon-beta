@@ -52,7 +52,8 @@ type GitHubContextType = {
   commitToRepository: (
     activeProject: ActiveProjectType,
     walletAddress: string,
-    forcePush?: boolean
+    forcePush?: boolean,
+    commitMessage?: string
   ) => Promise<void>;
   resetGitHubState: () => void;
   disconnectGitHub: () => void;
@@ -430,7 +431,8 @@ Project created with VybeAI
   const commitToRepository = async (
     activeProject: ActiveProjectType,
     walletAddress: string,
-    forcePush: boolean = true
+    forcePush: boolean = true,
+    commitMessage?: string
   ): Promise<void> => {
     if (!octokit || !username) {
       setError('GitHub not authenticated');
@@ -660,14 +662,20 @@ Project created with VybeAI
 
       // Create a new commit
       console.log('Creating commit');
+      const defaultMessage = forcePush
+        ? 'Force push from ANON AI (complete codebase)'
+        : 'Commit from ANON AI';
+      
+      // Use custom commit message if provided, otherwise use default
+      const finalCommitMessage = commitMessage || defaultMessage;
+      console.log(`Using commit message: "${finalCommitMessage}"`);
+      
       const commitResponse = await octokit.request(
         'POST /repos/{owner}/{repo}/git/commits',
         {
           owner: username,
           repo: activeProject.name,
-          message: forcePush
-            ? 'Force push from ANON AI (complete codebase)'
-            : 'Commit from ANON AI',
+          message: finalCommitMessage,
           tree: treeResponse.data.sha,
           parents: currentCommitSha ? [currentCommitSha] : [],
           headers: { 'X-GitHub-Api-Version': '2022-11-28' },

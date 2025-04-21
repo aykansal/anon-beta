@@ -21,7 +21,7 @@ export default function Home() {
   // const [prompt, setprompt] = useState('');
 
   return (
-    <div className="bg-[#FFFFFA] h-fit relative w-full">
+    <div className="bg-[#FFFFFA] h-[100vh] relative w-full">
       <LandingNavbar />
       {/* outer div */}
       <div className="w-full h-[93vh] flex items-end justify-center relative ">
@@ -102,7 +102,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="w-full flex h-[38vh] text-black items-center justify-center">
+      {/* <div className="w-full flex h-[38vh] text-black items-center justify-center">
         <div className="w-[94%] h-[75%] gap-20 flex items-center px-20 border border-black rounded-3xl">
           <div className="text-[19px] f19 leading-[1.5rem]">
             <h1>connect your</h1>
@@ -255,7 +255,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

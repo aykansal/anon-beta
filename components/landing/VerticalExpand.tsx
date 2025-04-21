@@ -26,6 +26,7 @@ const VerticalExpand = ({
         </div>
       </div>
       <div className="w-full h-[50%] flex items-end    justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className=" scale-105 object-cover" src={img} alt="not showing" />
       </div>
     </>

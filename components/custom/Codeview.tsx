@@ -2,7 +2,6 @@
 
 import {
   RunIcon,
-  ExportIcon,
   useSandpack,
   SandpackLayout,
   SandpackProvider,
@@ -14,12 +13,19 @@ import JSZip from 'jszip';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ActionContext } from '@/context/ActionContext';
 import SandPackPreviewClient from './SandPackPreviewClient';
 import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
-import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
+import {
+  Loader2Icon,
+  CodeIcon,
+  EyeIcon,
+  History,
+  ChevronDown,
+  Download,
+} from 'lucide-react';
 import {
   FileData,
   CodeContent,
@@ -27,30 +33,6 @@ import {
   ActiveProjectType,
 } from '@/lib/types';
 
-interface ArweaveWallet {
-  connect: (
-    permissions: string[],
-    appInfo?: {
-      name?: string;
-      logo?: string;
-    },
-    gateway?: {
-      host: string;
-      port: number;
-      protocol: 'http' | 'https';
-    }
-  ) => Promise<void>;
-  disconnect: () => Promise<void>;
-  getActiveAddress: () => Promise<string>;
-  userTokens: () => Promise<[]>;
-  tokenBalance: (tokenId: string) => Promise<number>;
-}
-
-declare global {
-  interface Window {
-  arweaveWallet: ArweaveWallet;
-  }
-}
 const SandpackDownloader = ({
   onDownload,
   disabled,
@@ -103,13 +85,13 @@ const SandpackDownloader = ({
       }}
       disabled={disabled}
       className={cn(
-        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+        'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       title="Export"
     >
-      <ExportIcon />
-      Export
+      <Download size={12} />
+      Download
     </button>
   );
 };
@@ -157,46 +139,122 @@ const Codeview = ({
   const [currentProject, setCurrentProject] =
     useState<CurrentProjectType | null>(null);
   const [validatedDependencies, setValidatedDependencies] = useState({});
+  const [codeVersions, setCodeVersions] = useState<
+    { id: number; timestamp: string; description: string }[]
+  >([]);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const versionDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Handle click outside to close dropdown
   useEffect(() => {
-    const fetchProjectCode = async (projectId: string) => {
-      try {
-        setLoading(true);
-        const response: {
-          codebase: unknown;
-          description: string;
-          externalPackages?: {
-            packageName: string;
-            packageVersion: string;
-          }[];
-          projectId: string;
-        } = await axios
-          .get(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject?.walletAddress}`
-          )
-          .then((res) => {
-            return res?.data;
-          });
-        console.log('API Response:', response);
-
-        if (response.codebase) {
-          setCurrentProject({
-            ...response,
-          } as CurrentProjectType);
-        }
-      } catch (error) {
-        // @ts-expect-error ignore type error
-        if (error.response?.data?.error === 'No code found for project') {
-          toast.error('Prompt to create vibe with the code');
-          return;
-        }
-        toast.error('Failed to load code');
-        console.error('Error loading project code:', error);
-      } finally {
-        setLoading(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        versionDropdownRef.current &&
+        !versionDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsVersionDropdownOpen(false);
       }
     };
 
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Fetch project code versions
+  const fetchCodeVersions = async (projectId: string) => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}/versions?walletAddress=${activeProject?.walletAddress}`
+      );
+      console.log('Code versions response:', response.data);
+
+      if (response.data.versions && Array.isArray(response.data.versions)) {
+        setCodeVersions(response.data.versions);
+      }
+    } catch (error) {
+      console.error('Error fetching code versions:', error);
+      toast.error('Failed to load code versions');
+    }
+  };
+
+  // Load a specific version of the codebase
+  const loadCodeVersion = async (versionId: number) => {
+    try {
+      setLoading(true);
+      toast.info('Loading code version...');
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${activeProject.projectId}/versions/${versionId}?walletAddress=${activeProject.walletAddress}`
+      );
+
+      console.log('Version codebase response:', response.data);
+
+      if (response.data) {
+        setCurrentProject({
+          ...response.data,
+        } as CurrentProjectType);
+
+        // Update the selected version
+        setSelectedVersion(versionId);
+        toast.success('Loaded code version successfully');
+      }
+    } catch (error) {
+      console.error('Error loading code version:', error);
+      toast.error('Failed to load code version');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to fetch the latest project code
+  const fetchProjectCode = async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response: {
+        codebase: unknown;
+        description: string;
+        externalPackages?: {
+          packageName: string;
+          packageVersion: string;
+        }[];
+        projectId: string;
+      } = await axios
+        .get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject?.walletAddress}`
+        )
+        .then((res) => {
+          return res?.data;
+        });
+      console.log('API Response:', response);
+
+      if (response.codebase) {
+        setCurrentProject({
+          ...response,
+        } as CurrentProjectType);
+
+        // Reset selected version when loading latest code
+        setSelectedVersion(null);
+      }
+
+      // Fetch code versions after getting the main codebase
+      await fetchCodeVersions(projectId);
+    } catch (error) {
+      // @ts-expect-error ignore type error
+      if (error.response?.data?.error === 'No code found for project') {
+        toast.error('Prompt to create vibe with the code');
+        return;
+      }
+      toast.error('Failed to load code');
+      console.error('Error loading project code:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (activeProject?.projectId) {
       fetchProjectCode(activeProject.projectId);
     }
@@ -467,136 +525,149 @@ const Codeview = ({
     ...currentProject?.codebase,
   };
 
+  // Format the timestamp nicely
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <SandpackProvider
-    theme={{
-      colors: {
-        surface1: 'hsl(0, 0%, 100%)',
-        surface2: 'hsl(0, 0%, 98%)',
-        surface3: 'hsl(0, 0%, 95%)',
-        clickable: 'hsl(220, 9%, 46%)',
-        base: 'hsl(240, 10%, 10%)',
-        disabled: 'hsl(220, 9%, 70%)',
-        hover: 'hsl(220, 100%, 26%)',
-        accent: 'hsl(220, 90%, 56%)',
-        error: 'hsl(0, 80%, 60%)',
-        errorSurface: 'hsl(0, 80%, 60%, 0.1)'
-      }
-    }}
-    customSetup={{
-      entry: '/src/main.tsx',
-      // environment: 'vite',
-      dependencies: {
-        ...DEPENDENCIES.dependencies,
-        ...validatedDependencies,
-      },
-      devDependencies: {
-        ...DEPENDENCIES.devDependencies,
-      },
-      // vite: {
-      //   resolve: {
-      //     alias: {
-      //       '@': '/src',
-      //       '@/assets': '/src/assets',
-      //       '@/components': '/src/components',
-      //     },
-      //   },
-      // },
-    }}
-        // @ts-expect-error ignore type error
-    files={sandpackFiles}
-    options={{
-      visibleFiles,
-      activeFile: visibleFiles.find(
-        (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
-      ),
-      externalResources: [
-        'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
-        // 'https://cdn.tailwindcss.com',
-      ],
-      classes: {
-        'sp-wrapper': 'h-full min-h-0',
-        'sp-layout': 'h-full min-h-0 border-none',
-        'sp-file-explorer':
-          'min-w-[200px] max-w-[300px] w-1/4 h-full overflow-auto border-r border-border',
-        'sp-code-editor': 'h-full flex-1',
-        'sp-tabs': 'bg-background border-b border-border',
-        'sp-preview-container': 'h-full bg-background',
-        'sp-preview-iframe': 'h-full bg-black',
-      },
-      recompileMode: 'immediate',
-      recompileDelay: 300,
-    }}
-  >
-    <div className="flex flex-col  h-full min-h-0">
-    <div className="h-10 px-2 flex items-center justify-between border-b border-gray-300 shrink-0 bg-white">
-  <div className="inline-flex h-7 gap-1 bg-white p-1  border-gray-200">
-    {views.map((view) => (
-      <motion.button
-        key={view.id}
-        onClick={() => setActiveView(view.id)}
-        disabled={isEditorDisabled()}
-        className={cn(
-          'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
-          view.className,
-          activeView === view.id
-            ? 'bg-white text-black  border-gray-300'
-            : 'text-gray-500 hover:text-black',
-          isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-        )}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <view.icon size={12} />
-        {view.label}
-      </motion.button>
-    ))}
-  </div>
-  <div className="flex items-center gap-2">
-    <button
-      onClick={() => onAction('commit')}
-      disabled={isEditorDisabled()}
-      className={cn(
-        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-black',
-        isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-      )}
+      theme={{
+        colors: {
+          surface1: 'hsl(var(--background))',
+          surface2: 'hsl(var(--card))',
+          surface3: 'hsl(var(--muted))',
+          clickable: 'hsl(var(--muted-foreground))',
+          base: 'hsl(var(--foreground))',
+          disabled: 'hsl(var(--muted-foreground))',
+          hover: 'hsl(var(--accent))',
+          accent: 'hsl(var(--primary))',
+          error: 'hsl(var(--destructive))',
+          errorSurface: 'hsl(var(--destructive)/0.1)',
+        },
+      }}
+      customSetup={{
+        entry: '/src/main.tsx',
+        // environment: 'vite',
+        dependencies: {
+          ...DEPENDENCIES.dependencies,
+          ...validatedDependencies,
+        },
+        devDependencies: {
+          ...DEPENDENCIES.devDependencies,
+        },
+        // vite: {
+        //   resolve: {
+        //     alias: {
+        //       '@': '/src',
+        //       '@/assets': '/src/assets',
+        //       '@/components': '/src/components',
+        //     },
+        //   },
+        // },
+      }}
+      // @ts-expect-error ignore type error
+      files={sandpackFiles}
+      options={{
+        // bundlerURL: 'https://sandpack-bundler',
+        visibleFiles,
+        activeFile: visibleFiles.find(
+          (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
+        ),
+        externalResources: [
+          'https://unpkg.com/@tailwindcss/ui/dist/tailwind-ui.min.css',
+        ],
+        classes: {
+          'sp-wrapper': 'h-full min-h-0',
+          'sp-layout': 'h-full min-h-0 border-none',
+          'sp-file-explorer':
+            'min-w-[200px] max-w-[300px] w-1/4 h-full overflow-auto border-r border-border',
+          'sp-code-editor': 'h-full flex-1',
+          'sp-tabs': 'bg-background border-b border-border',
+          'sp-preview-container': 'h-full bg-background',
+          'sp-preview-iframe': 'h-full bg-black',
+        },
+        recompileMode: 'immediate',
+        recompileDelay: 300,
+      }}
     >
-      <GitBranch size={12} /> Commit
-    </button>
-    <button
-      onClick={() => onAction('runlua')}
-      disabled={isEditorDisabled()}
-      className={cn(
-        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-gray-500 hover:text-black',
-        isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-      )}
-    >
-      <RunIcon /> Run Lua
-    </button>
-    <SandpackDownloader onDownload={onAction} disabled={isEditorDisabled()} />
-  </div>
-</div>
-
-
-      <div className="flex-1 relative min-h-0 overflow-hidden">
-        {(isSaving || isGenerating || loading || action === 'deploy') && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-xs z-50 flex items-center justify-center">
-            <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">
-              <Loader2Icon className="animate-spin text-primary" />
-              <p>
-                {loading
-                  ? 'Loading code...'
-                  : isSaving
-                  ? 'Saving changes...'
-                  : isGenerating
-                  ? 'Generating code...'
-                  : action === 'deploy'
-                  ? 'Deploying...'
-                  : 'Processing...'}
-              </p>
-            </div>
+      <div className="flex flex-col bg-background h-full min-h-0">
+        <div className="h-10 px-2 flex items-center justify-between border-b border-border shrink-0">
+          <div className="inline-flex h-7 gap-1 bg-muted rounded-md p-1">
+            {views.map((view) => (
+              <motion.button
+                key={view.id}
+                onClick={() => setActiveView(view.id)}
+                disabled={isEditorDisabled()}
+                className={cn(
+                  'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-all duration-300',
+                  view.className,
+                  activeView === view.id
+                    ? 'bg-background text-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                  isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <view.icon size={12} />
+                {view.label}
+              </motion.button>
+            ))}
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onAction('commit')}
+              disabled={isEditorDisabled()}
+              className={cn(
+                'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <GitBranch size={12} /> Commit
+            </button>
+            <button
+              onClick={() => onAction('runlua')}
+              disabled={isEditorDisabled()}
+              className={cn(
+                'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              <RunIcon /> Run Lua
+            </button>
+            <SandpackDownloader
+              onDownload={onAction}
+              disabled={isEditorDisabled()}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 relative min-h-0 overflow-hidden">
+          {(isSaving || isGenerating || loading || action === 'deploy') && (
+            <div className="absolute inset-0 bg-background/50 backdrop-blur-xs z-50 flex items-center justify-center">
+              <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">
+                <Loader2Icon className="animate-spin text-primary" />
+                <p>
+                  {loading
+                    ? 'Loading code...'
+                    : isSaving
+                    ? 'Saving changes...'
+                    : isGenerating
+                    ? 'Generating code...'
+                    : action === 'deploy'
+                    ? 'Deploying...'
+                    : 'Processing...'}
+                </p>
+              </div>
+            </div>
+          )}
 
         <div
           className={`h-full absolute inset-0 ${

@@ -124,6 +124,9 @@ const WalletConnect = ({
       if (walletType === 'arweave') {
         const status = await connectWallet();
         if (status === 'connected wallet successfully') {
+          if (!window.arweaveWallet) {
+            throw new Error('Arweave wallet not found');
+          }
           const address = await window.arweaveWallet.getActiveAddress();
 
           //@ts-expect-error ignore
@@ -155,6 +158,9 @@ const WalletConnect = ({
     //@ts-expect-error ignore
     if (walletData?.type === 'arweave') {
       try {
+        if (!window.arweaveWallet) {
+          throw new Error('Arweave wallet not found');
+        }
         await window.arweaveWallet.disconnect();
       } catch (error) {
         console.error('Error disconnecting wallet:', error);
