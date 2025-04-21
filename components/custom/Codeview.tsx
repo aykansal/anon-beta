@@ -2,7 +2,6 @@
 
 import {
   RunIcon,
-  ExportIcon,
   useSandpack,
   SandpackLayout,
   SandpackProvider,
@@ -14,12 +13,19 @@ import JSZip from 'jszip';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ActionContext } from '@/context/ActionContext';
 import SandPackPreviewClient from './SandPackPreviewClient';
 import { DEPENDENCIES, defaultFiles_3 } from '@/data/defaultFiles';
-import { Loader2Icon, CodeIcon, EyeIcon, GitBranch } from 'lucide-react';
+import {
+  Loader2Icon,
+  CodeIcon,
+  EyeIcon,
+  History,
+  ChevronDown,
+  Download,
+} from 'lucide-react';
 import {
   FileData,
   CodeContent,
@@ -82,13 +88,13 @@ const SandpackDownloader = ({
       }}
       disabled={disabled}
       className={cn(
-        'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+        'h-5 px-2 rounded flex items-center gap-1.5 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       title="Export"
     >
-      <ExportIcon />
-      Export
+      <Download size={12} />
+      Download
     </button>
   );
 };
@@ -136,46 +142,122 @@ const Codeview = ({
   const [currentProject, setCurrentProject] =
     useState<CurrentProjectType | null>(null);
   const [validatedDependencies, setValidatedDependencies] = useState({});
+  const [codeVersions, setCodeVersions] = useState<
+    { id: number; timestamp: string; description: string }[]
+  >([]);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const versionDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Handle click outside to close dropdown
   useEffect(() => {
-    const fetchProjectCode = async (projectId: string) => {
-      try {
-        setLoading(true);
-        const response: {
-          codebase: unknown;
-          description: string;
-          externalPackages?: {
-            packageName: string;
-            packageVersion: string;
-          }[];
-          projectId: string;
-        } = await axios
-          .get(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject?.walletAddress}`
-          )
-          .then((res) => {
-            return res?.data;
-          });
-        console.log('API Response:', response);
-
-        if (response.codebase) {
-          setCurrentProject({
-            ...response,
-          } as CurrentProjectType);
-        }
-      } catch (error) {
-        // @ts-expect-error ignore type error
-        if (error.response?.data?.error === 'No code found for project') {
-          toast.error('Prompt to create vibe with the code');
-          return;
-        }
-        toast.error('Failed to load code');
-        console.error('Error loading project code:', error);
-      } finally {
-        setLoading(false);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        versionDropdownRef.current &&
+        !versionDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsVersionDropdownOpen(false);
       }
     };
 
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Fetch project code versions
+  const fetchCodeVersions = async (projectId: string) => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}/versions?walletAddress=${activeProject?.walletAddress}`
+      );
+      console.log('Code versions response:', response.data);
+
+      if (response.data.versions && Array.isArray(response.data.versions)) {
+        setCodeVersions(response.data.versions);
+      }
+    } catch (error) {
+      console.error('Error fetching code versions:', error);
+      toast.error('Failed to load code versions');
+    }
+  };
+
+  // Load a specific version of the codebase
+  const loadCodeVersion = async (versionId: number) => {
+    try {
+      setLoading(true);
+      toast.info('Loading code version...');
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${activeProject.projectId}/versions/${versionId}?walletAddress=${activeProject.walletAddress}`
+      );
+
+      console.log('Version codebase response:', response.data);
+
+      if (response.data) {
+        setCurrentProject({
+          ...response.data,
+        } as CurrentProjectType);
+
+        // Update the selected version
+        setSelectedVersion(versionId);
+        toast.success('Loaded code version successfully');
+      }
+    } catch (error) {
+      console.error('Error loading code version:', error);
+      toast.error('Failed to load code version');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Function to fetch the latest project code
+  const fetchProjectCode = async (projectId: string) => {
+    try {
+      setLoading(true);
+      const response: {
+        codebase: unknown;
+        description: string;
+        externalPackages?: {
+          packageName: string;
+          packageVersion: string;
+        }[];
+        projectId: string;
+      } = await axios
+        .get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject?.walletAddress}`
+        )
+        .then((res) => {
+          return res?.data;
+        });
+      console.log('API Response:', response);
+
+      if (response.codebase) {
+        setCurrentProject({
+          ...response,
+        } as CurrentProjectType);
+
+        // Reset selected version when loading latest code
+        setSelectedVersion(null);
+      }
+
+      // Fetch code versions after getting the main codebase
+      await fetchCodeVersions(projectId);
+    } catch (error) {
+      // @ts-expect-error ignore type error
+      if (error.response?.data?.error === 'No code found for project') {
+        toast.error('Prompt to create vibe with the code');
+        return;
+      }
+      toast.error('Failed to load code');
+      console.error('Error loading project code:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (activeProject?.projectId) {
       fetchProjectCode(activeProject.projectId);
     }
@@ -446,6 +528,17 @@ const Codeview = ({
     ...currentProject?.codebase,
   };
 
+  // Format the timestamp nicely
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <SandpackProvider
       theme={{
@@ -464,7 +557,6 @@ const Codeview = ({
       }}
       customSetup={{
         entry: '/src/main.tsx',
-        // environment: 'vite',
         dependencies: {
           ...DEPENDENCIES.dependencies,
           ...validatedDependencies,
@@ -472,20 +564,10 @@ const Codeview = ({
         devDependencies: {
           ...DEPENDENCIES.devDependencies,
         },
-        // vite: {
-        //   resolve: {
-        //     alias: {
-        //       '@': '/src',
-        //       '@/assets': '/src/assets',
-        //       '@/components': '/src/components',
-        //     },
-        //   },
-        // },
       }}
       // @ts-expect-error ignore type error
       files={sandpackFiles}
       options={{
-        // bundlerURL: 'https://sandpack-bundler',
         visibleFiles,
         activeFile: visibleFiles.find(
           (file) => file.endsWith('.lua') || file.endsWith('App.tsx')
@@ -532,7 +614,99 @@ const Codeview = ({
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            {/* Version indicator for historical codebase */}
+            {selectedVersion && (
+              <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded-md text-xs font-medium border border-yellow-500/30 shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <History size={12} />
+                  <span>Viewing historical version</span>
+                  <button
+                    onClick={() => {
+                      if (activeProject?.projectId) {
+                        fetchProjectCode(activeProject.projectId);
+                      }
+                    }}
+                    className="ml-1 underline hover:no-underline"
+                  >
+                    Return to latest
+                  </button>
+                </div>
+              </div>
+            )}
+            {/* Version control dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsVersionDropdownOpen(!isVersionDropdownOpen)}
+                disabled={isEditorDisabled() || codeVersions.length === 0}
+                className={cn(
+                  'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
+                  (isEditorDisabled() || codeVersions.length === 0) &&
+                    'opacity-50 cursor-not-allowed'
+                )}
+                title="Code version history"
+              >
+                <History size={12} />
+                {selectedVersion ? 'Version' : 'Latest'}
+                <ChevronDown
+                  size={10}
+                  className={
+                    isVersionDropdownOpen
+                      ? 'rotate-180 transition-transform'
+                      : 'transition-transform'
+                  }
+                />
+              </button>
+
+              {isVersionDropdownOpen && codeVersions.length > 0 && (
+                <div
+                  className="absolute right-0 top-7 z-20 w-56 rounded-md border border-border bg-background shadow-lg"
+                  ref={versionDropdownRef}
+                >
+                  <div className="max-h-48 overflow-y-auto py-1 px-1">
+                    <button
+                      onClick={() => {
+                        if (activeProject?.projectId) {
+                          fetchProjectCode(activeProject.projectId);
+                          setIsVersionDropdownOpen(false);
+                        }
+                      }}
+                      className={cn(
+                        'w-full text-left px-2 py-1.5 text-xs rounded-sm hover:bg-muted flex items-center gap-1',
+                        !selectedVersion &&
+                          'bg-primary/10 text-primary font-medium'
+                      )}
+                    >
+                      <span className="font-medium">Latest Version</span>
+                    </button>
+
+                    {codeVersions.map((version) => (
+                      <button
+                        key={version.id}
+                        onClick={() => {
+                          loadCodeVersion(version.id);
+                          setIsVersionDropdownOpen(false);
+                        }}
+                        className={cn(
+                          'w-full text-left px-2 py-1.5 text-xs rounded-sm hover:bg-muted flex items-center justify-between',
+                          selectedVersion === version.id &&
+                            'bg-primary/10 text-primary font-medium'
+                        )}
+                        title={`Version from ${new Date(
+                          version.timestamp
+                        ).toLocaleString()} - ID: ${version.id}`}
+                      >
+                        <span className="truncate">{version.description}</span>
+                        <span className="text-muted-foreground shrink-0 ml-1">
+                          {formatTimestamp(version.timestamp)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* <button
               onClick={() => onAction('commit')}
               disabled={isEditorDisabled()}
               className={cn(
@@ -541,7 +715,7 @@ const Codeview = ({
               )}
             >
               <GitBranch size={12} /> Commit
-            </button>
+            </button> */}
             <button
               onClick={() => onAction('runlua')}
               disabled={isEditorDisabled()}
@@ -559,7 +733,7 @@ const Codeview = ({
           </div>
         </div>
 
-        <div className="flex-1 relative min-h-0 overflow-hidden">
+        <div className="h-full relative">
           {(isSaving || isGenerating || loading || action === 'deploy') && (
             <div className="absolute inset-0 bg-background/50 backdrop-blur-xs z-50 flex items-center justify-center">
               <div className="bg-card px-6 py-3 rounded-lg text-foreground flex items-center gap-3">

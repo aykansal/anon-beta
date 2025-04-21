@@ -1421,7 +1421,7 @@ const TitleBar = ({
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Write a meaningful message describing the changes you're committing.
+                Write a meaningful message describing the changes you&apos;re committing.
               </p>
             </div>
           </div>
