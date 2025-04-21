@@ -394,20 +394,37 @@ const TitleBar = ({
         return;
       }
 
+      // Don't try to fetch commits if repo doesn't exist yet
+      if (isProjectInfoDrawerOpen && gitHubStatus !== 'repo_exists') {
+        console.log('Repository does not exist yet, skipping commit fetch');
+        setCommits([]);
+        setCommitError(null);
+        return;
+      }
+
       setIsLoadingCommits(true);
       setCommitError(null);
-
+      
       try {
         console.log(`Fetching commits for project: ${activeProject.name}`);
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`
         );
-
+        
         if (!response.ok) {
           const errorData = await response.json();
+          
+          // Handle 404 errors gracefully - repo doesn't exist or is empty
+          if (response.status === 404) {
+            console.log('Repository or commits not found (404)');
+            setCommits([]);
+            setCommitError('No commits found. Repository may not exist yet or be empty.');
+            return;
+          }
+          
           throw new Error(errorData.details || 'Failed to fetch commits');
         }
-
+        
         const data = await response.json();
         console.log('Commits fetched successfully:', data.commits);
         setCommits(data.commits || []);
@@ -427,7 +444,7 @@ const TitleBar = ({
       console.log('Project info drawer opened, fetching commits');
       fetchCommits();
     }
-  }, [activeProject, githubToken, isProjectInfoDrawerOpen]);
+  }, [activeProject, githubToken, isProjectInfoDrawerOpen, gitHubStatus]);
 
   // Update handleProjectSelect to reset commits when changing projects
   const handleProjectSelect = (projectId: string) => {
@@ -470,10 +487,19 @@ const TitleBar = ({
       toast.error('GitHub connection required to view commits');
       return;
     }
+    
+    // Don't try to fetch commits if repo doesn't exist yet
+    if (gitHubStatus !== 'repo_exists') {
+      console.log('Repository does not exist yet, skipping commit refresh');
+      setCommits([]);
+      setCommitError('No commits available. Please create a repository first.');
+      toast.info('No repository found for this project');
+      return;
+    }
 
     setIsLoadingCommits(true);
     setCommitError(null);
-
+    
     try {
       console.log(
         `Manually refreshing commits for project: ${activeProject.name}`
@@ -481,12 +507,22 @@ const TitleBar = ({
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`
       );
-
+      
       if (!response.ok) {
         const errorData = await response.json();
+        
+        // Handle 404 errors gracefully - repo doesn't exist or is empty
+        if (response.status === 404) {
+          console.log('Repository or commits not found (404)');
+          setCommits([]);
+          setCommitError('No commits found. Repository may be empty.');
+          toast.info('No commits found in this repository');
+          return;
+        }
+        
         throw new Error(errorData.details || 'Failed to fetch commits');
       }
-
+      
       const data = await response.json();
       console.log('Commits refreshed successfully:', data.commits);
       setCommits(data.commits || []);
@@ -1297,11 +1333,11 @@ const TitleBar = ({
                         <GitCommit size={16} />
                         Recent Commits
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
                         onClick={refreshCommits}
-                        disabled={isLoadingCommits || !githubToken}
+                        disabled={isLoadingCommits || !githubToken || gitHubStatus !== 'repo_exists'}
                         className="h-7 px-2"
                       >
                         <RefreshCwIcon
@@ -1310,7 +1346,7 @@ const TitleBar = ({
                         />
                       </Button>
                     </h4>
-
+                    
                     {isLoadingCommits ? (
                       <div className="bg-card p-4 rounded-md border border-border/50 flex justify-center items-center">
                         <Loader2
@@ -1331,6 +1367,21 @@ const TitleBar = ({
                         <p className="text-xs text-muted-foreground mt-1">
                           {commitError}
                         </p>
+                        
+                        {gitHubStatus !== 'repo_exists' && (
+                          <Button
+                            onClick={() => {
+                              setIsProjectInfoDrawerOpen(false);
+                              setIsStatusDrawerOpen(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                          >
+                            <Github size={14} className="mr-1" />
+                            Setup GitHub Repository
+                          </Button>
+                        )}
                       </div>
                     ) : commits.length > 0 ? (
                       <div className="space-y-3">
@@ -1348,9 +1399,9 @@ const TitleBar = ({
                                   {commit.hash}
                                 </code>
                                 {commit.url && (
-                                  <a
-                                    href={commit.url}
-                                    target="_blank"
+                                  <a 
+                                    href={commit.url} 
+                                    target="_blank" 
                                     rel="noopener noreferrer"
                                     className="ml-1 text-muted-foreground hover:text-primary transition-colors"
                                     title="View on GitHub"
@@ -1360,7 +1411,7 @@ const TitleBar = ({
                                 )}
                               </div>
                             </div>
-
+                            
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <User size={12} />
@@ -1376,13 +1427,30 @@ const TitleBar = ({
                     ) : (
                       <div className="bg-card p-4 rounded-md border border-border/50 text-center">
                         <p className="text-muted-foreground text-sm">
-                          No commits found
+                          {gitHubStatus === 'repo_exists' 
+                            ? 'No commits found'
+                            : 'No GitHub repository connected'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {gitHubStatus === 'repo_exists'
+                          {gitHubStatus === 'repo_exists' 
                             ? 'This repository has no commits yet. Push changes to see commit history.'
                             : 'Connect to GitHub and create a repository to track commits.'}
                         </p>
+                        
+                        {gitHubStatus !== 'repo_exists' && (
+                          <Button
+                            onClick={() => {
+                              setIsProjectInfoDrawerOpen(false);
+                              setIsStatusDrawerOpen(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="mt-3"
+                          >
+                            <Github size={14} className="mr-1" />
+                            Setup GitHub Repository
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

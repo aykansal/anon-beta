@@ -646,7 +646,7 @@ const Codeview = ({
                 title="Code version history"
               >
                 <History size={12} />
-                {selectedVersion ? 'Version' : 'Latest'}
+                {selectedVersion ? `Version ${formatTimestamp(codeVersions.find(v => v.id === selectedVersion)?.timestamp || '')}` : 'Current'}
                 <ChevronDown
                   size={10}
                   className={
@@ -676,7 +676,7 @@ const Codeview = ({
                           'bg-primary/10 text-primary font-medium'
                       )}
                     >
-                      <span className="font-medium">Latest Version</span>
+                      <span className="font-medium">Current Version</span>
                     </button>
 
                     {codeVersions.map((version) => (
