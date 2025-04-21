@@ -411,7 +411,7 @@ const ProjectsPageContent = () => {
     };
   }, [fetchData, fetchProjects]);
 
-  const handleSaveToGithub = async () => {
+  const handleSaveToGithub = async (commitMessage?: string) => {
     if (!activeProject) {
       toast.error('No project selected');
       return;
@@ -421,7 +421,9 @@ const ProjectsPageContent = () => {
     setConnectionStatus('connecting');
 
     try {
-      await commitToRepository(activeProject, walletAddress, true);
+      // Use false for forcePush to do a regular commit instead of force push
+      const forcePush = false;
+      await commitToRepository(activeProject, walletAddress, forcePush, commitMessage);
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Error in GitHub operation:', error);

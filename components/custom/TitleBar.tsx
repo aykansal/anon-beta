@@ -18,6 +18,7 @@ import {
   Code,
   LayoutGrid,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Dialog,
@@ -30,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { useGitHub } from '@/context/GitHubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Textarea } from '@/components/ui/textarea';
 
 // Define status step type
 type StatusStep = {
@@ -77,6 +79,9 @@ const TitleBar = ({
   const [commits, setCommits] = useState<Commit[]>([]);
   const [isLoadingCommits, setIsLoadingCommits] = useState(false);
   const [commitError, setCommitError] = useState<string | null>(null);
+  const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
+  const [commitMessage, setCommitMessage] = useState('');
+  const [commitInProgress, setCommitInProgress] = useState(false);
 
   // Use GitHub context - only use what we need
   const {
@@ -272,13 +277,22 @@ const TitleBar = ({
     }
   };
 
+  // Show commit dialog when user clicks "Push Changes"
+  const showCommitDialog = () => {
+    // Default commit message with timestamp
+    setCommitMessage(`Update project ${activeProject?.name} - ${new Date().toLocaleString()}`);
+    setIsCommitDialogOpen(true);
+  };
+
   // Modified handle commit to repo
   const handleCommitToRepo = async () => {
-    if (!activeProject) {
-      toast.error('Please select a project first');
+    if (!activeProject || !commitMessage.trim()) {
+      toast.error('Please provide a commit message');
       return;
     }
 
+    setIsCommitDialogOpen(false);
+    setCommitInProgress(true);
     initPushSteps();
 
     try {
@@ -294,9 +308,13 @@ const TitleBar = ({
 
       // Push changes step
       updateStepStatus('push-changes', 'loading');
-      await onConnectGithub();
+      // Pass commit message to the onConnectGithub function
+      await onConnectGithub(commitMessage);
       updateStepStatus('push-changes', 'success');
 
+      // Refresh commits after successful push
+      await refreshCommits();
+      
       toast.success('Changes pushed to GitHub');
 
       // Close drawer after a delay
@@ -310,6 +328,8 @@ const TitleBar = ({
       }
       console.error('Error pushing to GitHub:', error);
       toast.error('Failed to push changes');
+    } finally {
+      setCommitInProgress(false);
     }
   };
 
@@ -368,28 +388,34 @@ const TitleBar = ({
     const fetchCommits = async () => {
       // Only fetch if we have a project and GitHub token
       if (!activeProject || !githubToken) {
-        console.log('Cannot fetch commits: missing activeProject or githubToken');
+        console.log(
+          'Cannot fetch commits: missing activeProject or githubToken'
+        );
         return;
       }
 
       setIsLoadingCommits(true);
       setCommitError(null);
-      
+
       try {
         console.log(`Fetching commits for project: ${activeProject.name}`);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`);
-        
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`
+        );
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.details || 'Failed to fetch commits');
         }
-        
+
         const data = await response.json();
         console.log('Commits fetched successfully:', data.commits);
         setCommits(data.commits || []);
       } catch (error) {
         console.error('Error fetching commits:', error);
-        setCommitError(error instanceof Error ? error.message : 'Unknown error occurred');
+        setCommitError(
+          error instanceof Error ? error.message : 'Unknown error occurred'
+        );
         setCommits([]);
       } finally {
         setIsLoadingCommits(false);
@@ -413,7 +439,7 @@ const TitleBar = ({
     if (selectedProject) {
       // Reset the lastCheckedProject when changing projects
       setLastCheckedProject(null);
-      setCommits([]);  // Reset commits when changing projects
+      setCommits([]); // Reset commits when changing projects
       setCommitError(null);
 
       // If we're coming from a project with an existing repo or error,
@@ -438,30 +464,38 @@ const TitleBar = ({
   // New refreshCommits function
   const refreshCommits = async () => {
     if (!activeProject || !githubToken) {
-      console.log('Cannot refresh commits: missing activeProject or githubToken');
+      console.log(
+        'Cannot refresh commits: missing activeProject or githubToken'
+      );
       toast.error('GitHub connection required to view commits');
       return;
     }
 
     setIsLoadingCommits(true);
     setCommitError(null);
-    
+
     try {
-      console.log(`Manually refreshing commits for project: ${activeProject.name}`);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`);
-      
+      console.log(
+        `Manually refreshing commits for project: ${activeProject.name}`
+      );
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`
+      );
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.details || 'Failed to fetch commits');
       }
-      
+
       const data = await response.json();
       console.log('Commits refreshed successfully:', data.commits);
       setCommits(data.commits || []);
       toast.success('Commits refreshed');
     } catch (error) {
       console.error('Error refreshing commits:', error);
-      setCommitError(error instanceof Error ? error.message : 'Unknown error occurred');
+      setCommitError(
+        error instanceof Error ? error.message : 'Unknown error occurred'
+      );
       setCommits([]);
       toast.error('Failed to refresh commits');
     } finally {
@@ -690,16 +724,17 @@ const TitleBar = ({
                             Ready to push changes
                           </p>
                           <p className="text-xs text-muted-foreground mb-3">
-                            Any code changes will be committed to your GitHub
+                            Your code changes will be committed to your GitHub
                             repository.
                           </p>
                           <Button
-                            onClick={handleCommitToRepo}
+                            onClick={showCommitDialog}
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
+                            disabled={commitInProgress}
                           >
                             <div className="flex items-center gap-2 text-black">
                               <Github size={16} />
-                              Push Changes
+                              {commitInProgress ? 'Committing...' : 'Commit Changes'}
                             </div>
                           </Button>
                         </div>
@@ -1112,7 +1147,7 @@ const TitleBar = ({
               className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
               onClick={() => setIsProjectInfoDrawerOpen(false)}
             />
-            
+
             {/* Project Info Drawer */}
             <motion.div
               initial={{ x: '100%' }}
@@ -1135,7 +1170,7 @@ const TitleBar = ({
                     <XCircle size={18} />
                   </button>
                 </div>
-                
+
                 {/* Project Info Content */}
                 <div className="flex-1 overflow-y-auto">
                   {/* Project Details */}
@@ -1144,32 +1179,42 @@ const TitleBar = ({
                       <LayoutGrid size={16} />
                       Project Details
                     </h4>
-                    
+
                     <div className="bg-card p-4 rounded-md border border-border/50">
                       <div className="mb-4">
-                        <h2 className="text-xl font-semibold mb-1">{activeProject.name}</h2>
+                        <h2 className="text-xl font-semibold mb-1">
+                          {activeProject.name}
+                        </h2>
                         <p className="text-sm text-muted-foreground">
-                          {activeProject.description || 'No description available'}
+                          {activeProject.description ||
+                            'No description available'}
                         </p>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-muted-foreground" />
+                          <Calendar
+                            size={14}
+                            className="text-muted-foreground"
+                          />
                           <span>Created: </span>
                           <span className="text-muted-foreground">
-                            {new Date(activeProject.createdAt).toLocaleDateString()}
+                            {new Date(
+                              activeProject.createdAt
+                            ).toLocaleDateString()}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           <Clock size={14} className="text-muted-foreground" />
                           <span>Updated: </span>
                           <span className="text-muted-foreground">
-                            {new Date(activeProject.updatedAt).toLocaleDateString()}
+                            {new Date(
+                              activeProject.updatedAt
+                            ).toLocaleDateString()}
                           </span>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 col-span-2">
                           <Code size={14} className="text-muted-foreground" />
                           <span>ID: </span>
@@ -1180,23 +1225,25 @@ const TitleBar = ({
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* GitHub Connection Status */}
                   <div className="p-5 border-b border-border/50">
                     <h4 className="text-sm font-medium text-primary/90 mb-3 flex items-center gap-2">
                       <Github size={16} />
                       GitHub Status
                     </h4>
-                    
-                    <div className={`p-3 rounded-md border ${
-                      gitHubStatus === 'repo_exists' 
-                        ? 'bg-green-500/5 border-green-500/20' 
-                        : gitHubStatus === 'authenticated'
+
+                    <div
+                      className={`p-3 rounded-md border ${
+                        gitHubStatus === 'repo_exists'
+                          ? 'bg-green-500/5 border-green-500/20'
+                          : gitHubStatus === 'authenticated'
                           ? 'bg-yellow-500/5 border-yellow-500/20'
                           : gitHubStatus === 'error'
-                            ? 'bg-destructive/5 border-destructive/20'
-                            : 'bg-secondary/40 border-border/50'
-                    }`}>
+                          ? 'bg-destructive/5 border-destructive/20'
+                          : 'bg-secondary/40 border-border/50'
+                      }`}
+                    >
                       <div className="flex items-center gap-2 mb-2">
                         {gitHubStatus === 'repo_exists' ? (
                           <CheckCircle2 size={16} className="text-green-500" />
@@ -1208,27 +1255,27 @@ const TitleBar = ({
                           <div className="w-2 h-2 rounded-full bg-muted-foreground shadow-sm ring-1 ring-background" />
                         )}
                         <span className="font-medium">
-                          {gitHubStatus === 'repo_exists' 
-                            ? 'Repository Connected' 
+                          {gitHubStatus === 'repo_exists'
+                            ? 'Repository Connected'
                             : gitHubStatus === 'authenticated'
-                              ? 'GitHub Account Connected'
-                              : gitHubStatus === 'error'
-                                ? 'Connection Error'
-                                : 'Not Connected'}
+                            ? 'GitHub Account Connected'
+                            : gitHubStatus === 'error'
+                            ? 'Connection Error'
+                            : 'Not Connected'}
                         </span>
                       </div>
-                      
+
                       <p className="text-xs text-muted-foreground">
-                        {gitHubStatus === 'repo_exists' 
-                          ? 'This project is linked to a GitHub repository.' 
+                        {gitHubStatus === 'repo_exists'
+                          ? 'This project is linked to a GitHub repository.'
                           : gitHubStatus === 'authenticated'
-                            ? 'GitHub account connected. Create a repository for this project.'
-                            : gitHubStatus === 'error'
-                              ? 'There was an error connecting to GitHub. Please try again.'
-                              : 'Connect to GitHub to save your project code.'}
+                          ? 'GitHub account connected. Create a repository for this project.'
+                          : gitHubStatus === 'error'
+                          ? 'There was an error connecting to GitHub. Please try again.'
+                          : 'Connect to GitHub to save your project code.'}
                       </p>
-                      
-                      <Button 
+
+                      <Button
                         onClick={() => {
                           setIsProjectInfoDrawerOpen(false);
                           setIsStatusDrawerOpen(true);
@@ -1242,7 +1289,7 @@ const TitleBar = ({
                       </Button>
                     </div>
                   </div>
-                  
+
                   {/* Recent Commits */}
                   <div className="p-5">
                     <h4 className="text-sm font-medium text-primary/90 mb-3 flex items-center gap-2 justify-between">
@@ -1250,32 +1297,48 @@ const TitleBar = ({
                         <GitCommit size={16} />
                         Recent Commits
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={refreshCommits}
                         disabled={isLoadingCommits || !githubToken}
                         className="h-7 px-2"
                       >
-                        <RefreshCwIcon size={14} className={isLoadingCommits ? "animate-spin" : ""} />
+                        <RefreshCwIcon
+                          size={14}
+                          className={isLoadingCommits ? 'animate-spin' : ''}
+                        />
                       </Button>
                     </h4>
-                    
+
                     {isLoadingCommits ? (
                       <div className="bg-card p-4 rounded-md border border-border/50 flex justify-center items-center">
-                        <Loader2 size={24} className="animate-spin text-primary" />
+                        <Loader2
+                          size={24}
+                          className="animate-spin text-primary"
+                        />
                         <span className="ml-2 text-sm">Loading commits...</span>
                       </div>
                     ) : commitError ? (
                       <div className="bg-card p-4 rounded-md border border-destructive/20 text-center">
-                        <AlertCircle size={20} className="mx-auto mb-2 text-destructive" />
-                        <p className="text-sm text-destructive font-medium">Failed to load commits</p>
-                        <p className="text-xs text-muted-foreground mt-1">{commitError}</p>
+                        <AlertCircle
+                          size={20}
+                          className="mx-auto mb-2 text-destructive"
+                        />
+                        <p className="text-sm text-destructive font-medium">
+                          Failed to load commits
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {commitError}
+                        </p>
                       </div>
                     ) : commits.length > 0 ? (
                       <div className="space-y-3">
-                        {commits.map(commit => (
-                          <div key={commit.id} className="p-3 bg-card border border-border/50 rounded-md">
+                        {commits.map((commit) => (
+                          <div
+                            key={commit.id}
+                            className="p-3 bg-card border border-border/50 rounded-md"
+                          >
                             <div className="flex justify-between items-start mb-2">
                               <div className="font-medium text-sm truncate flex-1">
                                 {commit.message}
@@ -1285,9 +1348,9 @@ const TitleBar = ({
                                   {commit.hash}
                                 </code>
                                 {commit.url && (
-                                  <a 
-                                    href={commit.url} 
-                                    target="_blank" 
+                                  <a
+                                    href={commit.url}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="ml-1 text-muted-foreground hover:text-primary transition-colors"
                                     title="View on GitHub"
@@ -1297,7 +1360,7 @@ const TitleBar = ({
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <User size={12} />
@@ -1312,9 +1375,11 @@ const TitleBar = ({
                       </div>
                     ) : (
                       <div className="bg-card p-4 rounded-md border border-border/50 text-center">
-                        <p className="text-muted-foreground text-sm">No commits found</p>
+                        <p className="text-muted-foreground text-sm">
+                          No commits found
+                        </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {gitHubStatus === 'repo_exists' 
+                          {gitHubStatus === 'repo_exists'
                             ? 'This repository has no commits yet. Push changes to see commit history.'
                             : 'Connect to GitHub and create a repository to track commits.'}
                         </p>
@@ -1322,25 +1387,64 @@ const TitleBar = ({
                     )}
                   </div>
                 </div>
-                
-                {/* Drawer Footer */}
-                {/* <div className="p-4 border-t border-border bg-secondary/20">
-                  <Button
-                    onClick={() => {
-                      setIsProjectInfoDrawerOpen(false);
-                      onRefresh();
-                    }}
-                    className="w-full"
-                  >
-                    <RefreshCwIcon size={16} className="mr-1" />
-                    Refresh Project Data
-                  </Button>
-                </div> */}
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
+      {/* Add Commit Message Dialog */}
+      <Dialog open={isCommitDialogOpen} onOpenChange={setIsCommitDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+              <GitCommit size={18} />
+              Commit Changes
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-3">
+            <div className="space-y-2">
+              <label
+                htmlFor="commitMessage"
+                className="text-sm font-medium leading-none flex items-center gap-2"
+              >
+                <MessageSquare size={14} />
+                Commit Message
+              </label>
+              <Textarea
+                id="commitMessage"
+                value={commitMessage}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCommitMessage(e.target.value)}
+                className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background text-foreground resize-none"
+                placeholder="Describe your changes..."
+                required
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Write a meaningful message describing the changes you're committing.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCommitDialogOpen(false)}
+              disabled={commitInProgress}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCommitToRepo}
+              className="gap-1.5"
+              disabled={!commitMessage.trim() || commitInProgress}
+            >
+              <GitCommit size={16} />
+              Commit & Push
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
