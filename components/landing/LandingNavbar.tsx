@@ -4,16 +4,16 @@ import React from 'react';
 
 const LandingNavbar = () => {
   return (
-    <div className="w-full px-8  py-2 justify-between z-[100] items-center bg-[#FFFFFA] flex h-[10.2vh] fixed rounded-b-2xl">
+    <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 py-1.5 sm:py-2 justify-between z-[100] items-center bg-[#FFFFFA] flex h-[8vh] sm:h-[9vh] md:h-[10.2vh] fixed rounded-b-xl sm:rounded-b-2xl shadow-sm">
       {/*  this is the logo section */}
-
-      <div className="w-[9.5%]">
+      <div className="w-[25%] sm:w-[15%] md:w-[12%] lg:w-[10%] xl:w-[9.5%] max-w-[120px]">
         <Image
           className="w-full h-full object-contain"
           src={'/bgRemoveLogoAnon.png'}
-          alt="not"
+          alt="Logo"
           width={290}
           height={290}
+          priority
         />
       </div>
 
@@ -44,18 +44,12 @@ const LandingNavbar = () => {
         </div>
       </div> */}
 
-      <div className="w-[22%]  text-[#596463] h-full flex tracking-wide items-center gap-3 ">
-        {/* <div className=" rounded-full bg-black ">
-            <div className="px-5 bg-[#FFFFFA] hover:-translate-y-1 transition-all duration-200   f18 py-2 rounded-full border-[1px] text-lg border-black">
-              Know us
-            </div>
-        </div> */}
-
-        <div className="bg-black rounded-full">
+      <div className="w-full sm:w-[40%] md:w-[30%] lg:w-[25%] xl:w-[22%] text-[#596463] h-full flex tracking-wide items-center justify-end gap-3">
+        <div className="bg-black rounded-full w-fit">
           <Link href="https://x.com/a0_anon" target="_blank">
-          <div className="px-5 bg-[#B0EC9C] hover:-translate-y-1 duration-200 transition-all f18 py-2 rounded-full border-[1px] text-lg ">
-            Connect with Us
-          </div>
+            <div className="px-3 sm:px-4 md:px-5 bg-[#B0EC9C] hover:-translate-y-1 duration-200 transition-all f18 py-1.5 sm:py-2 rounded-full border-[1px] text-base sm:text-lg border-black">
+              <span className="whitespace-nowrap">Connect with Us</span>
+            </div>
           </Link>
         </div>
       </div>
