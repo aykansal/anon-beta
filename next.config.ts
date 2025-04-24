@@ -19,11 +19,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  env: {
-    // NEXT_PUBLIC_BACKEND_URL: 'http://localhost:5000', 
-    NEXT_PUBLIC_FRONTEND_URL: 'https://anon-beta.vercel.app',
-    NEXT_PUBLIC_BACKEND_URL: 'https://vybeide-be.onrender.com',
-  },
   
   // Optimize webpack configuration for large modules
   webpack: (config, { isServer }) => {
