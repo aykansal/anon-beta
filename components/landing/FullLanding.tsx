@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { redirect } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import LandingNavbar from './LandingNavbar';
 import L1 from '@/public/landing/L1.png';
 import L2 from '@/public/landing/L2.png';
@@ -10,20 +10,14 @@ import R2 from '@/public/landing/R2.png';
 import Image from 'next/image';
 
 export default function Home() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+
   const startChat = () => {
-    redirect('/dashboard');
+    console.log('Navigation started');
+    setIsLoading(true);
+    router.push('/dashboard');
   };
-
-  // const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-  //   console.log('first entered');
-  //   if (event.key === 'Enter' && !event.shiftKey && prompt.length > 1) {
-  //     console.log('entered');
-  //     event.preventDefault();
-  //     startChat();
-  //   }
-  // };
-
-  // const [prompt, setprompt] = useState('');
 
   return (
     <div className="bg-[#FFFFFA] h-[100vh] relative w-full">
@@ -45,20 +39,28 @@ export default function Home() {
             </p>
             <div className="flex mt-10 mb-8 items-center justify-center w-full  gap-2">
               <div
-                className="px-3 sm:px-4 md:px-5 w-full sm:w-[50%] md:w-[30%] lg:w-[20%] xl:w-[15%] bg-[#B0EC9C] flex items-center gap-2 justify-center f18 py-[12px] sm:py-[14px] md:py-[16px] rounded-full border-[1px] text-base sm:text-lg border-black cursor-pointer hover:scale-[1.02] transition-transform duration-200"
+                className={`px-3 sm:px-4 md:px-5 w-full sm:w-[50%] md:w-[30%] lg:w-[20%] xl:w-[15%] bg-[#B0EC9C] flex items-center gap-2 justify-center f18 py-[12px] sm:py-[14px] md:py-[16px] rounded-full border-[1px] text-base sm:text-lg border-black cursor-pointer hover:scale-[1.02] transition-all duration-200 ${isLoading ? 'opacity-75 pointer-events-none' : ''}`}
                 onClick={startChat}
               >
-                <span className="whitespace-nowrap">Get started now</span>
-                <svg
-                  className="ButtonBrand_icon__mayHb w-5 h-5 sm:w-6 sm:h-6"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="currentColor"
-                    d="M11.47 4.47a.75.75 0 0 1 1.06 0l7 7a.75.75 0 0 1 0 1.06l-7 7a.75.75 0 1 1-1.06-1.06l5.72-5.72H5a.75.75 0 0 1 0-1.5h12.19l-5.72-5.72a.75.75 0 0 1 0-1.06Z"
-                  ></path>
-                </svg>
+                <span className="whitespace-nowrap">{isLoading ? 'Loading...' : 'Get started now'}</span>
+                {!isLoading && (
+                  <svg
+                    className="ButtonBrand_icon__mayHb w-5 h-5 sm:w-6 sm:h-6"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M11.47 4.47a.75.75 0 0 1 1.06 0l7 7a.75.75 0 0 1 0 1.06l-7 7a.75.75 0 1 1-1.06-1.06l5.72-5.72H5a.75.75 0 0 1 0-1.5h12.19l-5.72-5.72a.75.75 0 0 1 0-1.06Z"
+                    ></path>
+                  </svg>
+                )}
+                {isLoading && (
+                  <svg className="animate-spin w-5 h-5 sm:w-6 sm:h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
               </div>
             </div>
           </div>
