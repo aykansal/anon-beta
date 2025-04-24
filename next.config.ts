@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  env: {
+    NEXT_PUBLIC_BACKEND_URL: 'https://tryanon-be.onrender.com',
+  },
   
   // Optimize webpack configuration for large modules
   webpack: (config, { isServer }) => {
