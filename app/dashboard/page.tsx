@@ -2,13 +2,18 @@
 
 import axios from 'axios';
 import { toast } from 'sonner';
-import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
-import { motion } from 'framer-motion';
-import { PanelRightClose, PanelRightOpen, ArrowUp, PlusCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  PanelRightClose,
+  PanelRightOpen,
+  ArrowUp,
+  PlusCircle,
+} from 'lucide-react';
 import { ActiveProjectType } from '@/lib/types';
 import {
   Dialog,
@@ -355,12 +360,12 @@ const ProjectsPageContent = () => {
       console.log('Wander wallet loaded and ready for interaction');
       try {
         const permissions = await window.arweaveWallet?.getPermissions();
-        
+
         if (!permissions || permissions.length <= 0) {
           console.log('Requesting wallet permissions...');
-          await window.arweaveWallet?.connect(["ACCESS_ADDRESS"]);
+          await window.arweaveWallet?.connect(['ACCESS_ADDRESS']);
         }
-        
+
         // After wallet is loaded, fetch data
         await fetchDataAndProjects();
       } catch (error) {
@@ -373,8 +378,11 @@ const ProjectsPageContent = () => {
       if (e.detail?.address) {
         setWalletAddress(e.detail.address);
         // Refresh projects for the new wallet
-        fetchProjects().catch(error => {
-          console.error('Error refreshing projects after wallet switch:', error);
+        fetchProjects().catch((error) => {
+          console.error(
+            'Error refreshing projects after wallet switch:',
+            error
+          );
         });
       }
     };
@@ -383,29 +391,32 @@ const ProjectsPageContent = () => {
     if (typeof window !== 'undefined' && window.arweaveWallet) {
       handleWalletLoaded();
     } else if (typeof window !== 'undefined') {
-      window.addEventListener("arweaveWalletLoaded", handleWalletLoaded);
+      window.addEventListener('arweaveWalletLoaded', handleWalletLoaded);
     }
-    
+
     // Add wallet switch listener
     if (typeof window !== 'undefined') {
-      window.addEventListener("walletSwitch", handleWalletSwitch);
+      window.addEventListener('walletSwitch', handleWalletSwitch);
     }
 
     // Add theme change listener if event emitter is available
     let removeThemeListener: (() => void) | undefined;
-    
+
     if (typeof window !== 'undefined' && window.arweaveWallet?.events) {
-      removeThemeListener = window.arweaveWallet.events.on('theme-change', (theme: unknown) => {
-        console.log('Wander theme changed:', theme);
-        // Here you can integrate with your app's theme system if needed
-      });
+      removeThemeListener = window.arweaveWallet.events.on(
+        'theme-change',
+        (theme: unknown) => {
+          console.log('Wander theme changed:', theme);
+          // Here you can integrate with your app's theme system if needed
+        }
+      );
     }
-    
+
     return () => {
       // Clean up all event listeners
       if (typeof window !== 'undefined') {
-        window.removeEventListener("arweaveWalletLoaded", handleWalletLoaded);
-        window.removeEventListener("walletSwitch", handleWalletSwitch);
+        window.removeEventListener('arweaveWalletLoaded', handleWalletLoaded);
+        window.removeEventListener('walletSwitch', handleWalletSwitch);
         if (removeThemeListener) removeThemeListener();
       }
     };
@@ -423,7 +434,12 @@ const ProjectsPageContent = () => {
     try {
       // Use false for forcePush to do a regular commit instead of force push
       const forcePush = false;
-      await commitToRepository(activeProject, walletAddress, forcePush, commitMessage);
+      await commitToRepository(
+        activeProject,
+        walletAddress,
+        forcePush,
+        commitMessage
+      );
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Error in GitHub operation:', error);
@@ -563,9 +579,16 @@ const ProjectsPageContent = () => {
       ) : (
         <div className="flex-1 flex items-center justify-center bg-background">
           <div className="text-center">
-            <ArrowUp className="mx-auto text-primary mb-4 animate-bounce" size={28} />
-            <p className="text-lg font-medium mb-1">Click the &ldquo;New&rdquo; button above to create a project</p>
-            <p className="text-sm text-muted-foreground">Start coding with AI assistance</p>
+            <ArrowUp
+              className="mx-auto text-primary mb-4 animate-bounce"
+              size={28}
+            />
+            <p className="text-lg font-medium mb-1">
+              Click the &ldquo;New&rdquo; button above to create a project
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Start coding with AI assistance
+            </p>
           </div>
         </div>
       )}
@@ -596,7 +619,8 @@ const ProjectsPageContent = () => {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Choose a clear, descriptive name for your project. This will help you identify it later.
+                  Choose a clear, descriptive name for your project. This will
+                  help you identify it later.
                 </p>
               </div>
             </div>
@@ -608,7 +632,7 @@ const ProjectsPageContent = () => {
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 className="flex items-center gap-1"
                 disabled={!newProjectName.trim()}
