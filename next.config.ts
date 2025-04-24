@@ -20,9 +20,9 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    NEXT_PUBLIC_BACKEND_URL: 'https://tryanon-be.onrender.com',
+    NEXT_PUBLIC_BACKEND_URL: process.env.NODE_ENV === "development" ? 'http://localhost:5000' : "https://tryanon-be.onrender.com",
   },
-  
+
   // Optimize webpack configuration for large modules
   webpack: (config, { isServer }) => {
     // Increase size limits for performance hints
@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
       maxEntrypointSize: 1000000, // 1MB
       hints: 'warning', // 'error' or false to disable
     };
-    
+
     // Optimize chunk splitting strategy
     config.optimization = {
       ...config.optimization,
@@ -61,13 +61,13 @@ const nextConfig: NextConfig = {
         },
       },
     };
-    
+
     // Add additional entries to ModuleScopePlugin allowlist if needed
     if (!isServer) {
       // Client-side specific optimizations
       console.log('Optimizing client-side webpack config for large modules...');
     }
-    
+
     return config;
   },
 };
