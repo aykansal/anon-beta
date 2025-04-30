@@ -345,7 +345,7 @@ export async function connectWallet(): Promise<string | undefined> {
         // No need for explicit check again, done above
 
         await window.arweaveWallet.connect(
-            ['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'ACCESS_TOKENS', 'DISPATCH'],
+            ['ACCESS_ADDRESS', 'SIGN_TRANSACTION', 'DISPATCH'],
             {
                 name: 'Anon',
                 logo: 'https://arweave.net/pYIMnXpJRFUwTzogx_z5HCOPRRjCbSPYIlUqOjJ9Srs',
