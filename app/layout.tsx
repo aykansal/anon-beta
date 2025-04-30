@@ -6,6 +6,7 @@ import { ActionProvider } from '@/context/ActionContext';
 import { Toaster } from 'sonner';
 import { Analytics } from '@vercel/analytics/react';
 import ClientInitializer from '@/components/custom/ClientInitializer';
+import AuthProvider from '@/context/AuthProvider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,12 +38,14 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={true}
         >
-          <ActionProvider>
-            {children}
-            <Toaster position="bottom-center" />
-            <ClientInitializer />
-            <Analytics />
-          </ActionProvider>
+          <AuthProvider>
+            <ActionProvider>
+              {children}
+              <Toaster position="bottom-center" />
+              <ClientInitializer />
+              <Analytics />
+            </ActionProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

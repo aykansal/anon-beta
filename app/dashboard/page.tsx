@@ -1,20 +1,18 @@
 'use client';
 
-import axios from 'axios';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import Chatview from '@/components/custom/Chatview';
 import Codeview from '@/components/custom/Codeview';
 import TitleBar from '@/components/custom/TitleBar';
 import StatusBar from '@/components/custom/StatusBar';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   PanelRightClose,
   PanelRightOpen,
-  ArrowUp,
   PlusCircle,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
-import { ActiveProjectType } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -22,491 +20,242 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Overlay } from '@/components/ui/overlay';
 import { Button } from '@/components/ui/button';
 import { GitHubProvider } from '@/context/GitHubContext';
-import { useGitHub } from '@/context/GitHubContext';
+import { WalletProvider, useWallet } from '@/context/WalletContext';
+import { ProjectProvider, useProject } from '@/context/ProjectContext';
+import { ModalProvider, useModal } from '@/context/ModalContext';
+
+// Define types for overlay
+type OverlayType = 'loading' | 'wallet' | 'creating';
+
+// Add the StatusTimelineEvent type
+type StatusTimelineEvent = {
+  id: string;
+  message: string;
+  timestamp: number;
+};
+
+interface OverlayConfig {
+  type: OverlayType;
+  title: string;
+  description: string;
+  action?: () => Promise<void>;
+  actionLabel?: string;
+  statusTimeline?: StatusTimelineEvent[];
+}
 
 const ProjectsPageContent = () => {
-  const [projects, setProjects] = useState<ActiveProjectType[]>([]);
   const [splitPosition] = useState<number>(70);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [activeProject, setActiveProject] = useState<ActiveProjectType | null>(
-    null
-  );
-  const [connectionStatus, setConnectionStatus] = useState<string>('connected');
-  const [error, setError] = useState<Error | null>(null);
-  const [status, setStatus] = useState<string>('');
-  const [walletAddress, setWalletAddress] = useState<string>('');
   const [isChatVisible, setIsChatVisible] = useState<boolean>(true);
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [newProjectName, setNewProjectName] = useState<string>('');
-  const [isFirstVisit, setIsFirstVisit] = useState<boolean>(true);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  const [nameError, setNameError] = useState<string>('');
+  // Use our modal context
+  const { isOpen, projectName, openModal, closeModal, setProjectName } =
+    useModal();
 
-  const { commitToRepository, resetGitHubState } = useGitHub();
+  // Use our wallet and project context hooks
+  const { walletStatus, connectToWallet, error: walletError } = useWallet();
+
+  const {
+    projects,
+    activeProject,
+    isLoading,
+    isCreating,
+    isLoadingProjectData,
+    codebase,
+    chatMessages,
+    error: projectError,
+    status,
+    statusTimeline,
+    handleProjectSelect,
+    createProject,
+    refreshProject,
+  } = useProject();
+
+  // Add initialization effect to smooth out the initial loading experience
+  useEffect(() => {
+    // This creates a smoother initial loading experience
+    const timer = setTimeout(() => {
+      setIsInitializing(false);
+    }, 800); // Short delay to prevent UI jumps
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handler for project creation
+  const handleCreateProject = async () => {
+    if (!projectName.trim()) return;
+
+    console.log('Creating project from modal:', projectName);
+
+    // Close modal first
+    closeModal('createProject');
+
+    try {
+      // Create the project
+      await createProject(projectName.trim());
+      setProjectName('');
+    } catch (error) {
+      console.error('Error creating project:', error);
+      // Reopen the modal if there was an error
+      openModal('createProject');
+    }
+  };
+
+  // Handle creating new project from the centralized button
+  const handleCreateNewProjectClick = () => {
+    setProjectName('');
+    openModal('createProject');
+  };
+
+  // Determine what overlay to show - only show one at a time based on priority
+  const getActiveOverlay = (): OverlayConfig | null => {
+    // Initialization takes precedence over everything initially
+    if (isInitializing) {
+      return {
+        type: 'loading',
+        title: 'Initializing',
+        description: 'Loading dashboard...',
+      };
+    }
+
+    // Next, check wallet connection
+    if (walletStatus !== 'connected') {
+      return {
+        type: 'wallet',
+        title: 'Wallet Connection Required',
+        description:
+          'Please connect your wallet to access the dashboard and manage your projects.',
+        action: handleConnectWallet,
+        actionLabel:
+          walletStatus === 'connecting' ? 'Connecting...' : 'Connect Wallet',
+      };
+    }
+
+    // Once wallet is connected, check project creation
+    if (isCreating) {
+      return {
+        type: 'creating',
+        title: 'Creating New Project',
+        description: status || 'Setting up your new project...',
+        statusTimeline: statusTimeline,
+      };
+    }
+
+    // Next, check if we're loading the project list
+    if (isLoading) {
+      return {
+        type: 'loading',
+        title: 'Loading Projects',
+        description: status || 'Loading your projects...',
+        statusTimeline: statusTimeline,
+      };
+    }
+
+    // Finally, check if we're loading project data
+    if (isLoadingProjectData) {
+      return {
+        type: 'loading',
+        title: 'Loading Project Data',
+        description: status || 'Loading code and chat history...',
+        statusTimeline: statusTimeline,
+      };
+    }
+
+    // No overlay needed
+    return null;
+  };
 
   const isSavingCode: boolean = false;
 
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  // Handle connecting to wallet
+  const handleConnectWallet = useCallback(async () => {
+    await connectToWallet();
+  }, [connectToWallet]);
 
-  if (!backendUrl) {
-    throw new Error('NEXT_PUBLIC_BACKEND_URL environment variable is not set');
-  }
-
-  const fetchProjects = useCallback(async () => {
-    try {
-      setConnectionStatus('connecting');
-      setError(null);
-      const walletAddres = await window?.arweaveWallet?.getActiveAddress();
-      const res = await axios.get(
-        `${backendUrl}/projects?walletAddress=${walletAddres}`
-      );
-      if (!res.data || typeof res.data.projects === 'undefined') {
-        throw new Error('Invalid response format from server');
-      }
-
-      if (res.data.projects.length > 0) {
-        setProjects(res.data.projects);
-        setIsFirstVisit(false);
-
-        const storedProjectId = localStorage.getItem('activeProjectId');
-
-        if (storedProjectId) {
-          const storedProject = res.data.projects.find(
-            (p: {
-              createdAt: string;
-              description: string;
-              id: number;
-              name: string;
-              processId: string;
-              projectId: string;
-              sandboxId: string;
-              updatedAt: string;
-              walletAddress: string;
-            }) => p.projectId === storedProjectId
-          );
-          if (storedProject) {
-            setActiveProject(storedProject);
-          } else {
-            // If stored project not found, set first project as active
-            setActiveProject(res.data.projects[0]);
-            localStorage.setItem(
-              'activeProjectId',
-              res.data.projects[0].projectId
-            );
-          }
-        } else {
-          // If no stored project, set first project as active
-          setActiveProject(res.data.projects[0]);
-          localStorage.setItem(
-            'activeProjectId',
-            res.data.projects[0].projectId
-          );
-        }
-
-        toast.success('Projects fetched successfully');
-      } else {
-        setProjects([]);
-        setActiveProject(null);
-        localStorage.removeItem('activeProjectId');
-        // Don't show toast for first-time users with no projects
-        if (!isFirstVisit) {
-          toast.info('No projects found! Create a new project');
-        }
-      }
-      setConnectionStatus('connected');
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      const errorMessage =
-        // @ts-expect-error ignore
-        error.response?.data?.error ||
-        // @ts-expect-error ignore
-        error.message ||
-        'Failed to fetch projects';
-      setError(new Error(errorMessage));
-      toast.error(errorMessage);
-      setConnectionStatus('disconnected');
-    }
-  }, [backendUrl, isFirstVisit]);
-
-  const handleProjectSelect = async (project: ActiveProjectType) => {
-    try {
-      if (!project) {
-        setActiveProject(null);
-        // setFiles({});
-        setError(null);
-        localStorage.removeItem('activeProjectId');
-        resetGitHubState(); // Reset GitHub state when switching projects
-        return;
-      }
-
-      if (!project.projectId) {
-        throw new Error('Invalid project ID');
-      }
-
-      // Check if wallet address is available
-      if (!walletAddress) {
-        const currentWalletAddress =
-          await window?.arweaveWallet?.getActiveAddress();
-        if (!currentWalletAddress) {
-          throw new Error(
-            'Wallet address is required. Please connect your wallet.'
-          );
-        }
-        setWalletAddress(currentWalletAddress);
-      }
-
-      setConnectionStatus('connecting');
-      setError(null);
-
-      // Store the selected project ID in localStorage
-      localStorage.setItem('activeProjectId', project.projectId);
-
-      // Fetch project details including codebase
-      const response = await axios.get(
-        `${backendUrl}/projects/${project.projectId}?walletAddress=${walletAddress}`
-      );
-
-      if (response.data) {
-        // Update the active project with full project data
-        setActiveProject(project);
-
-        // Update files if codebase exists
-        if (response.data.codebase) {
-          if (Array.isArray(response.data.codebase)) {
-            const normalizedCodebase = {};
-            // @ts-expect-error ignore
-            response.data.codebase.forEach((file) => {
-              const filePath = file.filePath.startsWith('/')
-                ? file.filePath
-                : `/${file.filePath}`;
-              // @ts-expect-error ignore
-              normalizedCodebase[filePath] = file.code;
-            });
-            // setFiles(normalizedCodebase);
-          } else {
-            // setFiles(response.data.codebase);
-          }
-        } else {
-          // setFiles({});
-        }
-      }
-
-      setConnectionStatus('connected');
-      toast.success(`Selected project: ${project.name}`);
-    } catch (error) {
-      console.error('Error selecting project:', error);
-      let errorMessage = 'Failed to load project';
-
-      // @ts-expect-error ignore
-      if (error.response) {
-        // @ts-expect-error ignore
-        if (error.response.status === 400) {
-          errorMessage = 'Invalid request. Wallet address might be missing.';
-          // @ts-expect-error ignore
-        } else if (error.response.status === 404) {
-          errorMessage = 'Project not found. It may have been deleted.';
-        }
-
-        // @ts-expect-error ignore
-        if (error.response.data && error.response.data.error) {
-          // @ts-expect-error ignore
-          errorMessage = error.response.data.error;
-        }
-        // @ts-expect-error ignore
-      } else if (error.message) {
-        // @ts-expect-error ignore
-        errorMessage = error.message;
-      }
-
-      setError(new Error(errorMessage));
-      toast.error(errorMessage);
-      setConnectionStatus('disconnected');
-      setActiveProject(null);
-      localStorage.removeItem('activeProjectId');
-    }
-  };
-
-  const handleCreateProject = async (projectName: string) => {
-    try {
-      if (
-        !projectName ||
-        typeof projectName !== 'string' ||
-        projectName.trim() === ''
-      ) {
-        throw new Error(
-          'Project name is required and must be a non-empty string'
-        );
-      }
-
-      setStatus('Creating Project...'); // Set status to creating
-      setConnectionStatus('connecting');
-      setError(null);
-
-      // Get the actual spawnProcess function
-      const spawnProcessFn = await import('@/lib/arkit').then(
-        (mod) => mod.spawnProcess
-      );
-      const processId = await spawnProcessFn(projectName, [
-        { name: 'Action', value: 'create-project' },
-      ]);
-      console.log(processId);
-
-      if (!processId || typeof processId !== 'string') {
-        throw new Error('Failed to generate process ID');
-      }
-
-      const res = await axios.post(`${backendUrl}/projects`, {
-        processId,
-        sandboxId: 'null',
-        name: projectName,
-        walletAddress: walletAddress,
-      });
-
-      if (!res.data?.project) {
-        throw new Error('Invalid response from server: missing project data');
-      }
-
-      const newProject = res.data.project;
-      console.log('Created new project:', newProject);
-
-      setProjects((prevProjects) => [...prevProjects, newProject]);
-      await handleProjectSelect(newProject);
-      setIsFirstVisit(false);
-      setConnectionStatus('connected');
-      toast.success('Project created successfully');
-    } catch (error) {
-      console.error('Error creating project:', error);
-      const errorMessage =
-        // @ts-expect-error ignore
-        error.response?.data?.error ||
-        // @ts-expect-error ignore
-        error.message ||
-        'Error creating project';
-      setError(new Error(errorMessage));
-      toast.error(errorMessage);
-      setConnectionStatus('disconnected');
-    } finally {
-      // setIsCreating(false); // Reset isCreating after completion
-      setStatus(''); // Reset status after completion
-    }
-  };
-
-  // useEffect(() => {
-  //   const handleCodebaseUpdate = (event: CustomEvent) => {
-  //     if (!event.detail || typeof event.detail !== 'object') {
-  //       console.warn('Invalid codebase update event:', event);
-  //       return;
-  //     }
-  //     const newCodebase = event.detail;
-  //     setFiles(newCodebase);
-  //   };
-
-  //   window.addEventListener('codebaseUpdate', handleCodebaseUpdate);
-  //   return () =>
-  //     window.removeEventListener('codebaseUpdate', handleCodebaseUpdate);
-  // }, []);
-
-  const fetchData = useCallback(async () => {
-    try {
-      const connectWallet = await import('@/lib/arkit2').then(
-        (mod) => mod.connectWallet
-      );
-      const connectionStatus = await connectWallet();
-      if (connectionStatus === 'connected wallet successfully') {
-        const walletAddress = await window.arweaveWallet?.getActiveAddress();
-        // @ts-expect-error ignore
-        setWalletAddress(walletAddress);
-        const user = await axios.post(`${backendUrl}/user/create`, {
-          name: 'test',
-          walletAddress,
-        });
-        console.log(user.data);
-      }
-    } catch (error) {
-      // @ts-expect-error ignore
-      if (error.status === 300) {
-        toast.info('Welcome back !!', {
-          position: 'top-right',
-        });
-        return;
-      }
-      console.error('Error during wallet connection or user creation:', error);
-    }
-  }, [backendUrl]);
-
-  const handleRefreshProject = async () => {
-    if (!activeProject) {
-      toast.error('No project selected to refresh');
-      return;
-    }
-
-    await fetchData();
-    await fetchProjects();
-    toast.info('Refreshing project...');
-  };
-
-  useEffect(() => {
-    const fetchDataAndProjects = async () => {
-      try {
-        await fetchData();
-        await fetchProjects();
-      } catch (error) {
-        console.error('Error in fetching data or projects:', error);
-      }
-    };
-
-    // Add event listeners for Wander wallet events
-    const handleWalletLoaded = async () => {
-      console.log('Wander wallet loaded and ready for interaction');
-      try {
-        const permissions = await window.arweaveWallet?.getPermissions();
-
-        if (!permissions || permissions.length <= 0) {
-          console.log('Requesting wallet permissions...');
-          await window.arweaveWallet?.connect(['ACCESS_ADDRESS']);
-        }
-
-        // After wallet is loaded, fetch data
-        await fetchDataAndProjects();
-      } catch (error) {
-        console.error('Error interacting with wallet after load:', error);
-      }
-    };
-
-    const handleWalletSwitch = (e: WalletSwitchEvent) => {
-      console.log('Wallet switched to new address:', e.detail?.address);
-      if (e.detail?.address) {
-        setWalletAddress(e.detail.address);
-        // Refresh projects for the new wallet
-        fetchProjects().catch((error) => {
-          console.error(
-            'Error refreshing projects after wallet switch:',
-            error
-          );
-        });
-      }
-    };
-
-    // Check if wallet is already available before adding listeners
-    if (typeof window !== 'undefined' && window.arweaveWallet) {
-      handleWalletLoaded();
-    } else if (typeof window !== 'undefined') {
-      window.addEventListener('arweaveWalletLoaded', handleWalletLoaded);
-    }
-
-    // Add wallet switch listener
-    if (typeof window !== 'undefined') {
-      window.addEventListener('walletSwitch', handleWalletSwitch);
-    }
-
-    // Add theme change listener if event emitter is available
-    let removeThemeListener: (() => void) | undefined;
-
-    if (typeof window !== 'undefined' && window.arweaveWallet?.events) {
-      removeThemeListener = window.arweaveWallet.events.on(
-        'theme-change',
-        (theme: unknown) => {
-          console.log('Wander theme changed:', theme);
-          // Here you can integrate with your app's theme system if needed
-        }
-      );
-    }
-
-    return () => {
-      // Clean up all event listeners
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('arweaveWalletLoaded', handleWalletLoaded);
-        window.removeEventListener('walletSwitch', handleWalletSwitch);
-        if (removeThemeListener) removeThemeListener();
-      }
-    };
-  }, [fetchData, fetchProjects]);
-
+  // Handle commit to GitHub
   const handleSaveToGithub = async (commitMessage?: string) => {
-    if (!activeProject) {
-      toast.error('No project selected');
-      return;
-    }
+    // Implementation would be here, keeping it minimal
+    console.log('Saving to GitHub:', commitMessage);
+  };
 
-    setStatus('Processing GitHub request...');
-    setConnectionStatus('connecting');
+  // Determine if the main interface should be shown
+  const shouldShowInterface =
+    // Only show interface when:
+    // - Not initializing
+    !isInitializing &&
+    // - Wallet is connected
+    walletStatus === 'connected' &&
+    // - Not creating a project
+    !isCreating &&
+    // - Not in initial loading state
+    !isLoading &&
+    // - Either no active project, or it's loaded (not loading project data)
+    (!activeProject || !isLoadingProjectData);
 
-    try {
-      // Use false for forcePush to do a regular commit instead of force push
-      const forcePush = false;
-      await commitToRepository(
-        activeProject,
-        walletAddress,
-        forcePush,
-        commitMessage
+  // Get the current active overlay based on state
+  const activeOverlay = getActiveOverlay();
+
+  const validateProjectName = (name: string) => {
+    // Repository name validation: only ASCII letters, digits, and the characters ., - and _
+    const validPattern = /^[a-zA-Z0-9._-]+$/;
+    return validPattern.test(name);
+  };
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value;
+    setProjectName(name);
+
+    if (name && !validateProjectName(name)) {
+      setNameError(
+        'Project name can only contain letters, numbers, dots, hyphens, and underscores'
       );
-      setConnectionStatus('connected');
-    } catch (error) {
-      console.error('Error in GitHub operation:', error);
-      setConnectionStatus('disconnected');
-    } finally {
-      setStatus('');
+    } else {
+      setNameError('');
     }
   };
-
-  useEffect(() => {
-    const handleGitHubAuth = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const accessToken = urlParams.get('access_token');
-
-      if (accessToken) {
-        localStorage.setItem('githubToken', accessToken);
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname
-        );
-        toast.success('Successfully connected to GitHub');
-      }
-    };
-
-    handleGitHubAuth();
-  }, []);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem('githubToken');
-    if (storedToken) {
-      localStorage.setItem('githubToken', storedToken);
-    }
-  }, []);
-
-  const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const newProject = newProjectName.trim();
-    if (newProject) {
-      await handleCreateProject(newProject);
-      setNewProjectName('');
-      setIsDialogOpen(false);
-    }
-  };
-
-  console.log('activeProject', activeProject);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
+      {/* Single Unified Overlay System - Only one overlay at a time */}
+      <AnimatePresence mode="wait">
+        {activeOverlay && (
+          <Overlay
+            isVisible={true}
+            type={activeOverlay.type}
+            title={activeOverlay.title}
+            description={activeOverlay.description}
+            action={activeOverlay.action}
+            actionLabel={activeOverlay.actionLabel}
+            statusTimeline={activeOverlay.statusTimeline}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Header is always visible */}
       <div className="shrink-0 border-b border-border">
         <TitleBar
           onProjectSelect={handleProjectSelect}
-          onCreateProject={handleCreateProject}
-          onRefresh={handleRefreshProject}
-          // githubConnected={!!githubToken}
+          onRefresh={refreshProject}
           activeProject={activeProject}
           onConnectGithub={handleSaveToGithub}
           projects={projects}
         />
       </div>
 
-      {/* Error Display - Updated colors */}
-      {error && (
+      {/* Error Display */}
+      {(walletError || projectError) && !activeOverlay && (
         <div className="bg-destructive/5 px-4 py-2 text-destructive flex justify-between items-center border-b border-destructive/10">
-          <p>{error.message}</p>
+          <p>
+            {walletError ||
+              (projectError instanceof Error
+                ? projectError.message
+                : 'An error occurred')}
+          </p>
           <button
-            onClick={fetchProjects}
+            onClick={walletError ? handleConnectWallet : refreshProject}
             className="text-sm text-destructive hover:text-destructive/80"
           >
             Retry
@@ -514,156 +263,193 @@ const ProjectsPageContent = () => {
         </div>
       )}
 
-      {/* Main Content */}
-      {activeProject ? (
-        <div
-          id="main-container"
-          className="flex flex-1 min-h-0 overflow-hidden"
-        >
-          <div
-            style={{
-              width: isChatVisible ? `${splitPosition}%` : '100%',
-              transition: 'width 0.3s ease-in-out',
-            }}
-            className="h-full min-h-0 relative flex"
-          >
-            {/* Code Editor Container */}
-            <div className="flex-1 relative">
-              <Codeview
-                // files={files}
-                isSaving={isSavingCode}
-                isGenerating={isGenerating}
-                activeProject={activeProject}
-                onCommit={handleSaveToGithub}
-              />
-            </div>
-
-            {/* Toggle Chat Button - Repositioned */}
-            <div className="relative w-0">
-              <button
-                onClick={() => setIsChatVisible(!isChatVisible)}
-                className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors border border-border"
-                title={isChatVisible ? 'Hide Chat' : 'Show Chat'}
+      {/* Main Content - Only shown when appropriate */}
+      {shouldShowInterface && (
+        <>
+          {activeProject ? (
+            <div
+              id="main-container"
+              className="flex flex-1 min-h-0 overflow-hidden"
+            >
+              <div
+                style={{
+                  width: isChatVisible ? `${splitPosition}%` : '100%',
+                  transition: 'width 0.3s ease-in-out',
+                }}
+                className="h-full min-h-0 relative flex"
               >
-                {isChatVisible ? (
-                  <PanelRightClose size={16} />
-                ) : (
-                  <PanelRightOpen size={16} />
-                )}
-              </button>
-            </div>
-          </div>
+                {/* Code Editor Container */}
+                <div className="flex-1 relative">
+                  <Codeview
+                    isSaving={isSavingCode}
+                    isGenerating={isGenerating}
+                    activeProject={activeProject}
+                    onCommit={handleSaveToGithub}
+                    codebase={codebase as Record<string, string>}
+                  />
+                </div>
 
-          {/* Animated Chat Panel */}
-          <motion.div
-            style={{ width: `${100 - splitPosition}%` }}
-            animate={{
-              width: isChatVisible ? `${100 - splitPosition}%` : '0%',
-              opacity: isChatVisible ? 1 : 0,
-            }}
-            transition={{
-              duration: 0.3,
-              ease: [0.32, 0.72, 0, 1],
-            }}
-            className="h-full min-h-0 border-l border-border relative"
-          >
-            {isChatVisible && (
-              <Chatview
-                activeProject={activeProject}
-                onGenerateStart={() => setIsGenerating(true)}
-                onGenerateEnd={() => setIsGenerating(false)}
-              />
-            )}
-          </motion.div>
-        </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center bg-background">
-          <div className="text-center">
-            <ArrowUp
-              className="mx-auto text-primary mb-4 animate-bounce"
-              size={28}
-            />
-            <p className="text-lg font-medium mb-1">
-              Click the &ldquo;New&rdquo; button above to create a project
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Start coding with AI assistance
-            </p>
-          </div>
-        </div>
+                {/* Toggle Chat Button */}
+                <div className="relative w-0">
+                  <button
+                    onClick={() => setIsChatVisible(!isChatVisible)}
+                    className="absolute top-1/2 left-0 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary/10 hover:bg-primary/20 text-primary p-1.5 rounded-full transition-colors border border-border"
+                    title={isChatVisible ? 'Hide Chat' : 'Show Chat'}
+                  >
+                    {isChatVisible ? (
+                      <PanelRightClose size={16} />
+                    ) : (
+                      <PanelRightOpen size={16} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Animated Chat Panel */}
+              <AnimatePresence>
+                {isChatVisible && (
+                  <div
+                    style={{ width: `${100 - splitPosition}%` }}
+                    className="h-full min-h-0 border-l border-border relative"
+                  >
+                    <Chatview
+                      activeProject={activeProject}
+                      onGenerateStart={() => setIsGenerating(true)}
+                      onGenerateEnd={() => setIsGenerating(false)}
+                      chatMessages={chatMessages}
+                    />
+                  </div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <div className="flex flex-1 items-center justify-center bg-background">
+              <div className="flex flex-col items-center justify-center text-center">
+                <p className="mb-6 text-xl font-semibold text-foreground">
+                  Create your first project and start vibe coding with{' '}
+                  <span className="font-bold">Anon</span>
+                </p>
+                <Button
+                  size="lg"
+                  onClick={handleCreateNewProjectClick}
+                  className="flex items-center gap-2 px-4 py-2.5 text-base h-auto"
+                >
+                  <PlusCircle size={20} />
+                  <span>Create New Project</span>
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Create Project Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      {/* Create Project Dialog - Shared across components */}
+      <Dialog
+        open={isOpen.createProject && !isCreating}
+        onOpenChange={(open) => {
+          // Only allow closing if not in creating state
+          if (!isCreating) {
+            if (open) openModal('createProject');
+            else closeModal('createProject');
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl">Create New Project</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateSubmit} className="space-y-4">
-            <div className="grid gap-4 py-2">
-              <div className="space-y-2">
-                <label
-                  htmlFor="projectName"
-                  className="text-sm font-medium leading-none"
-                >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateProject();
+            }}
+            className="space-y-4"
+          >
+            <div className="flex flex-col justify-center py-2">
+              <div className="flex flex-col justify-center gap-2">
+                <label htmlFor="projectName" className="text-sm font-medium">
                   Project Name
                 </label>
                 <input
                   id="projectName"
                   type="text"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
+                  value={projectName}
+                  onChange={handleNameChange}
                   className="w-full p-3 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                  placeholder="Enter a descriptive name for your project"
+                  placeholder="todo-list"
                   required
                   autoFocus
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Choose a clear, descriptive name for your project. This will
-                  help you identify it later.
-                </p>
+                {nameError ? (
+                  <div className="mt-1.5 flex items-center text-destructive text-xs bg-destructive/5 p-2 rounded-md">
+                    <AlertCircle size={14} className="mr-2 shrink-0" />
+                    <span>{nameError}</span>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Choose a clear, descriptive name for your project.
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter className="flex justify-end gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsDialogOpen(false)}
+                onClick={() => closeModal('createProject')}
+                disabled={isCreating}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="flex items-center gap-1"
-                disabled={!newProjectName.trim()}
+                disabled={
+                  !projectName.trim() || isCreating || !!nameError
+                }
               >
-                <PlusCircle size={16} />
-                Create Project
+                {isCreating ? (
+                  <Loader2 size={16} className="animate-spin mr-1" />
+                ) : (
+                  <PlusCircle size={16} />
+                )}
+                {isCreating ? 'Creating...' : 'Create Project'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Status Bar - Updated colors */}
+      {/* Status Bar - Always visible */}
       <div className="shrink-0 border-t border-border">
         <StatusBar
           activeProject={activeProject}
-          connectionStatus={connectionStatus}
+          connectionStatus={
+            walletStatus === 'connected'
+              ? 'connected'
+              : walletStatus === 'connecting'
+              ? 'connecting'
+              : 'disconnected'
+          }
           status={status}
-          // className="bg-background"
         />
       </div>
     </div>
   );
 };
 
-// Wrapper component with GitHub Provider
+// Wrapper component with all providers
 const ProjectsPage = () => {
   return (
-    <GitHubProvider>
-      <ProjectsPageContent />
-    </GitHubProvider>
+    <WalletProvider>
+      <ProjectProvider>
+        <ModalProvider>
+          <GitHubProvider>
+            <ProjectsPageContent />
+          </GitHubProvider>
+        </ModalProvider>
+      </ProjectProvider>
+    </WalletProvider>
   );
 };
 

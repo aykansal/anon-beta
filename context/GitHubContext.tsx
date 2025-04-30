@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Octokit } from '@octokit/core';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ActiveProjectType } from '@/lib/types';
+import { ActiveProjectType } from '@/types/types';
 import { defaultFiles_3 } from '@/data/defaultFiles';
 
 // Define specific error types instead of using 'any'

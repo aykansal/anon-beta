@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { registerSandpackCacheListener, clearDependencyCache } from '@/lib/sandpackCache';
+import { registerSandpackCacheListener, clearDependencyCache } from '@/lib/sandpack/sandpackCache';
 
 interface SandpackModuleLoaderProps {
   children: React.ReactNode;

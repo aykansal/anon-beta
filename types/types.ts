@@ -1,5 +1,5 @@
 export interface CurrentProjectType {
-  codebase: CodeContent[];
+  codebase: Record<string, string>;
   description: string;
   externalPackages: { packageName: string; packageVersion: string }[];
   projectId: string;
@@ -17,18 +17,10 @@ export interface ActiveProjectType {
   walletAddress: string;
 }
 
-export interface CodeContent {
-  code: string;
-  filePath?: string;
-  [key: string]: unknown;
-}
-
 // Add new interfaces to handle the nested structure
 export interface FileData {
   code?: string;
   filePath?: string;
-  filepath?: string;
-  [key: string]: unknown;
 }
 
 export interface NestedFileObject {
@@ -40,4 +32,23 @@ export interface CodeFile {
   filePath?: string;
   code?: string;
   [key: string]: unknown;
+}
+
+export type OverlayType = 'loading' | 'wallet' | 'creating';
+
+export interface StatusTimelineEvent {
+  id: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface OverlayConfig {
+  type: 'loading' | 'error' | 'success' | 'info';
+  title?: string;
+  description?: string;
+  actionButton?: {
+    label: string;
+    onClick: () => void;
+  };
+  statusTimeline?: StatusTimelineEvent[];
 }

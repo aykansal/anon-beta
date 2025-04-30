@@ -32,6 +32,7 @@ import { useGitHub } from '@/context/GitHubContext';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Textarea } from '@/components/ui/textarea';
+import { useModal } from '@/context/ModalContext';
 
 // Define status step type
 type StatusStep = {
@@ -60,19 +61,14 @@ const TitleBar = ({
   // @ts-expect-error ignore type error
   onProjectSelect,
   // @ts-expect-error ignore type error
-  onCreateProject,
-  // @ts-expect-error ignore type error
   onConnectGithub,
   // @ts-expect-error ignore type error
   onRefresh,
 }) => {
-  const [newProjectName, setNewProjectName] = useState('');
   const [isStatusDrawerOpen, setIsStatusDrawerOpen] = useState(false);
   const [isProjectDrawerOpen, setIsProjectDrawerOpen] = useState(false);
   const [isProjectInfoDrawerOpen, setIsProjectInfoDrawerOpen] = useState(false);
   const [statusSteps, setStatusSteps] = useState<StatusStep[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [nameError, setNameError] = useState('');
   const [lastCheckedProject, setLastCheckedProject] = useState<string | null>(
     null
   );
@@ -82,6 +78,9 @@ const TitleBar = ({
   const [isCommitDialogOpen, setIsCommitDialogOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
   const [commitInProgress, setCommitInProgress] = useState(false);
+
+  // Use modal context
+  const { openModal } = useModal();
 
   // Use GitHub context - only use what we need
   const {
@@ -333,42 +332,8 @@ const TitleBar = ({
     }
   };
 
-  const validateProjectName = (name: string) => {
-    // Repository name validation: only ASCII letters, digits, and the characters ., - and _
-    const validPattern = /^[a-zA-Z0-9._-]+$/;
-    return validPattern.test(name);
-  };
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const name = e.target.value;
-    setNewProjectName(name);
-
-    if (name && !validateProjectName(name)) {
-      setNameError(
-        'Project name can only contain letters, numbers, dots, hyphens, and underscores'
-      );
-    } else {
-      setNameError('');
-    }
-  };
-
-  const handleCreateSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const newProject = newProjectName.trim();
-
-    if (!newProject) return;
-
-    if (!validateProjectName(newProject)) {
-      setNameError(
-        'Project name can only contain letters, numbers, dots, hyphens, and underscores'
-      );
-      return;
-    }
-
-    onCreateProject(newProject);
-    setNewProjectName('');
-    setNameError('');
-    setIsDialogOpen(false);
+  const handleOpenCreateProjectDialog = () => {
+    openModal('createProject');
   };
 
   // Determine if the GitHub button should be disabled
@@ -564,7 +529,7 @@ const TitleBar = ({
 
           {/* Action Buttons - Enhanced styles */}
           <button
-            onClick={() => setIsDialogOpen(true)}
+            onClick={handleOpenCreateProjectDialog}
             className="group h-9 px-3 flex items-center gap-2 bg-secondary/30 hover:bg-secondary/70 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow"
             title="New Project"
           >
@@ -980,66 +945,6 @@ const TitleBar = ({
         )}
       </AnimatePresence>
 
-      {/* Create Project Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              Create New Project
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleCreateSubmit}>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="projectName"
-                  className="text-sm font-medium leading-none"
-                >
-                  Project Name
-                </label>
-                <input
-                  id="projectName"
-                  type="text"
-                  value={newProjectName}
-                  onChange={handleNameChange}
-                  className="w-full p-2.5 rounded-md border border-border bg-background text-foreground focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
-                  placeholder="Enter project name"
-                  required
-                  autoFocus
-                />
-                {nameError ? (
-                  <div className="mt-1.5 flex items-center text-destructive text-xs bg-destructive/5 p-2 rounded-md">
-                    <AlertCircle size={14} className="mr-2 shrink-0" />
-                    <span>{nameError}</span>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Choose a clear, descriptive name for your project.
-                  </p>
-                )}
-              </div>
-            </div>
-            <DialogFooter className="mt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsDialogOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="gap-1.5"
-                disabled={!!nameError || !newProjectName.trim()}
-              >
-                <PlusIcon size={16} />
-                Create Project
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Project Drawer */}
       <AnimatePresence>
         {isProjectDrawerOpen && (
@@ -1139,7 +1044,7 @@ const TitleBar = ({
                       <Button
                         onClick={() => {
                           setIsProjectDrawerOpen(false);
-                          setIsDialogOpen(true);
+                          handleOpenCreateProjectDialog();
                         }}
                         variant="outline"
                         className="mt-2"
@@ -1156,7 +1061,7 @@ const TitleBar = ({
                   <Button
                     onClick={() => {
                       setIsProjectDrawerOpen(false);
-                      setIsDialogOpen(true);
+                      handleOpenCreateProjectDialog();
                     }}
                     className="w-full"
                   >

@@ -26,12 +26,7 @@ import {
   ChevronDown,
   Download,
 } from 'lucide-react';
-import {
-  FileData,
-  CodeContent,
-  CurrentProjectType,
-  ActiveProjectType,
-} from '@/lib/types';
+import { CurrentProjectType, ActiveProjectType } from '@/types/types';
 
 const SandpackDownloader = ({
   onDownload,
@@ -119,23 +114,28 @@ const validateNpmPackage = async (packageName: string) => {
       return { status: false };
     }
   } catch (error) {
-    // @ts-expect-error ignore type error
-    console.error(`Error validating package ${packageName}:`, error.message);
+    console.error(`Error validating package ${packageName}:`, error as Error);
     return { status: false };
   }
 };
+
+type CodebaseType = Record<string, string>;
+
+interface CodeviewProps {
+  activeProject: ActiveProjectType;
+  isSaving?: boolean;
+  isGenerating: boolean;
+  onCommit: (commitMessage?: string) => void;
+  codebase: CodebaseType | null;
+}
 
 const Codeview = ({
   activeProject,
   isSaving,
   isGenerating,
   onCommit,
-}: {
-  activeProject: ActiveProjectType;
-  isSaving?: boolean;
-  isGenerating: boolean;
-  onCommit: () => void;
-}) => {
+  codebase,
+}: CodeviewProps) => {
   const [activeView, setActiveView] = useState('code');
   const [loading, setLoading] = useState(false);
   const { action, setAction } = useContext(ActionContext);
@@ -149,7 +149,6 @@ const Codeview = ({
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -166,24 +165,6 @@ const Codeview = ({
     };
   }, []);
 
-  // Fetch project code versions
-  const fetchCodeVersions = async (projectId: string) => {
-    try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}/versions?walletAddress=${activeProject?.walletAddress}`
-      );
-      console.log('Code versions response:', response.data);
-
-      if (response.data.versions && Array.isArray(response.data.versions)) {
-        setCodeVersions(response.data.versions);
-      }
-    } catch (error) {
-      console.error('Error fetching code versions:', error);
-      toast.error('Failed to load code versions');
-    }
-  };
-
-  // Load a specific version of the codebase
   const loadCodeVersion = async (versionId: number) => {
     try {
       setLoading(true);
@@ -212,91 +193,7 @@ const Codeview = ({
     }
   };
 
-  // Function to fetch the latest project code
-  const fetchProjectCode = async (projectId: string) => {
-    try {
-      setLoading(true);
-      const response: {
-        codebase: unknown;
-        description: string;
-        externalPackages?: {
-          packageName: string;
-          packageVersion: string;
-        }[];
-        projectId: string;
-      } = await axios
-        .get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}?walletAddress=${activeProject?.walletAddress}`
-        )
-        .then((res) => {
-          return res?.data;
-        });
-      console.log('API Response:', response);
-
-      if (response.codebase) {
-        setCurrentProject({
-          ...response,
-        } as CurrentProjectType);
-
-        // Reset selected version when loading latest code
-        setSelectedVersion(null);
-      }
-
-      // Fetch code versions after getting the main codebase
-      await fetchCodeVersions(projectId);
-    } catch (error) {
-      // @ts-expect-error ignore type error
-      if (error.response?.data?.error === 'No code found for project') {
-        toast.error('Prompt to create vibe with the code');
-        return;
-      }
-      toast.error('Failed to load code');
-      console.error('Error loading project code:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeProject?.projectId) {
-      fetchProjectCode(activeProject.projectId);
-    }
-  }, [activeProject]);
-
-  useEffect(() => {
-    const validateDependencies = async (
-      packages: { packageName: string }[]
-    ): Promise<{ [key: string]: string }> => {
-      const validatedPackages: { [key: string]: string } = {};
-      for (const pkg of packages) {
-        // @ts-expect-error ignore type error
-        const isValid: {
-          status: boolean;
-          name?: string;
-          latestVersion?: string;
-        } = await validateNpmPackage(pkg.packageName);
-        if (isValid.status) {
-          // @ts-expect-error ignore type error
-          validatedPackages[isValid.name] = isValid.latestVersion;
-        } else {
-          console.warn(`Package validation failed for ${pkg.packageName}:`);
-          toast.error(`Package ${pkg.packageName} not found in npm registry`);
-        }
-      }
-      return validatedPackages;
-    };
-    const updateDependencies = async () => {
-      const externalPackages = currentProject?.externalPackages;
-      if (externalPackages) {
-        const validPackages = await validateDependencies(externalPackages);
-        setValidatedDependencies(validPackages);
-      }
-    };
-    updateDependencies();
-  }, [currentProject]);
-
   const isEditorDisabled = () => {
-    // Only disable if we're in a loading/saving state or deploying
     return isSaving || isGenerating || loading || action === 'deploy';
   };
 
@@ -316,68 +213,12 @@ const Codeview = ({
       if (currentProject?.codebase) {
         const codebase = currentProject.codebase;
 
-        // Find the Lua file in the codebase
         const luaPath = '/src/lib/index.lua';
-
-        if (Array.isArray(codebase)) {
-          // Handle array format - could be direct objects or nested
-          for (const item of codebase) {
-            if (item && typeof item === 'object') {
-              // Check if this is a direct file object with filepath/filePath
-              if (
-                ('filePath' in item || 'filepath' in item) &&
-                'code' in item
-              ) {
-                const filePath =
-                  (item as FileData).filePath || (item as FileData).filepath;
-                if (filePath === luaPath) {
-                  luaCodeToBeEval = (item as FileData).code || '';
-                  break;
-                }
-              } else {
-                // Check if it's a nested object with numeric keys
-                for (const key of Object.keys(item)) {
-                  const fileData = (item as Record<string, FileData>)[key];
-                  if (fileData && typeof fileData === 'object') {
-                    const filePath = fileData.filepath || fileData.filePath;
-                    if (filePath === luaPath) {
-                      luaCodeToBeEval = fileData.code || '';
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } else {
-          // Handle object format
-          // First try direct path access
+        if (codebase) {
           const luaFile = codebase[luaPath];
           if (luaFile) {
             if (typeof luaFile === 'string') {
               luaCodeToBeEval = luaFile;
-            } else if (
-              typeof luaFile === 'object' &&
-              'code' in (luaFile as CodeContent)
-            ) {
-              luaCodeToBeEval = (luaFile as CodeContent).code || '';
-            }
-          } else {
-            // Try to find any path ending with .lua
-            for (const [path, content] of Object.entries(codebase)) {
-              if (path.endsWith('.lua')) {
-                if (typeof content === 'string') {
-                  luaCodeToBeEval = content;
-                  break;
-                } else if (
-                  typeof content === 'object' &&
-                  content &&
-                  'code' in (content as CodeContent)
-                ) {
-                  luaCodeToBeEval = (content as CodeContent).code || '';
-                  break;
-                }
-              }
             }
           }
         }
@@ -460,63 +301,8 @@ const Codeview = ({
     }
   };
 
-  const codebaseFiles = currentProject?.codebase || {};
-
   // Generate visible files list based on the format of codebase
   let visibleFiles: string[] = [];
-
-  // Check for numeric keys format {0: {code, filePath}, 1: {code, filePath}}
-  const hasNumericKeys =
-    typeof codebaseFiles === 'object' &&
-    !Array.isArray(codebaseFiles) &&
-    Object.keys(codebaseFiles).some((key) => !isNaN(Number(key)));
-
-  if (hasNumericKeys) {
-    // Extract paths from the numeric keys format
-    Object.values(codebaseFiles as Record<string, unknown>).forEach(
-      (fileObj) => {
-        if (fileObj && typeof fileObj === 'object') {
-          const typedObj = fileObj as FileData;
-          if (typedObj.filePath || typedObj.filepath) {
-            const path = typedObj.filePath || typedObj.filepath || '';
-            const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-            visibleFiles.push(normalizedPath);
-          }
-        }
-      }
-    );
-  } else if (Array.isArray(codebaseFiles)) {
-    // Extract paths from nested array structure
-    for (const item of codebaseFiles as Array<Record<string, unknown>>) {
-      if (item && typeof item === 'object') {
-        if ('filePath' in item || 'filepath' in item) {
-          // Direct file object
-          const path =
-            (item as FileData).filePath || (item as FileData).filepath || '';
-          const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-          visibleFiles.push(normalizedPath);
-        } else {
-          // Nested object with numeric keys
-          for (const key of Object.keys(item)) {
-            const fileData = item[key] as Record<string, FileData>;
-            if (fileData && typeof fileData === 'object') {
-              const path =
-                (fileData as FileData).filepath ||
-                (fileData as FileData).filePath ||
-                '';
-              if (path) {
-                const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-                visibleFiles.push(normalizedPath);
-              }
-            }
-          }
-        }
-      }
-    }
-  } else {
-    // Object format - keys are the file paths
-    visibleFiles = Object.keys(codebaseFiles);
-  }
 
   // Fall back to default if no files were found
   if (visibleFiles.length === 0) {
@@ -528,7 +314,6 @@ const Codeview = ({
     ...currentProject?.codebase,
   };
 
-  // Format the timestamp nicely
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleString('en-US', {
@@ -538,6 +323,75 @@ const Codeview = ({
       minute: '2-digit',
     });
   };
+
+  // Update currentProject when codebase changes
+  useEffect(() => {
+    if (codebase && activeProject) {
+      // Create a proper CurrentProjectType by adding required properties
+      const processedProject: CurrentProjectType = {
+        codebase: codebase as CodebaseType,
+        description: activeProject.name || 'Project',
+        projectId: activeProject.projectId,
+        externalPackages: [],
+      };
+      setCurrentProject(processedProject);
+      setSelectedVersion(null);
+    }
+  }, [codebase, activeProject]);
+
+  useEffect(() => {
+    const fetchCodeVersions = async (projectId: string) => {
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}/versions?walletAddress=${activeProject?.walletAddress}`
+        );
+        console.log('Code versions response:', response.data);
+
+        if (response.data.versions && Array.isArray(response.data.versions)) {
+          setCodeVersions(response.data.versions);
+        }
+      } catch (error) {
+        console.error('Error fetching code versions:', error);
+        toast.error('Failed to load code versions');
+      }
+    };
+
+    if (activeProject?.projectId) {
+      fetchCodeVersions(activeProject.projectId);
+    }
+  }, [activeProject]);
+
+  useEffect(() => {
+    const validateDependencies = async (
+      packages: { packageName: string }[]
+    ): Promise<{ [key: string]: string }> => {
+      const validatedPackages: { [key: string]: string } = {};
+      for (const pkg of packages) {
+        // @ts-expect-error ignore type error
+        const isValid: {
+          status: boolean;
+          name?: string;
+          latestVersion?: string;
+        } = await validateNpmPackage(pkg.packageName);
+        if (isValid.status) {
+          // @ts-expect-error ignore type error
+          validatedPackages[isValid.name] = isValid.latestVersion;
+        } else {
+          console.warn(`Package validation failed for ${pkg.packageName}:`);
+          toast.error(`Package ${pkg.packageName} not found in npm registry`);
+        }
+      }
+      return validatedPackages;
+    };
+    const updateDependencies = async () => {
+      const externalPackages = currentProject?.externalPackages;
+      if (externalPackages) {
+        const validPackages = await validateDependencies(externalPackages);
+        setValidatedDependencies(validPackages);
+      }
+    };
+    updateDependencies();
+  }, [currentProject]);
 
   return (
     <SandpackProvider
@@ -565,7 +419,6 @@ const Codeview = ({
           ...DEPENDENCIES.devDependencies,
         },
       }}
-      // @ts-expect-error ignore type error
       files={sandpackFiles}
       options={{
         visibleFiles,
@@ -623,7 +476,8 @@ const Codeview = ({
                   <button
                     onClick={() => {
                       if (activeProject?.projectId) {
-                        fetchProjectCode(activeProject.projectId);
+                        setSelectedVersion(null);
+                        // Reset to current version - parent will handle this
                       }
                     }}
                     className="ml-1 underline hover:no-underline"
@@ -646,7 +500,12 @@ const Codeview = ({
                 title="Code version history"
               >
                 <History size={12} />
-                {selectedVersion ? `Version ${formatTimestamp(codeVersions.find(v => v.id === selectedVersion)?.timestamp || '')}` : 'Current'}
+                {selectedVersion
+                  ? `Version ${formatTimestamp(
+                      codeVersions.find((v) => v.id === selectedVersion)
+                        ?.timestamp || ''
+                    )}`
+                  : 'Current'}
                 <ChevronDown
                   size={10}
                   className={
@@ -666,7 +525,8 @@ const Codeview = ({
                     <button
                       onClick={() => {
                         if (activeProject?.projectId) {
-                          fetchProjectCode(activeProject.projectId);
+                          setSelectedVersion(null);
+                          // Reset to current version - parent will handle this
                           setIsVersionDropdownOpen(false);
                         }
                       }}
@@ -706,16 +566,6 @@ const Codeview = ({
               )}
             </div>
 
-            {/* <button
-              onClick={() => onAction('commit')}
-              disabled={isEditorDisabled()}
-              className={cn(
-                'h-5 px-2 rounded flex items-center gap-1 text-xs font-medium transition-colors text-muted-foreground hover:text-foreground',
-                isEditorDisabled() && 'opacity-50 cursor-not-allowed'
-              )}
-            >
-              <GitBranch size={12} /> Commit
-            </button> */}
             <button
               onClick={() => onAction('runlua')}
               disabled={isEditorDisabled()}

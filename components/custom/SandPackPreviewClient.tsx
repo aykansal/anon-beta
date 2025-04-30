@@ -4,10 +4,10 @@ import React, { Suspense, lazy, useMemo, useEffect } from 'react';
 import { ActionContext } from '@/context/ActionContext';
 import { useSandpack, type SandpackPreviewRef } from '@codesandbox/sandpack-react';
 import { toast } from 'sonner';
-import { getSandpackClient, getCodeSandboxURL, copyDeploymentLink } from '@/lib/sandpackUtils';
+import { getSandpackClient, getCodeSandboxURL, copyDeploymentLink } from '@/lib/sandpack/sandpackUtils';
 import SandpackErrorBoundary from './SandpackErrorBoundary';
 import SandpackModuleLoader from './SandpackModuleLoader';
-import { registerSandpackCacheListener } from '@/lib/sandpackCache';
+import { registerSandpackCacheListener } from '@/lib/sandpack/sandpackCache';
 
 // Dynamically import the SandpackPreview component to reduce initial bundle size
 const SandpackPreview = lazy(() => 

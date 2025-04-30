@@ -6,6 +6,7 @@ import Markdown from 'react-markdown';
 import { useState, useEffect, useRef } from 'react';
 import { Loader2Icon, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import { Input } from '../ui/input';
+import { ActiveProjectType } from '@/types/types';
 
 // Add a style tag for custom CSS
 const CustomStyles = () => (
@@ -212,30 +213,57 @@ const CustomStyles = () => (
 //   },
 // };
 
+// Define message type
+interface ChatMessage {
+  id: string;
+  content: string | Record<string, unknown>;
+  role: string;
+  timestamp: string;
+  isLoading?: boolean;
+}
+
+// File reference interface
+interface FileReference {
+  id: string;
+  code: string;
+}
+
+interface ChatviewProps {
+  activeProject: ActiveProjectType;
+  onGenerateStart?: () => void;
+  onGenerateEnd?: () => void;
+  showLuaToggle?: boolean;
+  chatMessages: ChatMessage[];
+}
+
 const Chatview = ({
-  //@ts-expect-error ignore
   activeProject,
-  //@ts-expect-error ignore
   onGenerateStart,
-  //@ts-expect-error ignore
   onGenerateEnd,
   showLuaToggle = true,
-}) => {
-  const [userInput, setuserInput] = useState('');
-  const [message, setmessage] = useState([]);
+  chatMessages = [],
+}: ChatviewProps) => {
+  const [userInput, setUserInput] = useState('');
+  const [message, setMessage] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [files, setFiles] = useState({});
-  const [mentionedFiles] = useState([]);
-  const messagesEndRef = useRef(null);
+  const [mentionedFiles] = useState<FileReference[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedFramework, setSelectedFramework] = useState('React');
   const [luaEnabled, setLuaEnabled] = useState(true);
-  // const [expandedFolders, setExpandedFolders] = useState(new Set());
-  const [failedMessage, setFailedMessage] = useState(null);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
 
+  // Update local messages state when chatMessages prop changes
+  useEffect(() => {
+    if (chatMessages && chatMessages.length > 0) {
+      setMessage(chatMessages);
+    } else {
+      setMessage([]);
+    }
+  }, [chatMessages]);
+
   const scrollToBottom = () => {
-    //@ts-expect-error ignore
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -334,10 +362,11 @@ const Chatview = ({
   //   });
   // };
 
-  // @ts-expect-error ignore
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
+    if (e) {
+      e.preventDefault();
+    }
 
     if (!userInput.trim() && !failedMessage) return;
 
@@ -351,7 +380,7 @@ const Chatview = ({
 
     // Clear input unless we're retrying
     if (!isRetrying) {
-      setuserInput('');
+      setUserInput('');
     }
 
     // Don't need this as we'll handle it with retry button
@@ -359,7 +388,7 @@ const Chatview = ({
 
     // Add the user message to the local messages immediately
     const tempUserMessageId = `temp-${Date.now()}`;
-    const userMessage = {
+    const userMessage: ChatMessage = {
       id: tempUserMessageId,
       content: messageToSend,
       role: 'user',
@@ -368,8 +397,7 @@ const Chatview = ({
 
     // Only add user message to UI if we're not retrying
     if (!isRetrying) {
-      // @ts-expect-error ignore
-      setmessage((prev) => [...prev, userMessage]);
+      setMessage((prev) => [...prev, userMessage]);
     }
 
     try {
@@ -379,9 +407,7 @@ const Chatview = ({
 
       // Add a temporary loading message
       const tempSystemMessageId = `temp-${Date.now() + 1}`;
-      // @ts-expect-error ignore
-      setmessage((prev) => [
-        // @ts-expect-error ignore
+      setMessage((prev) => [
         ...prev.filter((m) => !isRetrying || m.id !== tempSystemMessageId), // Remove previous loading message if retrying
         {
           id: tempSystemMessageId,
@@ -400,15 +426,10 @@ const Chatview = ({
       const requestBody = {
         prompt: { role: 'user', content: messageToSend },
         projectId: activeProject.projectId,
-
         fileContext: mentionedFiles.reduce((acc, file) => {
-          // @ts-expect-error ignore
-          if (files[file.id]) {
-            // @ts-expect-error ignore
-            acc[file.id] = files[file.id];
-          }
+          acc[file.id] = file.code;
           return acc;
-        }, {}),
+        }, {} as Record<string, string>),
         framework: selectedFramework,
         luaenabled: luaEnabled,
       };
@@ -417,20 +438,25 @@ const Chatview = ({
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/`,
         requestBody
       );
-      // @ts-expect-error ignore
 
       // Update messages, removing the loading indicator and adding the real response
-      setmessage((prev) => [
-        // @ts-expect-error ignore
-
-        ...prev.filter((m) => m.id !== tempSystemMessageId), // Remove loading message
+      const newMessages = [
+        ...message.filter((m) => m.id !== tempSystemMessageId), // Remove loading message
         {
           id: response.data.id || `msg-${Date.now()}`,
           content: response.data.content,
           role: 'assistant',
           timestamp: new Date().toISOString(),
         },
-      ]);
+      ];
+      
+      setMessage(newMessages);
+      
+      // Trigger event to update parent
+      const event = new CustomEvent('chatMessageUpdate', {
+        detail: { messages: newMessages }
+      });
+      window.dispatchEvent(event);
 
       // Reset retry state if we were retrying
       if (isRetrying) {
@@ -443,6 +469,8 @@ const Chatview = ({
       if (onGenerateEnd) {
         onGenerateEnd();
       }
+      
+      // Emit event for codebase update
       window.addEventListener('updateCodeview', (event) => {
         const customEvent = event as CustomEvent;
         if (customEvent.detail?.codebase) {
@@ -455,16 +483,13 @@ const Chatview = ({
           window.dispatchEvent(refreshEvent);
         }
       });
-      alert("Please Refresh the WebPage. Thanks !!");
     } catch (error) {
       console.error('Failed to send message:', error);
-      // @ts-expect-error ignore
 
       // Remove the loading indicator
-      setmessage((prev) => prev.filter((m) => !m.isLoading));
+      setMessage((prev) => prev.filter((m) => !m.isLoading));
 
       // Store the failed message for retry
-      // @ts-expect-error ignore
       setFailedMessage(messageToSend);
 
       // Reset retry state
@@ -482,24 +507,24 @@ const Chatview = ({
   // Function to handle retry
   const handleRetry = () => {
     if (failedMessage) {
-      // @ts-expect-error ignore
       handleSubmit();
     }
   };
-  // @ts-expect-error ignore
-  const renderMessageContent = (msg) => {
+  
+  const renderMessageContent = (msg: ChatMessage): string => {
     if (!msg || !msg.content) {
       return '';
     }
 
     if (msg.role === 'user') {
-      return msg.content;
+      return typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
     }
 
     try {
       // Check if content is already an object (might have been parsed earlier)
       if (typeof msg.content === 'object') {
-        return msg.content.description || '';
+        const description = msg.content.description;
+        return typeof description === 'string' ? description : '';
       }
 
       // Try to parse as JSON
@@ -512,16 +537,14 @@ const Chatview = ({
     } catch (error) {
       // If JSON parsing fails, return the content as is
       console.log('Failed to parse message content as JSON:', error);
-      return msg.content || '';
+      return typeof msg.content === 'string' ? msg.content : '';
     }
   };
 
   // Add a new function to handle key press events
-  // @ts-expect-error ignore
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // @ts-expect-error ignore
       handleSubmit();
     }
   };
@@ -543,7 +566,7 @@ const Chatview = ({
           ...msg,
           content: msg.role === 'model' ? JSON.parse(msg.content) : msg.content,
         }));
-        setmessage(messages);
+        setMessage(messages);
       } catch (error) {
         console.error('Error fetching messages:', error);
         toast.error('Failed to load chat messages');
@@ -556,8 +579,7 @@ const Chatview = ({
       fetchMessages(activeProject?.projectId);
       // fetchProjectFiles(activeProject?.projectId);
     } else {
-      setmessage([]);
-      setFiles({});
+      setMessage([]);
     }
     // console.log('Active project changed in Chatview:', activeProject);
   }, [activeProject]);
@@ -589,23 +611,18 @@ const Chatview = ({
               {Array.isArray(message) &&
                 message.map((msg, index) => (
                   <div
-                    // @ts-expect-error ignore
-
                     key={msg.id || index}
                     className={`flex ${
-                      // @ts-expect-error ignore
                       msg.role === 'user' ? 'justify-end' : 'justify-start'
                     }`}
                   >
                     <div
                       className={`max-w-[85%] sm:max-w-[75%] p-3 rounded-lg break-words ${
-                        // @ts-expect-error ignore
                         msg.role === 'user'
                           ? 'bg-primary/10 text-primary'
                           : 'bg-muted text-foreground'
                       }`}
                     >
-                      {/*@ts-expect-error ignore */}
                       {msg.isLoading ? (
                         <div className="flex items-center justify-center">
                           <Loader2Icon
@@ -614,9 +631,7 @@ const Chatview = ({
                           />
                         </div>
                       ) : (
-                        <Markdown
-                        //className="prose prose-sm dark:prose-invert max-w-none"
-                        >
+                        <Markdown>
                           {renderMessageContent(msg)}
                         </Markdown>
                       )}
@@ -699,7 +714,7 @@ const Chatview = ({
 
               <Input
                 value={userInput}
-                onChange={(e) => setuserInput(e.target.value)}
+                onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 disabled={loading}
                 className="w-full"

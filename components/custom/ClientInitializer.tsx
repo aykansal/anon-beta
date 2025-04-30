@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { monkeyPatchSandpack } from '@/lib/monkeyPatchSandpack';
+import { monkeyPatchSandpack } from '@/lib/sandpack/monkeyPatchSandpack';
 
 /**
  * This component initializes client-side only functionality
