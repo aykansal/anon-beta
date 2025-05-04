@@ -21,16 +21,16 @@ const ClientInitializer: React.FC = () => {
 
     // Initialize client-side only features
     initializeSandpack();
-    
+
     // Monitor localStorage for cache settings changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'sandpack-cache-enabled') {
         console.log('Sandpack cache settings changed:', e.newValue);
       }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
@@ -40,4 +40,4 @@ const ClientInitializer: React.FC = () => {
   return null;
 };
 
-export default ClientInitializer; 
+export default ClientInitializer;

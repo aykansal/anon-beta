@@ -234,6 +234,7 @@ interface ChatviewProps {
   onGenerateEnd?: () => void;
   showLuaToggle?: boolean;
   chatMessages: ChatMessage[];
+  onNewCodebase?: (codebase: Record<string, string>) => void;
 }
 
 const Chatview = ({
@@ -242,10 +243,10 @@ const Chatview = ({
   onGenerateEnd,
   showLuaToggle = true,
   chatMessages = [],
+  onNewCodebase,
 }: ChatviewProps) => {
   const [userInput, setUserInput] = useState('');
   const [message, setMessage] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(false);
   const [mentionedFiles] = useState<FileReference[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedFramework, setSelectedFramework] = useState('React');
@@ -266,102 +267,9 @@ const Chatview = ({
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
   useEffect(() => {
     scrollToBottom();
-  }, [message, loading]);
-
-  // const fetchProjectFiles = async (projectId: string) => {
-  //   try {
-  //     console.log("inside chatview");
-  //     const response = await axios.get(
-  //       `${process.env.NEXT_PUBLIC_BACKEND_URL}/projects/${projectId}`
-  //     );
-  //     if (response.data?.codebase) {
-  //       setFiles(response.data.codebase);
-  //     }
-  //   } catch (error) {
-  //     //@ts-expect-error ignore
-  //     if (error.response.data.error === 'No code found for project') {
-  //       toast.error('No code found for project');
-  //       return;
-  //     }
-  //     console.error('Error fetching project files:', error);
-  //   }
-  // };
-
-  // const getFileSuggestions = (search) => {
-  //   if (!files || !Array.isArray(files)) return [];
-
-  //   // Convert array to object with filePaths
-  //   const fileMap = {};
-  //   Object.entries(files).forEach(([_, file]) => {
-  //     if (file && file.filePath) {
-  //       fileMap[file.filePath] = file.code;
-  //     }
-  //   });
-
-  //   // If it's just @ without search, show folder structure
-  //   if (!search) {
-  //     const structure = getFolderStructure(files);
-  //     const suggestions = flattenFileStructure(structure);
-  //     // Only show files from expanded folders
-  //     return suggestions.filter((suggestion) => {
-  //       if (suggestion.isFile) {
-  //         // Check if parent folder is expanded
-  //         const folderPath =
-  //           suggestion.id.split('/').slice(0, -1).join('/') + '/';
-  //         return expandedFolders.has(folderPath);
-  //       }
-  //       return true; // Always show folders
-  //     });
-  //   }
-
-  //   // If there's a search term, search across all files
-  //   const searchLower = search.toLowerCase();
-  //   return Object.entries(files)
-  //     .filter(
-  //       ([_, file]) =>
-  //         file &&
-  //         file.filePath &&
-  //         file.filePath.toLowerCase().includes(searchLower)
-  //     )
-  //     .map(([_, file]) => ({
-  //       id: file.filePath,
-  //       display: file.filePath,
-  //       isFile: true,
-  //     }));
-  // };
-
-  // const handleFileMention = (id, display) => {
-  //   // Find the file in the array
-  //   const mentionedFile = Object.values(files).find(
-  //     (file) => file.filePath === id
-  //   );
-  //   if (mentionedFile) {
-  //     setMentionedFiles((prev) => [
-  //       ...prev,
-  //       {
-  //         id,
-  //         display,
-  //         code: mentionedFile.code,
-  //       },
-  //     ]);
-  //   }
-  // };
-
-  // const handleFolderClick = (folderId) => {
-  //   setExpandedFolders((prev) => {
-  //     const newSet = new Set(prev);
-  //     if (newSet.has(folderId)) {
-  //       newSet.delete(folderId);
-  //     } else {
-  //       newSet.add(folderId);
-  //     }
-  //     return newSet;
-  //   });
-  // };
-
+  }, [message]);
 
   const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     if (e) {
@@ -426,10 +334,13 @@ const Chatview = ({
       const requestBody = {
         prompt: { role: 'user', content: messageToSend },
         projectId: activeProject.projectId,
-        fileContext: mentionedFiles.reduce((acc, file) => {
-          acc[file.id] = file.code;
-          return acc;
-        }, {} as Record<string, string>),
+        fileContext: mentionedFiles.reduce(
+          (acc, file) => {
+            acc[file.id] = file.code;
+            return acc;
+          },
+          {} as Record<string, string>
+        ),
         framework: selectedFramework,
         luaenabled: luaEnabled,
       };
@@ -439,24 +350,57 @@ const Chatview = ({
         requestBody
       );
 
-      // Update messages, removing the loading indicator and adding the real response
-      const newMessages = [
-        ...message.filter((m) => m.id !== tempSystemMessageId), // Remove loading message
-        {
-          id: response.data.id || `msg-${Date.now()}`,
-          content: response.data.content,
-          role: 'assistant',
-          timestamp: new Date().toISOString(),
-        },
-      ];
-      
-      setMessage(newMessages);
-      
-      // Trigger event to update parent
-      const event = new CustomEvent('chatMessageUpdate', {
-        detail: { messages: newMessages }
+      // Extract content before updating state
+      const responseContent = response.data.content;
+
+      // Update messages using the functional form of setState to preserve user message
+      setMessage((prevMessages) => {
+        // Filter out the temporary loading message
+        const messagesWithoutLoading = prevMessages.filter(
+          (m) => m.id !== tempSystemMessageId
+        );
+
+        // Add the new assistant message from the response
+        const finalMessages = [
+          ...messagesWithoutLoading,
+          {
+            id: response.data.id || `msg-${Date.now()}`,
+            content: response.data.content,
+            role: 'assistant',
+            timestamp: new Date().toISOString(),
+          },
+        ];
+
+        console.log('Updated messages after API response:', finalMessages); // Debug log
+
+        return finalMessages;
       });
-      window.dispatchEvent(event);
+
+      // --- ADD onNewCodebase call here, after setMessage ---
+      try {
+        if (typeof responseContent === 'object' && responseContent?.codebase) {
+          console.log('New codebase received, calling onNewCodebase');
+          if (onNewCodebase) {
+            onNewCodebase(responseContent.codebase);
+          }
+        } else if (typeof responseContent === 'string') {
+          // Attempt to parse if it's a stringified JSON
+          const parsedContent = JSON.parse(responseContent);
+          if (parsedContent?.codebase) {
+            console.log(
+              'New codebase received (parsed from string), calling onNewCodebase'
+            );
+            if (onNewCodebase) {
+              onNewCodebase(parsedContent.codebase);
+            }
+          }
+        }
+      } catch (parseError) {
+        console.warn(
+          'Could not parse response content or find codebase:',
+          parseError
+        );
+      }
 
       // Reset retry state if we were retrying
       if (isRetrying) {
@@ -469,20 +413,6 @@ const Chatview = ({
       if (onGenerateEnd) {
         onGenerateEnd();
       }
-      
-      // Emit event for codebase update
-      window.addEventListener('updateCodeview', (event) => {
-        const customEvent = event as CustomEvent;
-        if (customEvent.detail?.codebase) {
-          const refreshEvent = new CustomEvent('refreshCodeview', {
-            detail: {
-              projectId: activeProject.projectId,
-              codebase: customEvent.detail.codebase,
-            },
-          });
-          window.dispatchEvent(refreshEvent);
-        }
-      });
     } catch (error) {
       console.error('Failed to send message:', error);
 
@@ -510,14 +440,16 @@ const Chatview = ({
       handleSubmit();
     }
   };
-  
+
   const renderMessageContent = (msg: ChatMessage): string => {
     if (!msg || !msg.content) {
       return '';
     }
 
     if (msg.role === 'user') {
-      return typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+      return typeof msg.content === 'string'
+        ? msg.content
+        : JSON.stringify(msg.content);
     }
 
     try {
@@ -555,34 +487,13 @@ const Chatview = ({
   };
 
   useEffect(() => {
-    const fetchMessages = async (projectId: string) => {
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/chat/history/${projectId}`
-        );
-        // @ts-expect-error ignore
-        const messages = response.data.messages.map((msg) => ({
-          ...msg,
-          content: msg.role === 'model' ? JSON.parse(msg.content) : msg.content,
-        }));
-        setMessage(messages);
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-        toast.error('Failed to load chat messages');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (activeProject) {
-      fetchMessages(activeProject?.projectId);
-      // fetchProjectFiles(activeProject?.projectId);
-    } else {
-      setMessage([]);
-    }
-    // console.log('Active project changed in Chatview:', activeProject);
-  }, [activeProject]);
+    const messages = chatMessages.map((msg) => ({
+      ...msg,
+      content:
+        msg.role === 'model' ? JSON.parse(msg.content as string) : msg.content,
+    }));
+    setMessage(messages);
+  }, [chatMessages]);
 
   if (!activeProject.projectId) {
     return (
@@ -597,12 +508,7 @@ const Chatview = ({
       <CustomStyles />
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="h-full p-4 space-y-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <Loader2Icon className="animate-spin mr-2" size={20} />
-              <p>Loading messages...</p>
-            </div>
-          ) : message && Array.isArray(message) && message.length === 0 ? (
+          {message && Array.isArray(message) && message.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <p>No messages yet. Start a conversation!</p>
             </div>
@@ -631,9 +537,7 @@ const Chatview = ({
                           />
                         </div>
                       ) : (
-                        <Markdown>
-                          {renderMessageContent(msg)}
-                        </Markdown>
+                        <Markdown>{renderMessageContent(msg)}</Markdown>
                       )}
                     </div>
                   </div>
@@ -716,7 +620,6 @@ const Chatview = ({
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 onKeyDown={handleKeyPress}
-                disabled={loading}
                 className="w-full"
               />
 

@@ -279,7 +279,9 @@ const TitleBar = ({
   // Show commit dialog when user clicks "Push Changes"
   const showCommitDialog = () => {
     // Default commit message with timestamp
-    setCommitMessage(`Update project ${activeProject?.name} - ${new Date().toLocaleString()}`);
+    setCommitMessage(
+      `Update project ${activeProject?.name} - ${new Date().toLocaleString()}`
+    );
     setIsCommitDialogOpen(true);
   };
 
@@ -313,7 +315,7 @@ const TitleBar = ({
 
       // Refresh commits after successful push
       await refreshCommits();
-      
+
       toast.success('Changes pushed to GitHub');
 
       // Close drawer after a delay
@@ -369,27 +371,29 @@ const TitleBar = ({
 
       setIsLoadingCommits(true);
       setCommitError(null);
-      
+
       try {
         console.log(`Fetching commits for project: ${activeProject.name}`);
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`
         );
-        
+
         if (!response.ok) {
           const errorData = await response.json();
-          
+
           // Handle 404 errors gracefully - repo doesn't exist or is empty
           if (response.status === 404) {
             console.log('Repository or commits not found (404)');
             setCommits([]);
-            setCommitError('No commits found. Repository may not exist yet or be empty.');
+            setCommitError(
+              'No commits found. Repository may not exist yet or be empty.'
+            );
             return;
           }
-          
+
           throw new Error(errorData.details || 'Failed to fetch commits');
         }
-        
+
         const data = await response.json();
         console.log('Commits fetched successfully:', data.commits);
         setCommits(data.commits || []);
@@ -452,7 +456,7 @@ const TitleBar = ({
       toast.error('GitHub connection required to view commits');
       return;
     }
-    
+
     // Don't try to fetch commits if repo doesn't exist yet
     if (gitHubStatus !== 'repo_exists') {
       console.log('Repository does not exist yet, skipping commit refresh');
@@ -464,7 +468,7 @@ const TitleBar = ({
 
     setIsLoadingCommits(true);
     setCommitError(null);
-    
+
     try {
       console.log(
         `Manually refreshing commits for project: ${activeProject.name}`
@@ -472,10 +476,10 @@ const TitleBar = ({
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/github/commits?token=${githubToken}&repo=${activeProject.name}`
       );
-      
+
       if (!response.ok) {
         const errorData = await response.json();
-        
+
         // Handle 404 errors gracefully - repo doesn't exist or is empty
         if (response.status === 404) {
           console.log('Repository or commits not found (404)');
@@ -484,10 +488,10 @@ const TitleBar = ({
           toast.info('No commits found in this repository');
           return;
         }
-        
+
         throw new Error(errorData.details || 'Failed to fetch commits');
       }
-      
+
       const data = await response.json();
       console.log('Commits refreshed successfully:', data.commits);
       setCommits(data.commits || []);
@@ -563,8 +567,8 @@ const TitleBar = ({
                   isRepoReadyToCommit
                     ? 'bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 hover:border-green-500/30'
                     : gitHubStatus === 'error'
-                    ? 'bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 hover:border-destructive/30'
-                    : 'bg-secondary/40 hover:bg-secondary/70 border border-border/40 hover:border-border/70'
+                      ? 'bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 hover:border-destructive/30'
+                      : 'bg-secondary/40 hover:bg-secondary/70 border border-border/40 hover:border-border/70'
                 }
                 disabled:opacity-40 disabled:cursor-not-allowed
               `}
@@ -581,8 +585,8 @@ const TitleBar = ({
                     isRepoReadyToCommit
                       ? 'text-green-500'
                       : gitHubStatus === 'error'
-                      ? 'text-destructive'
-                      : 'text-foreground'
+                        ? 'text-destructive'
+                        : 'text-foreground'
                   }
                 />
               )}
@@ -735,7 +739,9 @@ const TitleBar = ({
                           >
                             <div className="flex items-center gap-2 text-black">
                               <Github size={16} />
-                              {commitInProgress ? 'Committing...' : 'Commit Changes'}
+                              {commitInProgress
+                                ? 'Committing...'
+                                : 'Commit Changes'}
                             </div>
                           </Button>
                         </div>
@@ -1179,10 +1185,10 @@ const TitleBar = ({
                         gitHubStatus === 'repo_exists'
                           ? 'bg-green-500/5 border-green-500/20'
                           : gitHubStatus === 'authenticated'
-                          ? 'bg-yellow-500/5 border-yellow-500/20'
-                          : gitHubStatus === 'error'
-                          ? 'bg-destructive/5 border-destructive/20'
-                          : 'bg-secondary/40 border-border/50'
+                            ? 'bg-yellow-500/5 border-yellow-500/20'
+                            : gitHubStatus === 'error'
+                              ? 'bg-destructive/5 border-destructive/20'
+                              : 'bg-secondary/40 border-border/50'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -1199,10 +1205,10 @@ const TitleBar = ({
                           {gitHubStatus === 'repo_exists'
                             ? 'Repository Connected'
                             : gitHubStatus === 'authenticated'
-                            ? 'GitHub Account Connected'
-                            : gitHubStatus === 'error'
-                            ? 'Connection Error'
-                            : 'Not Connected'}
+                              ? 'GitHub Account Connected'
+                              : gitHubStatus === 'error'
+                                ? 'Connection Error'
+                                : 'Not Connected'}
                         </span>
                       </div>
 
@@ -1210,10 +1216,10 @@ const TitleBar = ({
                         {gitHubStatus === 'repo_exists'
                           ? 'This project is linked to a GitHub repository.'
                           : gitHubStatus === 'authenticated'
-                          ? 'GitHub account connected. Create a repository for this project.'
-                          : gitHubStatus === 'error'
-                          ? 'There was an error connecting to GitHub. Please try again.'
-                          : 'Connect to GitHub to save your project code.'}
+                            ? 'GitHub account connected. Create a repository for this project.'
+                            : gitHubStatus === 'error'
+                              ? 'There was an error connecting to GitHub. Please try again.'
+                              : 'Connect to GitHub to save your project code.'}
                       </p>
 
                       <Button
@@ -1238,11 +1244,15 @@ const TitleBar = ({
                         <GitCommit size={16} />
                         Recent Commits
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={refreshCommits}
-                        disabled={isLoadingCommits || !githubToken || gitHubStatus !== 'repo_exists'}
+                        disabled={
+                          isLoadingCommits ||
+                          !githubToken ||
+                          gitHubStatus !== 'repo_exists'
+                        }
                         className="h-7 px-2"
                       >
                         <RefreshCwIcon
@@ -1251,7 +1261,7 @@ const TitleBar = ({
                         />
                       </Button>
                     </h4>
-                    
+
                     {isLoadingCommits ? (
                       <div className="bg-card p-4 rounded-md border border-border/50 flex justify-center items-center">
                         <Loader2
@@ -1272,7 +1282,7 @@ const TitleBar = ({
                         <p className="text-xs text-muted-foreground mt-1">
                           {commitError}
                         </p>
-                        
+
                         {gitHubStatus !== 'repo_exists' && (
                           <Button
                             onClick={() => {
@@ -1304,9 +1314,9 @@ const TitleBar = ({
                                   {commit.hash}
                                 </code>
                                 {commit.url && (
-                                  <a 
-                                    href={commit.url} 
-                                    target="_blank" 
+                                  <a
+                                    href={commit.url}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="ml-1 text-muted-foreground hover:text-primary transition-colors"
                                     title="View on GitHub"
@@ -1316,7 +1326,7 @@ const TitleBar = ({
                                 )}
                               </div>
                             </div>
-                            
+
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <User size={12} />
@@ -1332,16 +1342,16 @@ const TitleBar = ({
                     ) : (
                       <div className="bg-card p-4 rounded-md border border-border/50 text-center">
                         <p className="text-muted-foreground text-sm">
-                          {gitHubStatus === 'repo_exists' 
+                          {gitHubStatus === 'repo_exists'
                             ? 'No commits found'
                             : 'No GitHub repository connected'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {gitHubStatus === 'repo_exists' 
+                          {gitHubStatus === 'repo_exists'
                             ? 'This repository has no commits yet. Push changes to see commit history.'
                             : 'Connect to GitHub and create a repository to track commits.'}
                         </p>
-                        
+
                         {gitHubStatus !== 'repo_exists' && (
                           <Button
                             onClick={() => {
@@ -1387,14 +1397,17 @@ const TitleBar = ({
               <Textarea
                 id="commitMessage"
                 value={commitMessage}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCommitMessage(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setCommitMessage(e.target.value)
+                }
                 className="w-full min-h-[100px] p-3 rounded-md border border-border bg-background text-foreground resize-none"
                 placeholder="Describe your changes..."
                 required
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Write a meaningful message describing the changes you&apos;re committing.
+                Write a meaningful message describing the changes you&apos;re
+                committing.
               </p>
             </div>
           </div>

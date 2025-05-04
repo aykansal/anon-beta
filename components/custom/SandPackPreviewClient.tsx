@@ -2,17 +2,24 @@
 
 import React, { Suspense, lazy, useMemo, useEffect } from 'react';
 import { ActionContext } from '@/context/ActionContext';
-import { useSandpack, type SandpackPreviewRef } from '@codesandbox/sandpack-react';
+import {
+  useSandpack,
+  type SandpackPreviewRef,
+} from '@codesandbox/sandpack-react';
 import { toast } from 'sonner';
-import { getSandpackClient, getCodeSandboxURL, copyDeploymentLink } from '@/lib/sandpack/sandpackUtils';
+import {
+  getSandpackClient,
+  getCodeSandboxURL,
+  copyDeploymentLink,
+} from '@/lib/sandpack/sandpackUtils';
 import SandpackErrorBoundary from './SandpackErrorBoundary';
 import SandpackModuleLoader from './SandpackModuleLoader';
 import { registerSandpackCacheListener } from '@/lib/sandpack/sandpackCache';
 
 // Dynamically import the SandpackPreview component to reduce initial bundle size
-const SandpackPreview = lazy(() => 
-  import('@codesandbox/sandpack-react').then(mod => ({
-    default: mod.SandpackPreview
+const SandpackPreview = lazy(() =>
+  import('@codesandbox/sandpack-react').then((mod) => ({
+    default: mod.SandpackPreview,
   }))
 );
 
@@ -44,7 +51,7 @@ const SandPackPreviewClient = () => {
         dependencies?: Record<string, string>;
       };
     }
-    
+
     // Use type assertion with a more specific type
     const extendedSandpack = sandpack as unknown as ExtendedSandpack;
     return extendedSandpack.sandboxInfo?.dependencies || {};
@@ -62,15 +69,15 @@ const SandPackPreviewClient = () => {
     try {
       setIsLoading(true);
       console.log('Handling SandPack action:', action?.Action);
-      
+
       const clientData = await getSandpackClient(previewRef);
       if (!clientData) {
         setIsLoading(false);
         return;
       }
-      
+
       const { client, clientId } = clientData;
-      
+
       // Verify client is registered with sandpack
       if (!sandpack.clients[clientId]) {
         console.warn('Client not found in sandpack clients');
@@ -78,13 +85,13 @@ const SandPackPreviewClient = () => {
         setIsLoading(false);
         return;
       }
-      
+
       const result = await getCodeSandboxURL(client);
       if (!result) {
         setIsLoading(false);
         return;
       }
-      
+
       if (action?.Action === 'deploy') {
         copyDeploymentLink(result.sandboxId);
       } else if (action?.Action === 'export') {
@@ -93,7 +100,10 @@ const SandPackPreviewClient = () => {
     } catch (err) {
       console.error('Error in handleSandpackAction:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
-      toast.error('Failed to perform action: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      toast.error(
+        'Failed to perform action: ' +
+          (err instanceof Error ? err.message : 'Unknown error')
+      );
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +117,7 @@ const SandPackPreviewClient = () => {
 
   // Toggle cache method
   const toggleCache = () => {
-    setCacheEnabled(prev => {
+    setCacheEnabled((prev) => {
       const newValue = !prev;
       toast.info(`Dependency caching ${newValue ? 'enabled' : 'disabled'}`);
       return newValue;
@@ -120,7 +130,7 @@ const SandPackPreviewClient = () => {
         <div className="text-red-500">
           <h3 className="font-bold">Preview Error</h3>
           <p>{error.message || 'Failed to load preview'}</p>
-          <button 
+          <button
             className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md"
             onClick={() => {
               setError(null);
@@ -135,7 +145,10 @@ const SandPackPreviewClient = () => {
   }
 
   return (
-    <SandpackModuleLoader dependencies={dependencies} enableCache={cacheEnabled}>
+    <SandpackModuleLoader
+      dependencies={dependencies}
+      enableCache={cacheEnabled}
+    >
       <SandpackErrorBoundary>
         <Suspense fallback={<SandpackLoading />}>
           <div className="relative w-full h-full">
@@ -153,10 +166,14 @@ const SandPackPreviewClient = () => {
               </div>
             )}
             <div className="absolute bottom-2 right-2 flex space-x-2">
-              <button 
+              <button
                 onClick={toggleCache}
                 className={`text-xs px-2 py-1 rounded ${cacheEnabled ? 'bg-green-500' : 'bg-gray-400'} text-white`}
-                title={cacheEnabled ? 'Disable dependency caching' : 'Enable dependency caching'}
+                title={
+                  cacheEnabled
+                    ? 'Disable dependency caching'
+                    : 'Enable dependency caching'
+                }
               >
                 {cacheEnabled ? '🔄 Cache On' : '⏹ Cache Off'}
               </button>

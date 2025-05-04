@@ -46,6 +46,7 @@ interface ProjectContextType {
   handleProjectSelect: (project: ActiveProjectType) => Promise<void>;
   createProject: (projectName: string) => Promise<ActiveProjectType | null>;
   refreshProject: () => Promise<void>;
+  setCodebase: (codebase: CodebaseType | null) => void;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
@@ -145,6 +146,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
                 : msg.content,
           })
         );
+        console.log('formattedMessages', formattedMessages);
         setChatMessages(formattedMessages as ChatMessageType[]);
       } else {
         setChatMessages([]);
@@ -457,6 +459,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         handleProjectSelect,
         createProject,
         refreshProject,
+        setCodebase,
       }}
     >
       {children}

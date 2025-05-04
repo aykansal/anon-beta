@@ -27,7 +27,6 @@ export interface NestedFileObject {
   [key: string]: FileData;
 }
 
-
 export interface CodeFile {
   filePath?: string;
   code?: string;

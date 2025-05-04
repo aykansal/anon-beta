@@ -172,7 +172,8 @@
   }
 
   /* Elegant input styles */
-  input, select {
+  input,
+  select {
     @apply bg-secondary border-border focus:outline-hidden focus:ring-0 focus:border-border transition-colors duration-150;
   }
 }
@@ -260,11 +261,11 @@
 }
 
 /* Remove hover effects from file explorer items */
-.sp-file-explorer [data-active="false"]:hover {
+.sp-file-explorer [data-active='false']:hover {
   background: transparent !important;
 }
 
-.sp-file-explorer [data-active="true"] {
+.sp-file-explorer [data-active='true'] {
   background: hsl(var(--secondary)) !important;
 }
 
@@ -283,11 +284,11 @@
 }
 
 /* Remove hover effects from tabs */
-.sp-tabs [role="tab"]:hover {
+.sp-tabs [role='tab']:hover {
   background: transparent !important;
 }
 
-.sp-tabs [role="tab"][data-active="true"] {
+.sp-tabs [role='tab'][data-active='true'] {
   background: hsl(var(--secondary)) !important;
 }
 
@@ -316,6 +317,3 @@
 .cm-scroller {
   height: 100% !important;
 }
-
-
-

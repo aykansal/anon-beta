@@ -16,7 +16,6 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [email, setEmail] = useState('');
 
-
   const handleSubscribe = async () => {
     if (email.trim()) {
       try {
@@ -390,11 +389,13 @@ export default function Home() {
         @keyframes buttonGlow {
           0%,
           100% {
-            box-shadow: 0 0 5px 0 rgba(var(--primary-rgb), 0.3),
+            box-shadow:
+              0 0 5px 0 rgba(var(--primary-rgb), 0.3),
               0 0 10px 0 rgba(var(--primary-rgb), 0.1);
           }
           50% {
-            box-shadow: 0 0 10px 2px rgba(var(--primary-rgb), 0.5),
+            box-shadow:
+              0 0 10px 2px rgba(var(--primary-rgb), 0.5),
               0 0 20px 5px rgba(var(--primary-rgb), 0.2);
           }
         }
@@ -568,7 +569,8 @@ export default function Home() {
           );
           background-size: 200% 100%;
           animation: movingBorder 3s linear infinite;
-          -webkit-mask: linear-gradient(#fff 0 0) content-box,
+          -webkit-mask:
+            linear-gradient(#fff 0 0) content-box,
             linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask-composite: exclude;
@@ -587,7 +589,8 @@ export default function Home() {
         .particle-overlay {
           position: absolute;
           inset: 0;
-          background-image: radial-gradient(
+          background-image:
+            radial-gradient(
               circle at 20% 30%,
               rgba(var(--primary-rgb), 0.08) 0%,
               transparent 8%
@@ -614,7 +617,8 @@ export default function Home() {
           position: absolute;
           inset: 0;
           background-size: 40px 40px;
-          background-image: linear-gradient(
+          background-image:
+            linear-gradient(
               to right,
               rgba(var(--primary-rgb), 0.03) 1px,
               transparent 1px
@@ -640,7 +644,8 @@ export default function Home() {
           left: -50%;
           width: 200%;
           height: 200%;
-          background: radial-gradient(
+          background:
+            radial-gradient(
               circle at center,
               transparent 60%,
               rgba(var(--primary-rgb), 0.03) 60%,
@@ -669,7 +674,8 @@ export default function Home() {
           position: absolute;
           width: 100%;
           height: 100%;
-          background-image: radial-gradient(
+          background-image:
+            radial-gradient(
               circle at 10% 10%,
               rgba(var(--primary-rgb), 0.05) 0%,
               rgba(var(--primary-rgb), 0.05) 1%,
@@ -715,7 +721,8 @@ export default function Home() {
           left: 0;
           right: 0;
           bottom: 0;
-          background: radial-gradient(
+          background:
+            radial-gradient(
               circle at 30% 20%,
               rgba(var(--primary-rgb), 0.1) 0%,
               transparent 25%
@@ -913,8 +920,17 @@ export default function Home() {
 
         /* Font Integration */
         body {
-          font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-            Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
+          font-family:
+            'Outfit',
+            -apple-system,
+            BlinkMacSystemFont,
+            'Segoe UI',
+            Roboto,
+            Oxygen,
+            Ubuntu,
+            Cantarell,
+            'Open Sans',
+            'Helvetica Neue',
             sans-serif;
         }
 
@@ -950,7 +966,8 @@ export default function Home() {
             rgba(var(--primary-rgb), 0.2) 50%,
             rgba(var(--primary-rgb), 0.05) 100%
           );
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+          box-shadow:
+            0 10px 25px -5px rgba(0, 0, 0, 0.1),
             0 8px 10px -6px rgba(0, 0, 0, 0.1),
             0 0 0 1px rgba(var(--primary-rgb), 0.3) inset;
           backdrop-filter: blur(16px);
@@ -1146,7 +1163,8 @@ export default function Home() {
         }
 
         .light .particle-overlay {
-          background-image: radial-gradient(
+          background-image:
+            radial-gradient(
               circle at 20% 30%,
               rgba(var(--warm-rgb), 0.06) 0%,
               transparent 8%
@@ -1171,7 +1189,8 @@ export default function Home() {
 
         .light .grid-lines {
           opacity: 0.2;
-          background-image: linear-gradient(
+          background-image:
+            linear-gradient(
               to right,
               rgba(var(--warm-rgb), 0.08) 1px,
               transparent 1px
@@ -1185,7 +1204,8 @@ export default function Home() {
 
         .light .tech-circles::before {
           opacity: 0.3;
-          background: radial-gradient(
+          background:
+            radial-gradient(
               circle at center,
               transparent 60%,
               rgba(var(--warm-rgb), 0.06) 60%,
@@ -1204,7 +1224,8 @@ export default function Home() {
 
         .light .floating-elements::before {
           opacity: 0.4;
-          background-image: radial-gradient(
+          background-image:
+            radial-gradient(
               circle at 10% 10%,
               rgba(var(--warm-rgb), 0.08) 0%,
               rgba(var(--warm-rgb), 0.08) 1%,
@@ -1233,7 +1254,8 @@ export default function Home() {
 
         .light .glow-effect {
           opacity: 0.2;
-          background: radial-gradient(
+          background:
+            radial-gradient(
               circle at 30% 20%,
               rgba(var(--warm-rgb), 0.15) 0%,
               transparent 25%

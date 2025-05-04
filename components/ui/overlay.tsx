@@ -40,7 +40,7 @@ export function Overlay({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className={cn(
-        "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center",
+        'fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center',
         className
       )}
     >
@@ -58,13 +58,13 @@ export function Overlay({
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
           )}
         </div>
-        
+
         <h2 className="text-xl font-bold mb-2">{title}</h2>
-        
+
         {description && (
           <p className="text-muted-foreground mb-4">{description}</p>
         )}
-        
+
         {/* Status Timeline */}
         {recentEvents.length > 0 && (
           <div className="mt-4 mb-4 border-t border-border pt-3">
@@ -73,11 +73,21 @@ export function Overlay({
               {recentEvents.map((event, index) => (
                 <div key={index} className="flex items-start gap-2 text-xs">
                   {index === 0 ? (
-                    <Loader2 size={14} className="text-primary shrink-0 animate-spin mt-0.5" />
+                    <Loader2
+                      size={14}
+                      className="text-primary shrink-0 animate-spin mt-0.5"
+                    />
                   ) : (
-                    <CheckCircle size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+                    <CheckCircle
+                      size={14}
+                      className="text-muted-foreground shrink-0 mt-0.5"
+                    />
                   )}
-                  <span className={index === 0 ? "text-primary" : "text-muted-foreground"}>
+                  <span
+                    className={
+                      index === 0 ? 'text-primary' : 'text-muted-foreground'
+                    }
+                  >
                     {event.message}
                   </span>
                 </div>
@@ -85,7 +95,7 @@ export function Overlay({
             </div>
           </div>
         )}
-        
+
         {action && actionLabel && (
           <Button onClick={action} className="w-full">
             {actionLabel}
@@ -94,4 +104,4 @@ export function Overlay({
       </div>
     </motion.div>
   );
-} 
+}

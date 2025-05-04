@@ -1,5 +1,5 @@
 // next.config.ts
-import { NextConfig } from "next";
+import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   // output: 'export',
@@ -20,7 +20,10 @@ const nextConfig: NextConfig = {
     ],
   },
   env: {
-    NEXT_PUBLIC_BACKEND_URL: process.env.NODE_ENV === "development" ? 'http://localhost:5000' : "https://vybeide-be.onrender.com",
+    NEXT_PUBLIC_BACKEND_URL:
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:5000'
+        : 'https://vybeide-be.onrender.com',
   },
 
   // Optimize webpack configuration for large modules

@@ -42,7 +42,9 @@ export default function Home() {
                 className={`px-3 sm:px-4 md:px-5 w-full sm:w-[50%] md:w-[30%] lg:w-[20%] xl:w-[15%] bg-[#B0EC9C] flex items-center gap-2 justify-center f18 py-[12px] sm:py-[14px] md:py-[16px] rounded-full border-[1px] text-base sm:text-lg border-black cursor-pointer hover:scale-[1.02] transition-all duration-200 ${isLoading ? 'opacity-75 pointer-events-none' : ''}`}
                 onClick={startChat}
               >
-                <span className="whitespace-nowrap">{isLoading ? 'Loading...' : 'Get started now'}</span>
+                <span className="whitespace-nowrap">
+                  {isLoading ? 'Loading...' : 'Get started now'}
+                </span>
                 {!isLoading && (
                   <svg
                     className="ButtonBrand_icon__mayHb w-5 h-5 sm:w-6 sm:h-6"
@@ -56,49 +58,65 @@ export default function Home() {
                   </svg>
                 )}
                 {isLoading && (
-                  <svg className="animate-spin w-5 h-5 sm:w-6 sm:h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin w-5 h-5 sm:w-6 sm:h-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                 )}
               </div>
             </div>
           </div>
           <div className="absolute top-[19%] -left-[1%] w-[150px] sm:w-[200px] md:w-[240px] lg:w-[290px] transition-all duration-300 hidden sm:block">
-            <Image 
-              src={L1} 
-              alt="not showing" 
-              width={290} 
+            <Image
+              src={L1}
+              alt="not showing"
+              width={290}
               height={290}
-              className="w-full h-auto object-contain" 
+              className="w-full h-auto object-contain"
               priority
             />
           </div>
           <div className="absolute top-[27%] right-[1%] w-[130px] sm:w-[180px] md:w-[220px] lg:w-[260px] transition-all duration-300 hidden sm:block">
-            <Image 
-              src={L2} 
-              alt="not showing" 
-              width={260} 
+            <Image
+              src={L2}
+              alt="not showing"
+              width={260}
               height={260}
               className="w-full h-auto object-contain"
               priority
             />
           </div>
           <div className="absolute top-[58%] left-[1%] w-[160px] sm:w-[200px] md:w-[250px] lg:w-[300px] transition-all duration-300 hidden sm:block">
-            <Image 
-              src={R1} 
-              alt="not showing" 
-              width={300} 
+            <Image
+              src={R1}
+              alt="not showing"
+              width={300}
               height={300}
               className="w-full h-auto object-contain"
               priority
             />
           </div>
           <div className="absolute bottom-[0%] right-[6%] w-[110px] sm:w-[150px] md:w-[180px] lg:w-[210px] transition-all duration-300 hidden sm:block">
-            <Image 
-              src={R2} 
-              alt="not showing" 
-              width={210} 
+            <Image
+              src={R2}
+              alt="not showing"
+              width={210}
               height={210}
               className="w-full h-auto object-contain"
               priority

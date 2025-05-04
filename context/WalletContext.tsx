@@ -25,7 +25,8 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const [walletStatus, setWalletStatus] = useState<WalletStatus>('disconnected');
+  const [walletStatus, setWalletStatus] =
+    useState<WalletStatus>('disconnected');
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +36,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       try {
         if (typeof window !== 'undefined' && window.arweaveWallet) {
           const permissions = await window.arweaveWallet?.getPermissions();
-          
+
           if (permissions && permissions.length > 0) {
             // If we have permissions, get the address using arkit.ts getWalletDetails
             try {
@@ -51,7 +52,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             }
           }
         }
-        
+
         setWalletStatus('disconnected');
       } catch (err) {
         console.error('Error checking wallet connection:', err);
@@ -84,12 +85,18 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
 
     if (typeof window !== 'undefined') {
-      window.addEventListener('walletSwitch', handleWalletSwitch as EventListener);
+      window.addEventListener(
+        'walletSwitch',
+        handleWalletSwitch as EventListener
+      );
     }
 
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener('walletSwitch', handleWalletSwitch as EventListener);
+        window.removeEventListener(
+          'walletSwitch',
+          handleWalletSwitch as EventListener
+        );
       }
     };
   }, []);
@@ -106,12 +113,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       // Check if wallet is available
       if (typeof window === 'undefined' || !window.arweaveWallet) {
-        throw new Error('Arweave wallet extension not found. Please install a compatible wallet.');
+        throw new Error(
+          'Arweave wallet extension not found. Please install a compatible wallet.'
+        );
       }
 
       // Use connectWallet from arkit.ts
       const connection = await connectWallet();
-      
+
       if (connection === 'connected wallet successfully') {
         // Get wallet details using arkit.ts getWalletDetails
         const details = await getWalletDetails();
@@ -126,7 +135,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       console.error('Error connecting to wallet:', err);
       setWalletStatus('error');
       setError(err instanceof Error ? err.message : 'Failed to connect wallet');
-      toast.error(err instanceof Error ? err.message : 'Failed to connect wallet');
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to connect wallet'
+      );
       return false;
     } finally {
       setIsConnecting(false);
@@ -168,4 +179,4 @@ export function useWallet() {
     throw new Error('useWallet must be used within a WalletProvider');
   }
   return context;
-} 
+}

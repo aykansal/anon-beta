@@ -592,12 +592,12 @@ const Codeview = ({
                   {loading
                     ? 'Loading code...'
                     : isSaving
-                    ? 'Saving changes...'
-                    : isGenerating
-                    ? 'Generating code...'
-                    : action === 'deploy'
-                    ? 'Deploying...'
-                    : 'Processing...'}
+                      ? 'Saving changes...'
+                      : isGenerating
+                        ? 'Generating code...'
+                        : action === 'deploy'
+                          ? 'Deploying...'
+                          : 'Processing...'}
                 </p>
               </div>
             </div>

@@ -1,8 +1,10 @@
 import React from 'react';
-import { Loader2Icon, GitBranchIcon} from 'lucide-react';
+import { Loader2Icon, GitBranchIcon } from 'lucide-react';
 
 const StatusBar = ({
+  // @ts-expect-error ignore,
   activeProject,
+  // @ts-expect-error ignore,
   status, // New status prop
   connectionStatus = 'connected', // 'connected' | 'disconnected' | 'connecting',
 }) => {
@@ -31,7 +33,9 @@ const StatusBar = ({
         {connectionStatus === 'connected' && (
           <>
             <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_6px] shadow-primary"></div>
-            <span className="hover:text-foreground transition-colors">Connected</span>
+            <span className="hover:text-foreground transition-colors">
+              Connected
+            </span>
           </>
         )}
         {connectionStatus === 'connecting' && (

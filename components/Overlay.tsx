@@ -16,20 +16,50 @@ const Overlay: React.FC<OverlayProps> = ({ config, isVisible }) => {
         );
       case 'error':
         return (
-          <svg className="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="h-12 w-12 text-red-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         );
       case 'success':
         return (
-          <svg className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <svg
+            className="h-12 w-12 text-green-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
           </svg>
         );
       case 'info':
         return (
-          <svg className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className="h-12 w-12 text-blue-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
         );
     }
@@ -53,10 +83,14 @@ const Overlay: React.FC<OverlayProps> = ({ config, isVisible }) => {
             <div className="flex flex-col items-center space-y-4">
               {getIcon()}
               {config.title && (
-                <h2 className="text-xl font-semibold text-white">{config.title}</h2>
+                <h2 className="text-xl font-semibold text-white">
+                  {config.title}
+                </h2>
               )}
               {config.description && (
-                <p className="text-gray-300 text-center">{config.description}</p>
+                <p className="text-gray-300 text-center">
+                  {config.description}
+                </p>
               )}
               {config.statusTimeline && config.statusTimeline.length > 0 && (
                 <div className="w-full mt-4">
@@ -89,4 +123,4 @@ const Overlay: React.FC<OverlayProps> = ({ config, isVisible }) => {
   );
 };
 
-export default Overlay; 
+export default Overlay;

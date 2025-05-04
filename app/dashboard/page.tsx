@@ -1,11 +1,5 @@
 'use client';
 
-import { AnimatePresence } from 'framer-motion';
-import Chatview from '@/components/custom/Chatview';
-import Codeview from '@/components/custom/Codeview';
-import TitleBar from '@/components/custom/TitleBar';
-import StatusBar from '@/components/custom/StatusBar';
-import { useCallback, useState, useEffect } from 'react';
 import {
   PanelRightClose,
   PanelRightOpen,
@@ -20,12 +14,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useCallback, useState, useEffect } from 'react';
+
+import { AnimatePresence } from 'framer-motion';
+
+import { useModal } from '@/context/ModalContext';
 import { Overlay } from '@/components/ui/overlay';
+import { useWallet } from '@/context/WalletContext';
+import { useProject } from '@/context/ProjectContext';
+
 import { Button } from '@/components/ui/button';
-import { GitHubProvider } from '@/context/GitHubContext';
-import { WalletProvider, useWallet } from '@/context/WalletContext';
-import { ProjectProvider, useProject } from '@/context/ProjectContext';
-import { ModalProvider, useModal } from '@/context/ModalContext';
+import Chatview from '@/components/custom/Chatview';
+import Codeview from '@/components/custom/Codeview';
+import TitleBar from '@/components/custom/TitleBar';
+import StatusBar from '@/components/custom/StatusBar';
 
 // Define types for overlay
 type OverlayType = 'loading' | 'wallet' | 'creating';
@@ -73,6 +75,7 @@ const ProjectsPageContent = () => {
     handleProjectSelect,
     createProject,
     refreshProject,
+    setCodebase,
   } = useProject();
 
   // Add initialization effect to smooth out the initial loading experience
@@ -285,7 +288,7 @@ const ProjectsPageContent = () => {
                     isGenerating={isGenerating}
                     activeProject={activeProject}
                     onCommit={handleSaveToGithub}
-                    codebase={codebase as Record<string, string>}
+                    codebase={codebase as Record<string, string> | null}
                   />
                 </div>
 
@@ -316,7 +319,9 @@ const ProjectsPageContent = () => {
                       activeProject={activeProject}
                       onGenerateStart={() => setIsGenerating(true)}
                       onGenerateEnd={() => setIsGenerating(false)}
+                      showLuaToggle={true}
                       chatMessages={chatMessages}
+                      onNewCodebase={setCodebase}
                     />
                   </div>
                 )}
@@ -404,9 +409,7 @@ const ProjectsPageContent = () => {
               <Button
                 type="submit"
                 className="flex items-center gap-1"
-                disabled={
-                  !projectName.trim() || isCreating || !!nameError
-                }
+                disabled={!projectName.trim() || isCreating || !!nameError}
               >
                 {isCreating ? (
                   <Loader2 size={16} className="animate-spin mr-1" />
@@ -428,8 +431,8 @@ const ProjectsPageContent = () => {
             walletStatus === 'connected'
               ? 'connected'
               : walletStatus === 'connecting'
-              ? 'connecting'
-              : 'disconnected'
+                ? 'connecting'
+                : 'disconnected'
           }
           status={status}
         />
@@ -438,19 +441,4 @@ const ProjectsPageContent = () => {
   );
 };
 
-// Wrapper component with all providers
-const ProjectsPage = () => {
-  return (
-    <WalletProvider>
-      <ProjectProvider>
-        <ModalProvider>
-          <GitHubProvider>
-            <ProjectsPageContent />
-          </GitHubProvider>
-        </ModalProvider>
-      </ProjectProvider>
-    </WalletProvider>
-  );
-};
-
-export default ProjectsPage;
+export default ProjectsPageContent;

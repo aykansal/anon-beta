@@ -13,12 +13,15 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class SandpackErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class SandpackErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
       hasError: false,
-      error: null
+      error: null,
     };
   }
 
@@ -26,14 +29,14 @@ class SandpackErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBou
     console.error('SandpackErrorBoundary caught error:', error);
     return {
       hasError: true,
-      error
+      error,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error('Error caught by SandpackErrorBoundary:', error);
     console.error('Error info:', errorInfo);
-    
+
     // Log the error to your analytics or logging service
     const errorMessage = error.message || 'Unknown error occurred';
     toast.error(`Sandpack error: ${errorMessage}`);
@@ -42,7 +45,7 @@ class SandpackErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBou
   resetError = (): void => {
     this.setState({
       hasError: false,
-      error: null
+      error: null,
     });
   };
 
@@ -51,16 +54,18 @@ class SandpackErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBou
       if (this.props.fallback) {
         return this.props.fallback;
       }
-      
+
       return (
         <div className="w-full h-full flex items-center justify-center bg-gray-100 p-4 rounded-md">
           <div className="text-red-500 max-w-md text-center">
             <h3 className="font-bold text-lg mb-2">Preview Error</h3>
-            <p className="mb-4">{this.state.error?.message || 'Failed to load code preview'}</p>
+            <p className="mb-4">
+              {this.state.error?.message || 'Failed to load code preview'}
+            </p>
             <p className="text-sm text-gray-500 mb-4">
               This could be caused by a network issue or compatibility problem.
             </p>
-            <button 
+            <button
               className="px-4 py-2 bg-blue-500 text-white rounded-md"
               onClick={this.resetError}
             >
@@ -75,4 +80,4 @@ class SandpackErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBou
   }
 }
 
-export default SandpackErrorBoundary; 
+export default SandpackErrorBoundary;

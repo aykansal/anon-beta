@@ -12,8 +12,12 @@ interface OverlayContextType {
 
 const OverlayContext = createContext<OverlayContextType | undefined>(undefined);
 
-export const OverlayProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentOverlay, setCurrentOverlay] = useState<OverlayConfig | null>(null);
+export const OverlayProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [currentOverlay, setCurrentOverlay] = useState<OverlayConfig | null>(
+    null
+  );
   const [isVisible, setIsVisible] = useState(false);
 
   const showOverlay = useCallback((config: OverlayConfig) => {
@@ -29,20 +33,23 @@ export const OverlayProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimeout(() => setCurrentOverlay(null), 300);
   }, []);
 
-  const addTimelineEvent = useCallback((message: string) => {
-    console.log('Adding timeline event:', message);
-    if (currentOverlay?.statusTimeline) {
-      const newEvent = {
-        id: Date.now().toString(),
-        message,
-        timestamp: Date.now(),
-      };
-      setCurrentOverlay({
-        ...currentOverlay,
-        statusTimeline: [...currentOverlay.statusTimeline, newEvent],
-      });
-    }
-  }, [currentOverlay]);
+  const addTimelineEvent = useCallback(
+    (message: string) => {
+      console.log('Adding timeline event:', message);
+      if (currentOverlay?.statusTimeline) {
+        const newEvent = {
+          id: Date.now().toString(),
+          message,
+          timestamp: Date.now(),
+        };
+        setCurrentOverlay({
+          ...currentOverlay,
+          statusTimeline: [...currentOverlay.statusTimeline, newEvent],
+        });
+      }
+    },
+    [currentOverlay]
+  );
 
   const clearTimeline = useCallback(() => {
     console.log('Clearing timeline');
@@ -76,4 +83,4 @@ export const useOverlay = () => {
     throw new Error('useOverlay must be used within an OverlayProvider');
   }
   return context;
-}; 
+};
