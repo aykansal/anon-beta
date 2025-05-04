@@ -36,6 +36,7 @@ const SandpackLoading = () => (
 const SandPackPreviewClient = () => {
   const { sandpack } = useSandpack();
   const actionContext = React.useContext(ActionContext);
+  // @ts-expect-error ignore
   const { action } = actionContext;
   const previewRef = React.useRef<SandpackPreviewRef>(null);
   const [error, setError] = React.useState<Error | null>(null);

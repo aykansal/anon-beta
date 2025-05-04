@@ -138,6 +138,7 @@ const Codeview = ({
 }: CodeviewProps) => {
   const [activeView, setActiveView] = useState('code');
   const [loading, setLoading] = useState(false);
+  // @ts-expect-error ignore
   const { action, setAction } = useContext(ActionContext);
   const [currentProject, setCurrentProject] =
     useState<CurrentProjectType | null>(null);

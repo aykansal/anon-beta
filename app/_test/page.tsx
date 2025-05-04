@@ -3,14 +3,11 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
-  anonSqliteProcess,
   fetchMessagesAR,
   messageAR,
   runLua,
   spawnProcess,
-  // transactionAR,
 } from '@/lib/arkit';
-import WalletConnect from '@/components/anon/WalletConnect';
 import styles from '@/styles/test.module.css';
 import { connect, createDataItemSigner } from '@permaweb/aoconnect';
 import axios from 'axios';
@@ -59,7 +56,6 @@ const Testarweave = () => {
         process,
         data: JSON.stringify(fileData),
         tags: [
-          // @ts-expect-error ignore
           {
             name: 'Action',
             value: 'ChatMessage',
@@ -109,7 +105,7 @@ const Testarweave = () => {
       console.warn('Process already spawned!');
       setProcess(storedProcess);
     } else {
-      const process = await spawnProcess();
+      const process = await spawnProcess('anonSqliteProcess');
       setProcess(process);
       localStorage.setItem('spawnedProcess', process);
     }
@@ -136,12 +132,12 @@ const Testarweave = () => {
               </p>
             </div>
             <div className="flex justify-center w-full md:w-auto">
-              <WalletConnect
+              {/* <WalletConnect
                 //@ts-expect-error ignore
                 onWalletConnected={(walletData) => {
                   console.log('Wallet connected:', walletData);
                 }}
-              />
+              /> */}
             </div>
           </div>
         </header>
@@ -169,7 +165,7 @@ const Testarweave = () => {
                 onClick={async () => {
                   setLoading(true);
                   await runLua({
-                    process: anonSqliteProcess,
+                    process: process,
                     code: `Handlers.add("getAuthor",{Action="getAuthor"},
                             function (msg)
                                 local tables={}
@@ -200,7 +196,7 @@ const Testarweave = () => {
                       data: `
                     Send({Target="f_ZV6pI3KYkkHIctjTeEvUyBo8icRAwmDkHWWcvl3uY",Tags={Action="getAuthor"}})
                     `,
-                      process: anonSqliteProcess,
+                      process: process,
                       signer: createDataItemSigner(window.arweaveWallet),
                       tags: [{ name: 'Action', value: 'Eval' }],
                     })
@@ -219,7 +215,7 @@ const Testarweave = () => {
                   const ao = connect();
                   const res = await ao.dryrun({
                     data: '',
-                    process: anonSqliteProcess,
+                    process: process,
                     tags: [{ name: 'Action', value: 'getAuthor' }],
                   });
                   console.log(res.Messages[0].Data);
