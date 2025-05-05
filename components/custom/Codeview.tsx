@@ -485,7 +485,18 @@ const Codeview = ({
                     onClick={() => {
                       if (activeProject?.projectId) {
                         setSelectedVersion(null);
-                        // Reset to current version - parent will handle this
+                        // Reset to current version using the codebase prop
+                        if (codebase) {
+                          const latestProject: CurrentProjectType = {
+                            codebase: codebase as CodebaseType,
+                            description: activeProject.name || 'Project',
+                            projectId: activeProject.projectId,
+                            externalPackages: [],
+                          };
+                          setCurrentProject(latestProject);
+                          console.log('Switched to latest codebase version');
+                          toast.success('Loaded latest code version');
+                        }
                       }
                     }}
                     className="ml-1 underline hover:no-underline"
@@ -541,7 +552,18 @@ const Codeview = ({
                       onClick={() => {
                         if (activeProject?.projectId) {
                           setSelectedVersion(null);
-                          // Reset to current version - parent will handle this
+                          // Reset to current version using the codebase prop
+                          if (codebase) {
+                            const latestProject: CurrentProjectType = {
+                              codebase: codebase as CodebaseType,
+                              description: activeProject.name || 'Project',
+                              projectId: activeProject.projectId,
+                              externalPackages: [],
+                            };
+                            setCurrentProject(latestProject);
+                            console.log('Switched to latest codebase version');
+                            toast.success('Loaded latest code version');
+                          }
                           setIsVersionDropdownOpen(false);
                         }
                       }}
