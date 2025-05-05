@@ -27,6 +27,7 @@ import {
   Download,
 } from 'lucide-react';
 import { CurrentProjectType, ActiveProjectType } from '@/types/types';
+import { useProject } from '@/context/ProjectContext';
 
 const SandpackDownloader = ({
   onDownload,
@@ -37,6 +38,7 @@ const SandpackDownloader = ({
 }) => {
   const { sandpack } = useSandpack();
   const { files: sandpackFiles } = sandpack;
+  const { activeProject } = useProject();
 
   const downloadFiles = async () => {
     if (disabled) return;
@@ -57,7 +59,8 @@ const SandpackDownloader = ({
       try {
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'project.zip';
+        link.download =
+          activeProject?.name || `tryanon_${activeProject?.projectId}`;
         document.body.appendChild(link);
         link.click();
         toast.success('Files downloaded successfully');
@@ -473,7 +476,11 @@ const Codeview = ({
               <div className="bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 px-2 py-1 rounded-md text-xs font-medium border border-yellow-500/30 shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <History size={12} />
-                  <span>Viewing historical version</span>
+                  <span>
+                    Viewing historical version from {formatTimestamp(
+                      codeVersions.find((v) => v.id === selectedVersion)?.timestamp || ''
+                    )}
+                  </span>
                   <button
                     onClick={() => {
                       if (activeProject?.projectId) {
@@ -506,7 +513,7 @@ const Codeview = ({
                       codeVersions.find((v) => v.id === selectedVersion)
                         ?.timestamp || ''
                     )}`
-                  : 'Current'}
+                  : 'Current (Latest)'}
                 <ChevronDown
                   size={10}
                   className={
@@ -522,6 +529,13 @@ const Codeview = ({
                   className="absolute right-0 top-7 z-20 w-56 rounded-md border border-border bg-background shadow-lg"
                   ref={versionDropdownRef}
                 >
+                  <div className="px-2 py-1.5 border-b border-border">
+                    <p className="text-xs text-muted-foreground">
+                      {codeVersions.length === 1 
+                        ? "Only one version available"
+                        : `${codeVersions.length} versions, newest first`}
+                    </p>
+                  </div>
                   <div className="max-h-48 overflow-y-auto py-1 px-1">
                     <button
                       onClick={() => {
@@ -537,10 +551,11 @@ const Codeview = ({
                           'bg-primary/10 text-primary font-medium'
                       )}
                     >
-                      <span className="font-medium">Current Version</span>
+                      <span className="font-medium">Current (Latest Version)</span>
                     </button>
 
-                    {codeVersions.map((version) => (
+                    {/* Skip the most recent version since it's already represented by "Current" */}
+                    {codeVersions.length > 1 && codeVersions.slice(1).map((version) => (
                       <button
                         key={version.id}
                         onClick={() => {
