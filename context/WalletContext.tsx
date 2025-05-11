@@ -8,10 +8,31 @@ import React, {
   ReactNode,
 } from 'react';
 import { toast } from 'sonner';
-import { connectWallet, disconnectWallet, getWalletDetails } from '@/lib/arkit';
+import { connectWallet as connectArweaveWallet, disconnectWallet as disconnectArweaveWallet, getWalletDetails } from '@/lib/arkit';
 
-type WalletStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
+// Define enum for wallet status for better type safety
+export enum WalletStatus {
+  DISCONNECTED = 'disconnected',
+  CONNECTING = 'connecting',
+  CONNECTED = 'connected',
+  ERROR = 'error'
+}
 
+// Define enum for connection results
+export enum WalletConnectionResult {
+  CONNECTED = 'connected',
+  USER_CANCELLED = 'cancelled',
+  ERROR = 'error'
+}
+
+// Define interface for wallet connection response
+export interface WalletConnectionResponse {
+  status: WalletConnectionResult;
+  message?: string;
+  error?: Error;
+}
+
+// Update the context type with the enum
 interface WalletContextType {
   walletAddress: string;
   walletStatus: WalletStatus;
@@ -25,42 +46,44 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [walletAddress, setWalletAddress] = useState<string>('');
-  const [walletStatus, setWalletStatus] =
-    useState<WalletStatus>('disconnected');
+  const [walletStatus, setWalletStatus] = useState<WalletStatus>(WalletStatus.DISCONNECTED);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check wallet connection on component mount
-  useEffect(() => {
-    const checkWalletConnection = async () => {
-      try {
-        if (typeof window !== 'undefined' && window.arweaveWallet) {
-          const permissions = await window.arweaveWallet?.getPermissions();
+  /**
+   * Checks if the wallet is already connected
+   */
+  const checkWalletConnection = async (): Promise<void> => {
+    try {
+      if (typeof window !== 'undefined' && window.arweaveWallet) {
+        const permissions = await window.arweaveWallet?.getPermissions();
 
-          if (permissions && permissions.length > 0) {
-            // If we have permissions, get the address using arkit.ts getWalletDetails
-            try {
-              const details = await getWalletDetails();
-              if (details.walletAddress) {
-                setWalletAddress(details.walletAddress);
-                setWalletStatus('connected');
-                console.log('Wallet already connected:', details.walletAddress);
-                return;
-              }
-            } catch (err) {
-              console.log('Error getting wallet details', err);
+        if (permissions && permissions.length > 0) {
+          // If we have permissions, get the address using arkit.ts getWalletDetails
+          try {
+            const details = await getWalletDetails();
+            if (details.walletAddress) {
+              setWalletAddress(details.walletAddress);
+              setWalletStatus(WalletStatus.CONNECTED);
+              console.log('Wallet already connected:', details.walletAddress);
+              return;
             }
+          } catch (err) {
+            console.log('Error getting wallet details', err);
           }
         }
-
-        setWalletStatus('disconnected');
-      } catch (err) {
-        console.error('Error checking wallet connection:', err);
-        setWalletStatus('error');
-        setError('Failed to check wallet connection');
       }
-    };
 
+      setWalletStatus(WalletStatus.DISCONNECTED);
+    } catch (err) {
+      console.error('Error checking wallet connection:', err);
+      setWalletStatus(WalletStatus.ERROR);
+      setError('Failed to check wallet connection');
+    }
+  };
+
+  // Check wallet connection on component mount
+  useEffect(() => {
     // Wait for arweave wallet to be injected
     if (typeof window !== 'undefined') {
       if (window.arweaveWallet) {
@@ -71,16 +94,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           checkWalletConnection();
         });
       }
+
+      // Cleanup event listener
+      return () => {
+        window.removeEventListener('arweaveWalletLoaded', () => {
+          checkWalletConnection();
+        });
+      };
     }
   }, []);
 
   // Listen for wallet switch events
   useEffect(() => {
-    const handleWalletSwitch = (e: CustomEvent) => {
+    const handleWalletSwitch = (e: CustomEvent): void => {
       console.log('Wallet switched to new address:', e.detail?.address);
       if (e.detail?.address) {
         setWalletAddress(e.detail.address);
-        setWalletStatus('connected');
+        setWalletStatus(WalletStatus.CONNECTED);
       }
     };
 
@@ -101,14 +131,17 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /**
+   * Connect to wallet and handle different connection scenarios
+   */
   const connectToWallet = async (): Promise<boolean> => {
-    if (walletStatus === 'connected') {
+    if (walletStatus === WalletStatus.CONNECTED) {
       return true; // Already connected
     }
 
     try {
       setIsConnecting(true);
-      setWalletStatus('connecting');
+      setWalletStatus(WalletStatus.CONNECTING);
       setError(null);
 
       // Check if wallet is available
@@ -118,42 +151,55 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         );
       }
 
-      // Use connectWallet from arkit.ts
-      const connection = await connectWallet();
+      // Use the updated connectWallet from arkit.ts
+      const connectionResult = await connectArweaveWallet();
 
-      if (connection === 'connected wallet successfully') {
-        // Get wallet details using arkit.ts getWalletDetails
-        const details = await getWalletDetails();
-        setWalletAddress(details.walletAddress);
-        setWalletStatus('connected');
-        console.log('Wallet connected successfully:', details.walletAddress);
-        return true;
-      } else {
-        throw new Error('Wallet connection failed');
+      switch (connectionResult.status) {
+        case WalletConnectionResult.CONNECTED:
+          // Get wallet details using arkit.ts getWalletDetails
+          const details: { walletAddress: string; balance: number } = await getWalletDetails();
+          setWalletAddress(details.walletAddress);
+          setWalletStatus(WalletStatus.CONNECTED);
+          console.log('Wallet connected successfully:', details.walletAddress);
+          return true;
+          
+        case WalletConnectionResult.USER_CANCELLED:
+          console.log('User cancelled the wallet connection');
+          setWalletStatus(WalletStatus.DISCONNECTED); // Reset to disconnected state
+          return false;
+          
+        case WalletConnectionResult.ERROR:
+        default:
+          throw connectionResult.error || new Error(connectionResult.message || 'Unknown wallet connection error');
       }
+      
     } catch (err) {
       console.error('Error connecting to wallet:', err);
-      setWalletStatus('error');
-      setError(err instanceof Error ? err.message : 'Failed to connect wallet');
-      toast.error(
-        err instanceof Error ? err.message : 'Failed to connect wallet'
-      );
+      setWalletStatus(WalletStatus.ERROR);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect wallet';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return false;
     } finally {
+      console.log('Wallet Connection Process Complete');
       setIsConnecting(false);
     }
   };
 
-  const handleDisconnectWallet = () => {
+  /**
+   * Disconnect the wallet
+   */
+  const handleDisconnectWallet = (): void => {
     try {
       // Use disconnectWallet from arkit.ts
-      disconnectWallet();
+      disconnectArweaveWallet();
       setWalletAddress('');
-      setWalletStatus('disconnected');
+      setWalletStatus(WalletStatus.DISCONNECTED);
       toast.info('Wallet disconnected');
     } catch (err) {
       console.error('Error disconnecting wallet:', err);
-      toast.error('Failed to disconnect wallet');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to disconnect wallet';
+      toast.error(errorMessage);
     }
   };
 
@@ -173,7 +219,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useWallet() {
+/**
+ * Custom hook to use the wallet context
+ */
+export function useWallet(): WalletContextType {
   const context = useContext(WalletContext);
   if (context === undefined) {
     throw new Error('useWallet must be used within a WalletProvider');
