@@ -597,8 +597,8 @@ const Chatview = ({
               className="bg-background border border-border rounded-md px-2 py-1 text-foreground h-[44px] shrink-0"
             >
               <option value="React">React</option>
-              <option value="Nextjs">Nextjs</option>
-              <option value="HTML">HTML</option>
+              {/* <option value="Nextjs">Nextjs</option> */}
+              {/* <option value="HTML">HTML</option> */}
             </select>
             <div className="flex-1 relative">
               <button

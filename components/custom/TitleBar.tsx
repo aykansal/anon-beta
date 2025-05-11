@@ -512,7 +512,7 @@ const TitleBar = ({
     <>
       <div className="border-b border-border/50 bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
         {/* Main Toolbar */}
-        <div className="h-14 px-4 flex items-center gap-4 max-w-screen-2xl mx-auto">
+        <div className="h-14 px-2 flex items-center gap-4 max-w-screen-2xl">
           {/* Project Selection Button - Opens Drawer */}
           <button
             onClick={() => setIsProjectDrawerOpen(true)}

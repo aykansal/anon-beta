@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { spawnProcess } from '@/lib/arkit';
+import { DbAdmin_LUA_CODE, runLua, spawnProcess } from '@/lib/arkit';
 import { useWallet } from './WalletContext';
 import { ActiveProjectType, FileData } from '@/types/types';
 
@@ -332,6 +332,19 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
       if (!processId || typeof processId !== 'string') {
         throw new Error('Failed to generate process ID');
       }
+
+      const luaResult = await runLua({
+        process: processId,
+        code: DbAdmin_LUA_CODE,
+        tags: [
+          {
+            name: 'Description',
+            value: `${projectName} now supports sqlite database operations.`,
+          },
+        ],
+      });
+
+      console.log('Successfully added DbAdmin support to project:', luaResult.id);
 
       // Create the project in the backend
       addStatusEvent('Saving project to backend...');

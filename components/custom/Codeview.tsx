@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { CurrentProjectType, ActiveProjectType } from '@/types/types';
 import { useProject } from '@/context/ProjectContext';
+import { CU_URL, GATEWAY_URL, GRAPHQL_URL, MODE, runLua } from '@/lib/arkit';
 
 const SandpackDownloader = ({
   onDownload,
@@ -223,6 +224,9 @@ const Codeview = ({
           if (luaFile) {
             if (typeof luaFile === 'string') {
               luaCodeToBeEval = luaFile;
+            } else if (typeof luaFile === 'object' && 'code' in luaFile) {
+              // @ts-expect-error ignore type error
+              luaCodeToBeEval = luaFile.code;
             }
           }
         }
@@ -246,40 +250,34 @@ const Codeview = ({
       }
 
       try {
-        const { connect, createDataItemSigner } = await import(
-          '@permaweb/aoconnect'
-        );
-        const ao = connect({ MODE: 'legacy' });
+        const { connect } = await import('@permaweb/aoconnect');
+        const ao = connect({
+          MODE: MODE,
+          CU_URL: CU_URL,
+          GATEWAY_URL: GATEWAY_URL,
+          GRAPHQL_URL: GRAPHQL_URL,
+        });
         console.log('activeProject', activeProject);
 
-        const messageId = await ao.message({
+        const luaResult = await runLua({
           process: activeProject.projectId,
-          data: luaCodeToBeEval,
-          signer: createDataItemSigner(window.arweaveWallet),
+          code: luaCodeToBeEval,
           tags: [
-            { name: 'Name', value: 'Anon' },
-            { name: 'Version', value: '0.2.1' },
-            {
-              name: 'Authority',
-              value: 'fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY',
-            },
-            { name: 'Action', value: 'Eval' },
             {
               name: 'Description',
               value: `${currentProject?.description || 'project description'}`,
             },
           ],
         });
-        console.log('Message ID:', messageId);
+        console.log('Message ID:', luaResult.id);
 
         const result = await ao.result({
           process: activeProject?.projectId || '',
-          message: messageId,
+          message: luaResult.id,
         });
         // console.log('Result:', result);
 
-        // @ts-expect-error ignore type error
-        result.id = messageId;
+        // result.id = messageId;
         toast.success('Lua code executed successfully');
         // @ts-expect-error ignore type error
         setCurrentProject({ ...currentProject, latestMessage: result });

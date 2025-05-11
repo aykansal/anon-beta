@@ -62,6 +62,7 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+
   *,
   ::after,
   ::before,
@@ -292,7 +293,7 @@
   background: hsl(var(--secondary)) !important;
 }
 
-.sp-code-editor > div:last-child {
+.sp-code-editor>div:last-child {
   flex: 1 !important;
   min-height: 0 !important;
   overflow: auto !important;
@@ -307,6 +308,14 @@
 .sp-preview-iframe {
   height: 100% !important;
 }
+
+.sp-cube-wrapper .sp-button {
+  visibility: hidden !important;
+}
+
+/* .sp-cube-wrapper . {
+  visibility: hidden !important;
+} */
 
 /* Fix for editor content */
 .cm-editor {
